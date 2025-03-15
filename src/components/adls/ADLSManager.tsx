@@ -8,6 +8,7 @@ import { Dataset, ADLSCredentials } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { LogOut } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const ADLSManager: React.FC = () => {
   const {
@@ -31,7 +32,15 @@ const ADLSManager: React.FC = () => {
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
-    await connect(credentials, name);
+    try {
+      await connect(credentials, name);
+      toast({
+        title: "Connected successfully",
+        description: `Connected to ${name}`,
+      });
+    } catch (err) {
+      // Error is already handled in the useADLSData hook
+    }
   };
 
   const handleDisconnect = async () => {
@@ -44,12 +53,23 @@ const ADLSManager: React.FC = () => {
   };
 
   const handleGoBackToDatasets = () => {
-    // Clear the selected dataset by passing null to the loadDataset function
+    // Clear the selected dataset by passing empty string to the loadDataset function
     loadDataset('');
   };
 
+  const handleSaveChanges = async () => {
+    const success = await saveChanges();
+    if (success) {
+      toast({
+        title: "Changes saved",
+        description: `Successfully saved ${changes.length} changes to the dataset`,
+      });
+    }
+    return success;
+  };
+
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Azure Data Lake Storage Manager</h1>
         <p className="text-gray-600">
@@ -129,7 +149,7 @@ const ADLSManager: React.FC = () => {
           changes={changes}
           modifiedRows={modifiedRows}
           onCellUpdate={updateCell}
-          onSaveChanges={saveChanges}
+          onSaveChanges={handleSaveChanges}
           onDiscardChanges={discardChanges}
           onLoadData={loadDataset}
           onGoBack={handleGoBackToDatasets}

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange } from '@/types/adls';
 import { 
   Table, 
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle } from 'lucide-react';
+import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -27,6 +27,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import TableColumnManager from './TableColumnManager';
+import { toast } from '@/hooks/use-toast';
 
 interface DataEditorProps {
   dataset: Dataset;
@@ -75,15 +78,37 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [filterValue, setFilterValue] = useState<string>('');
   const [showChanges, setShowChanges] = useState(false);
   const [editMode, setEditMode] = useState(true);
+  const [showColumnManager, setShowColumnManager] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [frozenColumns, setFrozenColumns] = useState<string[]>(['__id']);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'comfortable' | 'compact'>('comfortable');
+  const [showOnlyModified, setShowOnlyModified] = useState(false);
+  
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  // Set visible columns when dataset changes
+  useEffect(() => {
+    if (dataPreview?.columns) {
+      setVisibleColumns(dataPreview.columns.map(col => col.name));
+    }
+  }, [dataPreview?.columns]);
 
   // Load data when component parameters change
   useEffect(() => {
     if (dataset) {
       loadData();
     }
-  }, [dataset.id, page, pageSize, sortColumn, sortDirection, filters]);
+  }, [dataset.id, page, pageSize, sortColumn, sortDirection, filters, showOnlyModified]);
 
   const loadData = async () => {
+    // If we're only showing modified rows, we don't need to make a server call
+    if (showOnlyModified) {
+      // Client-side filtering - we'd actually want to implement this on the server
+      // but for this demo we'll just filter client-side
+      return;
+    }
+    
     await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters.length > 0 ? filters : undefined);
   };
 
@@ -125,6 +150,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
       onCellUpdate(editCell.rowId, editCell.columnName, editValue);
       setEditCell(null);
       setEditValue(null);
+      
+      // Show visual feedback
+      toast({
+        title: "Cell updated",
+        description: "Your changes have been applied but not saved yet.",
+        duration: 2000
+      });
     }
   };
 
@@ -160,6 +192,66 @@ const DataEditor: React.FC<DataEditorProps> = ({
     return Math.ceil(dataPreview.totalRows / pageSize);
   };
 
+  const handleVisibilityChange = (columnName: string, isVisible: boolean) => {
+    if (isVisible) {
+      setVisibleColumns(prev => [...prev, columnName]);
+    } else {
+      setVisibleColumns(prev => prev.filter(col => col !== columnName));
+    }
+  };
+
+  const handleFreezeChange = (columnName: string, isFrozen: boolean) => {
+    if (isFrozen) {
+      setFrozenColumns(prev => [...prev, columnName]);
+    } else {
+      setFrozenColumns(prev => prev.filter(col => col !== columnName));
+    }
+  };
+
+  const handleColumnReorder = (sourceIndex: number, destinationIndex: number) => {
+    if (!dataPreview?.columns) return;
+    
+    const reorderedVisibleColumns = [...visibleColumns];
+    const [movedColumn] = reorderedVisibleColumns.splice(
+      visibleColumns.indexOf(dataPreview.columns[sourceIndex].name), 
+      1
+    );
+    
+    reorderedVisibleColumns.splice(
+      visibleColumns.indexOf(dataPreview.columns[destinationIndex].name), 
+      0, 
+      movedColumn
+    );
+    
+    setVisibleColumns(reorderedVisibleColumns);
+  };
+
+  const toggleRowSelection = (rowId: string) => {
+    setSelectedRows(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(rowId)) {
+        newSelection.delete(rowId);
+      } else {
+        newSelection.add(rowId);
+      }
+      return newSelection;
+    });
+  };
+
+  const handleSaveChanges = async () => {
+    const success = await onSaveChanges();
+    if (success) {
+      toast({
+        title: "Changes saved",
+        description: `Successfully saved ${changes.length} changes`,
+        variant: "default"
+      });
+      
+      // Clear selected rows after save
+      setSelectedRows(new Set());
+    }
+  };
+
   const renderCellEditor = (rowId: string, columnName: string, value: any, columnType: string) => {
     switch (columnType) {
       case 'boolean':
@@ -184,6 +276,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
             autoFocus
             className="w-full"
           />
+        );
+      case 'timestamp':
+      case 'date':
+        return (
+          <div className="flex items-center">
+            <Input
+              type="datetime-local"
+              value={editValue ? new Date(editValue).toISOString().slice(0, 16) : ''}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                setEditValue(date.toISOString());
+              }}
+              onKeyDown={handleKeyDown}
+              onBlur={commitEdit}
+              autoFocus
+              className="w-full"
+            />
+            <Calendar className="ml-2 h-4 w-4 text-gray-500" />
+          </div>
         );
       default:
         return (
@@ -219,6 +330,24 @@ const DataEditor: React.FC<DataEditorProps> = ({
     }
   };
 
+  // Generate CSS classes for cells based on their state
+  const getCellClasses = (rowId: string, columnName: string) => {
+    const isEditing = editCell?.rowId === rowId && editCell?.columnName === columnName;
+    const isModified = modifiedRows.has(rowId);
+    const isSelected = selectedRows.has(rowId);
+    const isFrozen = frozenColumns.includes(columnName);
+    
+    return `
+      ${editMode ? 'cursor-pointer' : ''} 
+      ${isEditing ? 'bg-amber-50 dark:bg-amber-950 p-0' : ''}
+      ${isModified ? 'bg-green-50 dark:bg-green-950' : ''}
+      ${isSelected ? 'bg-blue-50 dark:bg-blue-950' : ''}
+      ${isFrozen ? 'sticky left-0 z-10 bg-white dark:bg-gray-800' : ''}
+      ${viewMode === 'compact' ? 'py-1' : 'py-2'}
+      transition-all duration-200
+    `;
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -241,6 +370,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
       </Card>
     );
   }
+
+  // Only show rows that are in the modifiedRows set when showOnlyModified is true
+  const rowsToDisplay = showOnlyModified 
+    ? dataPreview.rows.filter(row => modifiedRows.has(row.__id))
+    : dataPreview.rows;
 
   return (
     <div className="space-y-4">
@@ -269,6 +403,39 @@ const DataEditor: React.FC<DataEditorProps> = ({
               <Label htmlFor="edit-mode">Edit Mode</Label>
             </div>
             
+            <div className="flex items-center space-x-2 mr-4">
+              <Switch
+                id="view-modified"
+                checked={showOnlyModified}
+                onCheckedChange={setShowOnlyModified}
+              />
+              <Label htmlFor="view-modified">Show Modified Only</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 mr-4">
+              <Select
+                value={viewMode}
+                onValueChange={(value: 'comfortable' | 'compact') => setViewMode(value)}
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="View mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="comfortable">Comfortable</SelectItem>
+                  <SelectItem value="compact">Compact</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowColumnManager(true)}
+            >
+              <Columns className="mr-2 h-4 w-4" />
+              Columns
+            </Button>
+            
             <Button 
               variant="outline" 
               size="sm"
@@ -276,6 +443,26 @@ const DataEditor: React.FC<DataEditorProps> = ({
             >
               <Filter className="mr-2 h-4 w-4" />
               Filter
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(
+                  Array.from(modifiedRows).map(rowId => 
+                    dataPreview.rows.find(row => row.__id === rowId)
+                  )
+                ));
+                toast({
+                  title: "Copied to clipboard",
+                  description: `${modifiedRows.size} modified rows copied to clipboard`,
+                });
+              }}
+              disabled={modifiedRows.size === 0}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Modified
             </Button>
             
             <Dialog open={showChanges} onOpenChange={setShowChanges}>
@@ -419,6 +606,17 @@ const DataEditor: React.FC<DataEditorProps> = ({
               </DialogContent>
             </Dialog>
             
+            <TableColumnManager
+              columns={dataPreview.columns}
+              visibleColumns={visibleColumns}
+              frozenColumns={frozenColumns}
+              onVisibilityChange={handleVisibilityChange}
+              onFreezeChange={handleFreezeChange}
+              onReorder={handleColumnReorder}
+              open={showColumnManager}
+              onOpenChange={setShowColumnManager}
+            />
+            
             <Button 
               variant="outline" 
               size="sm"
@@ -430,7 +628,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Button>
             
             <Button 
-              onClick={onSaveChanges}
+              onClick={handleSaveChanges}
               disabled={changes.length === 0 || isSaving}
             >
               <Save className="mr-2 h-4 w-4" />
@@ -439,74 +637,131 @@ const DataEditor: React.FC<DataEditorProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {dataPreview.columns.map((column) => (
-                    <TableHead 
-                      key={column.name}
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort(column.name)}
-                    >
-                      <div className="flex items-center">
-                        {column.name}
-                        {sortColumn === column.name && (
-                          sortDirection === 'asc' ? (
-                            <ChevronUp className="ml-1 h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="ml-1 h-4 w-4" />
-                          )
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {column.type}
-                        {column.nullable && ' (nullable)'}
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dataPreview.rows.map((row) => (
-                  <TableRow 
-                    key={row.__id}
-                    className={modifiedRows.has(row.__id) ? 'bg-green-50' : ''}
-                  >
-                    {dataPreview.columns.map((column) => {
-                      const isEditing = editCell?.rowId === row.__id && editCell?.columnName === column.name;
-                      
-                      return (
-                        <TableCell 
-                          key={`${row.__id}-${column.name}`}
-                          className={`${editMode ? 'cursor-pointer' : ''}`}
-                          onClick={() => editMode && startEdit(row.__id, column.name, row[column.name])}
-                        >
-                          {isEditing ? (
-                            renderCellEditor(row.__id, column.name, row[column.name], column.type)
-                          ) : (
-                            renderCellValue(row[column.name], column.type)
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-                {dataPreview.rows.length === 0 && (
+          <div className="border rounded-md overflow-hidden">
+            <div 
+              className="overflow-x-auto" 
+              style={{ maxHeight: '70vh' }}
+              ref={tableRef}
+            >
+              <Table>
+                <TableHeader className="sticky top-0 z-20 bg-white dark:bg-gray-800">
                   <TableRow>
-                    <TableCell colSpan={dataPreview.columns.length} className="text-center py-8">
-                      No data found matching the current filters
-                    </TableCell>
+                    <TableHead 
+                      className="sticky left-0 z-30 bg-white dark:bg-gray-800 w-10"
+                    >
+                      <Checkbox 
+                        checked={
+                          rowsToDisplay.length > 0 && 
+                          selectedRows.size === rowsToDisplay.length
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedRows(new Set(rowsToDisplay.map(row => row.__id)));
+                          } else {
+                            setSelectedRows(new Set());
+                          }
+                        }}
+                      />
+                    </TableHead>
+                    {dataPreview.columns
+                      .filter(column => visibleColumns.includes(column.name))
+                      .map((column) => (
+                        <TableHead 
+                          key={column.name}
+                          className={`cursor-pointer select-none whitespace-nowrap
+                            ${frozenColumns.includes(column.name) 
+                              ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
+                          `}
+                          style={{
+                            left: frozenColumns.includes(column.name) 
+                              ? `${frozenColumns.indexOf(column.name) * 150}px` 
+                              : 'auto',
+                            minWidth: '150px'
+                          }}
+                          onClick={() => handleSort(column.name)}
+                        >
+                          <div className="flex items-center">
+                            {column.name}
+                            {sortColumn === column.name && (
+                              sortDirection === 'asc' ? (
+                                <ChevronUp className="ml-1 h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                              )
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {column.type}
+                            {column.nullable && ' (nullable)'}
+                          </div>
+                        </TableHead>
+                    ))}
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {rowsToDisplay.map((row) => (
+                    <TableRow 
+                      key={row.__id}
+                      className={`${
+                        selectedRows.has(row.__id) ? 'bg-blue-50 dark:bg-blue-950' : ''
+                      } ${
+                        modifiedRows.has(row.__id) ? 'animate-[pulse_2s_ease-in-out]' : ''
+                      } hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}
+                    >
+                      <TableCell 
+                        className="sticky left-0 z-10 bg-white dark:bg-gray-800 w-10"
+                        onClick={() => toggleRowSelection(row.__id)}
+                      >
+                        <Checkbox checked={selectedRows.has(row.__id)} />
+                      </TableCell>
+                      {dataPreview.columns
+                        .filter(column => visibleColumns.includes(column.name))
+                        .map((column) => {
+                          const isEditing = editCell?.rowId === row.__id && editCell?.columnName === column.name;
+                          
+                          return (
+                            <TableCell 
+                              key={`${row.__id}-${column.name}`}
+                              className={getCellClasses(row.__id, column.name)}
+                              style={{
+                                left: frozenColumns.includes(column.name) 
+                                  ? `${frozenColumns.indexOf(column.name) * 150}px` 
+                                  : 'auto'
+                              }}
+                              onClick={() => editMode && startEdit(row.__id, column.name, row[column.name])}
+                              title={`Original value: ${row[column.name]}`}
+                            >
+                              {isEditing ? (
+                                renderCellEditor(row.__id, column.name, row[column.name], column.type)
+                              ) : (
+                                renderCellValue(row[column.name], column.type)
+                              )}
+                            </TableCell>
+                          );
+                      })}
+                    </TableRow>
+                  ))}
+                  {rowsToDisplay.length === 0 && (
+                    <TableRow>
+                      <TableCell 
+                        colSpan={visibleColumns.length + 1} 
+                        className="text-center py-8"
+                      >
+                        No data found matching the current filters
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
           <div className="flex items-center">
             <span className="text-sm text-gray-500 mr-4">
-              {dataPreview.rows.length} of {dataPreview.totalRows} rows
+              {rowsToDisplay.length} of {dataPreview.totalRows} rows
+              {selectedRows.size > 0 && ` (${selectedRows.size} selected)`}
+              {modifiedRows.size > 0 && ` (${modifiedRows.size} modified)`}
             </span>
             <Select 
               value={pageSize.toString()} 
