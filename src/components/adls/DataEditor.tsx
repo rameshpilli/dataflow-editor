@@ -863,20 +863,22 @@ const DataEditor: React.FC<DataEditorProps> = ({
                               onClick={() => handleSort(column.name)}
                               width={columnWidths[column.name] || 150}
                             >
-                              <div className="flex items-center space-x-1">
-                                <span className="truncate">{column.name}</span>
-                                {sortColumn === column.name && (
-                                  sortDirection === 'asc' ? (
+                              <div className="flex flex-col">
+                                <span className="truncate font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
+                                <span className="text-xs text-gray-500 truncate mt-1">
+                                  {column.type}
+                                  {column.nullable && ' (nullable)'}
+                                </span>
+                              </div>
+                              {sortColumn === column.name && (
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                  {sortDirection === 'asc' ? (
                                     <ChevronUp className="h-4 w-4 flex-shrink-0" />
                                   ) : (
                                     <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                  )
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 truncate">
-                                {column.type}
-                                {column.nullable && ' (nullable)'}
-                              </div>
+                                  )}
+                                </div>
+                              )}
                             </TableHead>
                           </ResizableColumn>
                         </ColumnMenu>
