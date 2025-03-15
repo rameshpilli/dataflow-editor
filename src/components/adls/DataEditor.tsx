@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange } from '@/types/adls';
 import { 
@@ -13,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy, Edit, FileExport, Check } from 'lucide-react';
+import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy, Edit, FileDown, Check } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -93,21 +92,18 @@ const DataEditor: React.FC<DataEditorProps> = ({
   
   const tableRef = useRef<HTMLDivElement>(null);
 
-  // Set visible columns when dataset changes
   useEffect(() => {
     if (dataPreview?.columns) {
       setVisibleColumns(dataPreview.columns.map(col => col.name));
     }
   }, [dataPreview?.columns]);
 
-  // Load data when component parameters change
   useEffect(() => {
     if (dataset) {
       loadData();
     }
   }, [dataset.id, page, pageSize, sortColumn, sortDirection, filters, showOnlyModified]);
 
-  // Fade out the green highlight after 5 seconds
   useEffect(() => {
     if (lastSavedRows.size > 0 && fadeTimeout === null) {
       const timeout = setTimeout(() => {
@@ -117,7 +113,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
       setFadeTimeout(timeout);
     }
 
-    // Clean up timeout
     return () => {
       if (fadeTimeout) {
         clearTimeout(fadeTimeout);
@@ -126,10 +121,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   }, [lastSavedRows, fadeTimeout]);
 
   const loadData = async () => {
-    // If we're only showing modified rows, we don't need to make a server call
     if (showOnlyModified) {
-      // Client-side filtering - we'd actually want to implement this on the server
-      // but for this demo we'll just filter client-side
       return;
     }
     
@@ -138,16 +130,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   const handleSort = (columnName: string) => {
     if (sortColumn === columnName) {
-      // Toggle direction if already sorting by this column
       if (sortDirection === 'asc') {
         setSortDirection('desc');
       } else if (sortDirection === 'desc') {
-        // Reset sorting
         setSortColumn(undefined);
         setSortDirection(undefined);
       }
     } else {
-      // Start sorting by this column
       setSortColumn(columnName);
       setSortDirection('asc');
     }
@@ -185,7 +174,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
       setEditCell(null);
       setEditValue(null);
       
-      // Show visual feedback
       toast({
         title: "Cell updated",
         description: "Your changes have been applied but not saved yet.",
@@ -274,28 +262,22 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   const toggleAllRowsSelection = (checked: boolean) => {
     if (checked) {
-      // Select all visible rows
       setSelectedRows(new Set(rowsToDisplay.map(row => row.__id)));
     } else {
-      // Deselect all rows
       setSelectedRows(new Set());
     }
   };
 
   const handleBulkEdit = (columnName: string, value: any, setNull: boolean) => {
-    // Apply the same change to all selected rows
     const selectedRowsArray = Array.from(selectedRows);
     
-    // Prepare a message for the toast
     const columnInfo = dataPreview?.columns.find(col => col.name === columnName);
     const finalValue = setNull ? null : value;
     
-    // Process each row
     for (const rowId of selectedRowsArray) {
       onCellUpdate(rowId, columnName, finalValue);
     }
     
-    // Show a success toast
     toast({
       title: "Bulk edit applied",
       description: `Updated "${columnName}" for ${selectedRowsArray.length} row(s) to ${setNull ? 'NULL' : String(value)}`,
@@ -304,7 +286,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   const handleColumnEditAll = (columnName: string) => {
-    // Show bulk edit dialog for all rows
     setShowBulkEditDialog(true);
   };
 
@@ -313,7 +294,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
       ? Array.from(selectedRows)
       : rowsToDisplay.map(row => row.__id);
     
-    // Ask for confirmation
     if (confirm(`Are you sure you want to set "${columnName}" to NULL for ${rowIds.length} row(s)?`)) {
       for (const rowId of rowIds) {
         onCellUpdate(rowId, columnName, null);
@@ -330,7 +310,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const handleSaveChanges = async () => {
     const success = await onSaveChanges();
     if (success) {
-      // Mark rows as saved for the green highlight
       setLastSavedRows(new Set(modifiedRows));
       
       toast({
@@ -339,7 +318,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
         variant: "default"
       });
       
-      // Clear selected rows after save
       setSelectedRows(new Set());
     }
   };
@@ -354,13 +332,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
       return;
     }
     
-    // Get the modified rows data
     const modifiedRowsData = dataPreview?.rows.filter(row => modifiedRows.has(row.__id)) || [];
     
-    // Convert to CSV or JSON
     const json = JSON.stringify(modifiedRowsData, null, 2);
     
-    // Create a download link
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -456,7 +431,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
     }
   };
 
-  // Generate CSS classes for cells based on their state
   const getCellClasses = (rowId: string, columnName: string) => {
     const isEditing = editCell?.rowId === rowId && editCell?.columnName === columnName;
     const isModified = modifiedRows.has(rowId);
@@ -522,12 +496,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
     );
   }
 
-  // Only show rows that are in the modifiedRows set when showOnlyModified is true
   const rowsToDisplay = showOnlyModified 
     ? dataPreview.rows.filter(row => modifiedRows.has(row.__id))
     : dataPreview.rows;
 
-  // Get selected rows data for the bulk edit dialog
   const selectedRowsData = rowsToDisplay.filter(row => selectedRows.has(row.__id));
 
   return (
@@ -615,7 +587,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               onClick={handleExportModified}
               disabled={modifiedRows.size === 0}
             >
-              <FileExport className="mr-2 h-4 w-4" />
+              <FileDown className="mr-2 h-4 w-4" />
               Export Modified
             </Button>
             
@@ -964,11 +936,9 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 if (getTotalPages() <= 5) {
                   pageNum = i + 1;
                 } else {
-                  // Calculate page numbers for pagination
                   const leftOffset = Math.min(2, page - 1);
                   pageNum = page - leftOffset + i;
                   
-                  // Ensure we don't exceed total pages
                   if (pageNum > getTotalPages()) {
                     pageNum = getTotalPages() - (4 - i);
                   }

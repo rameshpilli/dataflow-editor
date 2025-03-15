@@ -7,8 +7,11 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import { SortAsc, SortDesc, Edit, Trash, ArrowUpDown, EyeOff } from 'lucide-react';
+import { SortAsc, SortDesc, Edit, Trash, ArrowUpDown, EyeOff, Type, Calendar, LetterCase } from 'lucide-react';
 
 interface ColumnMenuProps {
   column: DatasetColumn;
@@ -19,6 +22,7 @@ interface ColumnMenuProps {
   onSetNull: () => void;
   onSetNullSelected: () => void;
   onHide: () => void;
+  onTransform?: (type: string) => void;
   hasSelectedRows: boolean;
 }
 
@@ -31,8 +35,18 @@ const ColumnMenu: React.FC<ColumnMenuProps> = ({
   onSetNull,
   onSetNullSelected,
   onHide,
+  onTransform,
   hasSelectedRows
 }) => {
+  const handleTransform = (type: string) => {
+    if (onTransform) {
+      onTransform(type);
+    } else {
+      // Fallback if transform handler isn't provided
+      console.warn('Transform handler not provided for column', column.name);
+    }
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger>{children}</ContextMenuTrigger>
@@ -72,6 +86,58 @@ const ColumnMenu: React.FC<ColumnMenuProps> = ({
           </ContextMenuItem>
         )}
         <ContextMenuSeparator />
+        
+        {/* Column transformations submenu */}
+        {onTransform && (column.type === 'string' || column.type === 'date' || column.type === 'timestamp') && (
+          <>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger>
+                <Type className="mr-2 h-4 w-4" />
+                Transform Values
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="w-48">
+                {column.type === 'string' && (
+                  <>
+                    <ContextMenuItem onClick={() => handleTransform('uppercase')}>
+                      <LetterCase className="mr-2 h-4 w-4" />
+                      Convert to UPPERCASE
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleTransform('lowercase')}>
+                      <LetterCase className="mr-2 h-4 w-4" />
+                      Convert to lowercase
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleTransform('capitalize')}>
+                      <LetterCase className="mr-2 h-4 w-4" />
+                      Capitalize Words
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleTransform('trim')}>
+                      <LetterCase className="mr-2 h-4 w-4" />
+                      Trim Whitespace
+                    </ContextMenuItem>
+                  </>
+                )}
+                {(column.type === 'date' || column.type === 'timestamp') && (
+                  <>
+                    <ContextMenuItem onClick={() => handleTransform('iso')}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Format as ISO
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleTransform('localeDate')}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Format as Local Date
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleTransform('localeDateTime')}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Format as Local Date & Time
+                    </ContextMenuItem>
+                  </>
+                )}
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+            <ContextMenuSeparator />
+          </>
+        )}
+        
         <ContextMenuItem onClick={onHide}>
           <EyeOff className="mr-2 h-4 w-4" />
           Hide Column
