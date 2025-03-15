@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatasetColumn } from '@/types/adls';
 import {
@@ -10,7 +11,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import { SortAsc, SortDesc, Edit, Trash, ArrowUpDown, EyeOff, Type, Calendar, CaseUpper, CaseLower, Font } from 'lucide-react';
+import { SortAsc, SortDesc, Edit, Trash, ArrowUpDown, EyeOff, Type, Calendar, CaseUpper, CaseLower, Heading } from 'lucide-react';
 
 interface ColumnMenuProps {
   column: DatasetColumn;
@@ -105,7 +106,7 @@ const ColumnMenu: React.FC<ColumnMenuProps> = ({
                       Convert to lowercase
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => handleTransform('capitalize')}>
-                      <Font className="mr-2 h-4 w-4" />
+                      <Heading className="mr-2 h-4 w-4" />
                       Capitalize Words
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => handleTransform('trim')}>
