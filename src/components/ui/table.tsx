@@ -98,7 +98,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap overflow-hidden text-ellipsis", // Prevent text wrapping in headers
+      "overflow-hidden text-ellipsis", // Allow horizontal scrolling without text wrapping
       className
     )}
     style={{
@@ -121,7 +121,7 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       "p-4 align-middle [&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap overflow-hidden text-ellipsis", // Prevent text wrapping in cells
+      "overflow-hidden text-ellipsis", // Allow horizontal scrolling without text wrapping
       className
     )}
     style={{
