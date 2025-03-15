@@ -18,7 +18,7 @@ const Table = React.forwardRef<
     <table
       ref={ref}
       className={cn(
-        "w-full caption-bottom text-sm transition-all duration-200",
+        "w-full caption-bottom text-sm",
         columnResizing ? "table-fixed" : "",
         className
       )}
@@ -98,7 +98,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap overflow-visible", // Ensure text doesn't wrap
+      "whitespace-nowrap", // Prevent text wrapping in headers
       className
     )}
     style={{
@@ -119,10 +119,15 @@ const TableCell = React.forwardRef<
 >(({ className, minWidth, width, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+    className={cn(
+      "p-4 align-middle [&:has([role=checkbox])]:pr-0",
+      "whitespace-nowrap overflow-hidden text-ellipsis", // Prevent text wrapping in cells
+      className
+    )}
     style={{
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
+      maxWidth: width ? `${width}px` : undefined,
     }}
     {...props}
   />

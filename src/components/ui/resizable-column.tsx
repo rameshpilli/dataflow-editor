@@ -23,6 +23,7 @@ const ResizableColumn: React.FC<ResizableColumnProps> = ({
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     initialX.current = e.clientX;
     initialWidth.current = width;
     setIsResizing(true);
@@ -46,14 +47,18 @@ const ResizableColumn: React.FC<ResizableColumnProps> = ({
   }, [handleMouseMove]);
 
   return (
-    <div className={cn("relative group", className)} style={{ width: `${width}px` }}>
+    <div 
+      className={cn("relative group", className)} 
+      style={{ width: `${width}px`, minWidth: `${minWidth}px` }}
+    >
       {children}
       <div 
         className={cn(
-          "absolute top-0 right-0 h-full w-1 cursor-col-resize group-hover:bg-gray-300 dark:group-hover:bg-gray-600",
+          "absolute top-0 right-0 h-full w-2 cursor-col-resize group-hover:bg-gray-300 dark:group-hover:bg-gray-600",
           isResizing ? "bg-primary" : ""
         )}
         onMouseDown={startResizing}
+        onClick={(e) => e.stopPropagation()}
       />
     </div>
   );

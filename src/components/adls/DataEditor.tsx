@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -113,12 +112,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const tableRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize column widths
   useEffect(() => {
     if (dataPreview?.columns) {
       const initialWidths: Record<string, number> = {};
       dataPreview.columns.forEach(col => {
-        // Set default width based on column type
         if (col.type === 'boolean') {
           initialWidths[col.name] = 100;
         } else if (col.type === 'integer' || col.type === 'decimal') {
@@ -397,10 +394,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   const handleFitColumnsToContent = () => {
-    // In a real app, this would calculate optimal widths based on content
     const newWidths: Record<string, number> = {};
     dataPreview?.columns.forEach(col => {
-      // Calculate width based on column type and content
       if (col.type === 'boolean') {
         newWidths[col.name] = 100;
       } else if (col.type === 'integer') {
@@ -410,7 +405,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
       } else if (col.type === 'timestamp' || col.type === 'date') {
         newWidths[col.name] = 180;
       } else {
-        // For string columns, calculate based on content length
         const maxContentLength = Math.max(
           col.name.length * 10,
           ...rowsToDisplay.map(row => {
@@ -435,7 +429,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   const handleFitToScreen = () => {
-    // Reset zoom and make all columns visible
     setZoomLevel(100);
     if (dataPreview?.columns) {
       setVisibleColumns(dataPreview.columns.map(col => col.name));
@@ -451,17 +444,14 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const handleFocusSelection = () => {
     if (selectedRows.size === 0) return;
     
-    // Zoom in slightly and scroll to the first selected row
     setZoomLevel(125);
     
-    // Find the first selected row element and scroll to it
     const firstSelectedRowId = Array.from(selectedRows)[0];
     const rowElement = document.getElementById(`row-${firstSelectedRowId}`);
     
     if (rowElement && tableContainerRef.current) {
       rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       
-      // Highlight the row momentarily
       rowElement.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
       setTimeout(() => {
         rowElement.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
@@ -810,24 +800,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
         </CardHeader>
         <CardContent>
           <div 
-            className="border rounded-md overflow-hidden"
+            className="border rounded-md"
             ref={tableContainerRef}
           >
-            <div 
-              className="overflow-x-auto" 
-              style={{ maxHeight: '70vh' }}
+            <ScrollArea 
+              className="h-[70vh]"
               ref={tableRef}
             >
               <Table 
                 zoomLevel={zoomLevel} 
                 fullWidth={fullWidthTable}
                 columnResizing={true}
+                className="w-full"
               >
                 <TableHeader className="sticky top-0 z-20 bg-white dark:bg-gray-800">
                   <TableRow>
                     <TableHead 
-                      className="sticky left-0 z-30 bg-white dark:bg-gray-800 w-10"
+                      className="sticky left-0 z-30 bg-white dark:bg-gray-800"
                       minWidth={40}
+                      width={40}
                     >
                       <Checkbox 
                         checked={
@@ -860,7 +851,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                             onResize={(width) => handleResizeColumn(column.name, width)}
                           >
                             <TableHead 
-                              className={`cursor-pointer select-none whitespace-nowrap overflow-visible
+                              className={`cursor-pointer select-none whitespace-nowrap
                                 ${frozenColumns.includes(column.name) 
                                   ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
                               `}
@@ -872,17 +863,17 @@ const DataEditor: React.FC<DataEditorProps> = ({
                               onClick={() => handleSort(column.name)}
                               width={columnWidths[column.name] || 150}
                             >
-                              <div className="flex items-center">
-                                {column.name}
+                              <div className="flex items-center space-x-1">
+                                <span className="truncate">{column.name}</span>
                                 {sortColumn === column.name && (
                                   sortDirection === 'asc' ? (
-                                    <ChevronUp className="ml-1 h-4 w-4" />
+                                    <ChevronUp className="h-4 w-4 flex-shrink-0" />
                                   ) : (
-                                    <ChevronDown className="ml-1 h-4 w-4" />
+                                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
                                   )
                                 )}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-gray-500 truncate">
                                 {column.type}
                                 {column.nullable && ' (nullable)'}
                               </div>
@@ -900,9 +891,9 @@ const DataEditor: React.FC<DataEditorProps> = ({
                       id={`row-${row.__id}`}
                     >
                       <TableCell 
-                        className="sticky left-0 z-10 bg-white dark:bg-gray-800 w-10"
+                        className="sticky left-0 z-10 bg-white dark:bg-gray-800"
                         onClick={() => toggleRowSelection(row.__id)}
-                        minWidth={40}
+                        width={40}
                       >
                         <Checkbox checked={selectedRows.has(row.__id)} />
                       </TableCell>
@@ -919,16 +910,17 @@ const DataEditor: React.FC<DataEditorProps> = ({
                                 left: frozenColumns.includes(column.name) 
                                   ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
                                   : 'auto',
-                                width: columnWidths[column.name] || 150
                               }}
                               onClick={() => editMode && startEdit(row.__id, column.name, row[column.name])}
-                              title={`Original value: ${row[column.name]}`}
+                              title={`${column.name}: ${row[column.name]}`}
                               width={columnWidths[column.name] || 150}
                             >
                               {isEditing ? (
                                 renderCellEditor(row.__id, column.name, row[column.name], column.type)
                               ) : (
-                                renderCellValue(row[column.name], column.type)
+                                <div className="truncate">
+                                  {renderCellValue(row[column.name], column.type)}
+                                </div>
                               )}
                               {modifiedRows.has(row.__id) && lastSavedRows.has(row.__id) && (
                                 <span className="absolute -right-1 -top-1 text-green-500">
@@ -952,7 +944,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                   )}
                 </TableBody>
               </Table>
-            </div>
+            </ScrollArea>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
