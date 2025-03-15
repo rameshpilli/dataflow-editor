@@ -14,11 +14,11 @@ interface ConnectionFormProps {
 }
 
 const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, isLoading }) => {
-  const [connectionName, setConnectionName] = useState('');
+  const [connectionName, setConnectionName] = useState('My Azure Storage');
   const [useManagedIdentity, setUseManagedIdentity] = useState(false);
-  const [connectionString, setConnectionString] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [accountKey, setAccountKey] = useState('');
+  const [connectionString, setConnectionString] = useState('DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey==;EndpointSuffix=core.windows.net');
+  const [accountName, setAccountName] = useState('myaccount');
+  const [accountKey, setAccountKey] = useState('mykey==');
   const [authMethod, setAuthMethod] = useState<'connection-string' | 'account-key'>('connection-string');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,11 +88,13 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, isLoading })
                   <Label htmlFor="connection-string">Connection String</Label>
                   <Input
                     id="connection-string"
-                    type="password"
                     placeholder="Enter connection string"
                     value={connectionString}
                     onChange={e => setConnectionString(e.target.value)}
                   />
+                  <p className="text-xs text-gray-500">
+                    This is a mock service - any valid-looking connection string will work
+                  </p>
                 </div>
               </TabsContent>
               
@@ -111,11 +113,13 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, isLoading })
                   <Label htmlFor="account-key">Storage Account Key</Label>
                   <Input
                     id="account-key"
-                    type="password"
                     placeholder="Enter account key"
                     value={accountKey}
                     onChange={e => setAccountKey(e.target.value)}
                   />
+                  <p className="text-xs text-gray-500">
+                    This is a mock service - any valid-looking account key will work
+                  </p>
                 </div>
               </TabsContent>
             </Tabs>

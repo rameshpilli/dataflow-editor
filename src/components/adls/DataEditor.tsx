@@ -529,7 +529,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               <PaginationItem>
                 <PaginationPrevious 
                   onClick={() => handlePageChange(Math.max(1, page - 1))} 
-                  disabled={page === 1}
+                  className={page === 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
               
@@ -563,7 +563,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               <PaginationItem>
                 <PaginationNext 
                   onClick={() => handlePageChange(Math.min(getTotalPages(), page + 1))} 
-                  disabled={page >= getTotalPages()}
+                  className={page >= getTotalPages() ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>

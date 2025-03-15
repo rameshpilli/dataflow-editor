@@ -44,8 +44,8 @@ const ADLSManager: React.FC = () => {
   };
 
   const handleGoBackToDatasets = () => {
-    // Just clear the selected dataset
-    setSelectedDataset && (window as any).setSelectedDataset(null);
+    // Clear the selected dataset by passing null to the loadDataset function
+    loadDataset('');
   };
 
   return (
