@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatasetColumn } from '@/types/adls';
 import {
@@ -11,7 +10,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import { SortAsc, SortDesc, Edit, Trash, ArrowUpDown, EyeOff, Type, Calendar, LetterCase } from 'lucide-react';
+import { SortAsc, SortDesc, Edit, Trash, ArrowUpDown, EyeOff, Type, Calendar, CaseUpper, CaseLower, Font } from 'lucide-react';
 
 interface ColumnMenuProps {
   column: DatasetColumn;
@@ -42,7 +41,6 @@ const ColumnMenu: React.FC<ColumnMenuProps> = ({
     if (onTransform) {
       onTransform(type);
     } else {
-      // Fallback if transform handler isn't provided
       console.warn('Transform handler not provided for column', column.name);
     }
   };
@@ -99,19 +97,19 @@ const ColumnMenu: React.FC<ColumnMenuProps> = ({
                 {column.type === 'string' && (
                   <>
                     <ContextMenuItem onClick={() => handleTransform('uppercase')}>
-                      <LetterCase className="mr-2 h-4 w-4" />
+                      <CaseUpper className="mr-2 h-4 w-4" />
                       Convert to UPPERCASE
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => handleTransform('lowercase')}>
-                      <LetterCase className="mr-2 h-4 w-4" />
+                      <CaseLower className="mr-2 h-4 w-4" />
                       Convert to lowercase
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => handleTransform('capitalize')}>
-                      <LetterCase className="mr-2 h-4 w-4" />
+                      <Font className="mr-2 h-4 w-4" />
                       Capitalize Words
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => handleTransform('trim')}>
-                      <LetterCase className="mr-2 h-4 w-4" />
+                      <Type className="mr-2 h-4 w-4" />
                       Trim Whitespace
                     </ContextMenuItem>
                   </>
