@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy } from 'lucide-react';
+import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy, Edit, FileExport, Check } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -29,6 +29,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import TableColumnManager from './TableColumnManager';
+import ColumnMenu from './ColumnMenu';
+import BulkEditDialog from './BulkEditDialog';
 import { toast } from '@/hooks/use-toast';
 
 interface DataEditorProps {
@@ -84,6 +86,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'comfortable' | 'compact'>('comfortable');
   const [showOnlyModified, setShowOnlyModified] = useState(false);
+  const [showBulkEditDialog, setShowBulkEditDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [lastSavedRows, setLastSavedRows] = useState<Set<string>>(new Set());
+  const [fadeTimeout, setFadeTimeout] = useState<NodeJS.Timeout | null>(null);
   
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -100,6 +106,24 @@ const DataEditor: React.FC<DataEditorProps> = ({
       loadData();
     }
   }, [dataset.id, page, pageSize, sortColumn, sortDirection, filters, showOnlyModified]);
+
+  // Fade out the green highlight after 5 seconds
+  useEffect(() => {
+    if (lastSavedRows.size > 0 && fadeTimeout === null) {
+      const timeout = setTimeout(() => {
+        setLastSavedRows(new Set());
+        setFadeTimeout(null);
+      }, 5000);
+      setFadeTimeout(timeout);
+    }
+
+    // Clean up timeout
+    return () => {
+      if (fadeTimeout) {
+        clearTimeout(fadeTimeout);
+      }
+    };
+  }, [lastSavedRows, fadeTimeout]);
 
   const loadData = async () => {
     // If we're only showing modified rows, we don't need to make a server call
@@ -126,6 +150,16 @@ const DataEditor: React.FC<DataEditorProps> = ({
       // Start sorting by this column
       setSortColumn(columnName);
       setSortDirection('asc');
+    }
+  };
+
+  const handleColumnSort = (columnName: string, direction: 'asc' | 'desc' | null) => {
+    if (direction === null) {
+      setSortColumn(undefined);
+      setSortDirection(undefined);
+    } else {
+      setSortColumn(columnName);
+      setSortDirection(direction);
     }
   };
 
@@ -238,9 +272,67 @@ const DataEditor: React.FC<DataEditorProps> = ({
     });
   };
 
+  const toggleAllRowsSelection = (checked: boolean) => {
+    if (checked) {
+      // Select all visible rows
+      setSelectedRows(new Set(rowsToDisplay.map(row => row.__id)));
+    } else {
+      // Deselect all rows
+      setSelectedRows(new Set());
+    }
+  };
+
+  const handleBulkEdit = (columnName: string, value: any, setNull: boolean) => {
+    // Apply the same change to all selected rows
+    const selectedRowsArray = Array.from(selectedRows);
+    
+    // Prepare a message for the toast
+    const columnInfo = dataPreview?.columns.find(col => col.name === columnName);
+    const finalValue = setNull ? null : value;
+    
+    // Process each row
+    for (const rowId of selectedRowsArray) {
+      onCellUpdate(rowId, columnName, finalValue);
+    }
+    
+    // Show a success toast
+    toast({
+      title: "Bulk edit applied",
+      description: `Updated "${columnName}" for ${selectedRowsArray.length} row(s) to ${setNull ? 'NULL' : String(value)}`,
+      duration: 3000
+    });
+  };
+
+  const handleColumnEditAll = (columnName: string) => {
+    // Show bulk edit dialog for all rows
+    setShowBulkEditDialog(true);
+  };
+
+  const handleColumnSetNull = (columnName: string, onlySelected: boolean = false) => {
+    const rowIds = onlySelected 
+      ? Array.from(selectedRows)
+      : rowsToDisplay.map(row => row.__id);
+    
+    // Ask for confirmation
+    if (confirm(`Are you sure you want to set "${columnName}" to NULL for ${rowIds.length} row(s)?`)) {
+      for (const rowId of rowIds) {
+        onCellUpdate(rowId, columnName, null);
+      }
+      
+      toast({
+        title: "Column values updated",
+        description: `Set "${columnName}" to NULL for ${rowIds.length} row(s)`,
+        duration: 3000
+      });
+    }
+  };
+
   const handleSaveChanges = async () => {
     const success = await onSaveChanges();
     if (success) {
+      // Mark rows as saved for the green highlight
+      setLastSavedRows(new Set(modifiedRows));
+      
       toast({
         title: "Changes saved",
         description: `Successfully saved ${changes.length} changes`,
@@ -250,6 +342,40 @@ const DataEditor: React.FC<DataEditorProps> = ({
       // Clear selected rows after save
       setSelectedRows(new Set());
     }
+  };
+
+  const handleExportModified = () => {
+    if (modifiedRows.size === 0) {
+      toast({
+        title: "No modified rows",
+        description: "There are no modified rows to export",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Get the modified rows data
+    const modifiedRowsData = dataPreview?.rows.filter(row => modifiedRows.has(row.__id)) || [];
+    
+    // Convert to CSV or JSON
+    const json = JSON.stringify(modifiedRowsData, null, 2);
+    
+    // Create a download link
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${dataset.name}_modified_rows.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export complete",
+      description: `Exported ${modifiedRowsData.length} modified rows to JSON`,
+      duration: 3000
+    });
   };
 
   const renderCellEditor = (rowId: string, columnName: string, value: any, columnType: string) => {
@@ -336,16 +462,41 @@ const DataEditor: React.FC<DataEditorProps> = ({
     const isModified = modifiedRows.has(rowId);
     const isSelected = selectedRows.has(rowId);
     const isFrozen = frozenColumns.includes(columnName);
+    const isRecentlySaved = lastSavedRows.has(rowId);
     
     return `
       ${editMode ? 'cursor-pointer' : ''} 
       ${isEditing ? 'bg-amber-50 dark:bg-amber-950 p-0' : ''}
-      ${isModified ? 'bg-green-50 dark:bg-green-950' : ''}
+      ${isModified && !isRecentlySaved ? 'bg-yellow-50 dark:bg-yellow-950' : ''}
+      ${isRecentlySaved ? 'bg-green-50 dark:bg-green-950 transition-colors duration-500' : ''}
       ${isSelected ? 'bg-blue-50 dark:bg-blue-950' : ''}
       ${isFrozen ? 'sticky left-0 z-10 bg-white dark:bg-gray-800' : ''}
       ${viewMode === 'compact' ? 'py-1' : 'py-2'}
+      ${isModified && !isRecentlySaved ? 'animate-pulse' : ''}
       transition-all duration-200
     `;
+  };
+
+  const getRowClasses = (rowId: string) => {
+    const isSelected = selectedRows.has(rowId);
+    const isModified = modifiedRows.has(rowId);
+    const isRecentlySaved = lastSavedRows.has(rowId);
+    
+    let baseClass = "hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors";
+    
+    if (isSelected) {
+      baseClass += " bg-blue-50 dark:bg-blue-950";
+    }
+    
+    if (isModified && !isRecentlySaved) {
+      baseClass += " border-l-4 border-yellow-400";
+    }
+    
+    if (isRecentlySaved) {
+      baseClass += " border-l-4 border-green-400 transition-colors duration-500";
+    }
+    
+    return baseClass;
   };
 
   if (isLoading) {
@@ -376,6 +527,9 @@ const DataEditor: React.FC<DataEditorProps> = ({
     ? dataPreview.rows.filter(row => modifiedRows.has(row.__id))
     : dataPreview.rows;
 
+  // Get selected rows data for the bulk edit dialog
+  const selectedRowsData = rowsToDisplay.filter(row => selectedRows.has(row.__id));
+
   return (
     <div className="space-y-4">
       <Card>
@@ -393,7 +547,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
             <CardTitle className="text-xl">{dataset.name}</CardTitle>
             <CardDescription>{dataset.path}</CardDescription>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap">
             <div className="flex items-center space-x-2 mr-4">
               <Switch
                 id="edit-mode"
@@ -445,24 +599,24 @@ const DataEditor: React.FC<DataEditorProps> = ({
               Filter
             </Button>
             
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBulkEditDialog(true)}
+              disabled={selectedRows.size === 0}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Bulk Edit ({selectedRows.size})
+            </Button>
+            
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(JSON.stringify(
-                  Array.from(modifiedRows).map(rowId => 
-                    dataPreview.rows.find(row => row.__id === rowId)
-                  )
-                ));
-                toast({
-                  title: "Copied to clipboard",
-                  description: `${modifiedRows.size} modified rows copied to clipboard`,
-                });
-              }}
+              onClick={handleExportModified}
               disabled={modifiedRows.size === 0}
             >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy Modified
+              <FileExport className="mr-2 h-4 w-4" />
+              Export Modified
             </Button>
             
             <Dialog open={showChanges} onOpenChange={setShowChanges}>
@@ -617,6 +771,14 @@ const DataEditor: React.FC<DataEditorProps> = ({
               onOpenChange={setShowColumnManager}
             />
             
+            <BulkEditDialog
+              open={showBulkEditDialog}
+              onOpenChange={setShowBulkEditDialog}
+              selectedRows={selectedRowsData}
+              columns={dataPreview.columns}
+              onApplyBulkEdit={handleBulkEdit}
+            />
+            
             <Button 
               variant="outline" 
               size="sm"
@@ -655,46 +817,54 @@ const DataEditor: React.FC<DataEditorProps> = ({
                           selectedRows.size === rowsToDisplay.length
                         }
                         onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedRows(new Set(rowsToDisplay.map(row => row.__id)));
-                          } else {
-                            setSelectedRows(new Set());
-                          }
+                          toggleAllRowsSelection(checked === true);
                         }}
+                        aria-label="Select all rows"
                       />
                     </TableHead>
                     {dataPreview.columns
                       .filter(column => visibleColumns.includes(column.name))
                       .map((column) => (
-                        <TableHead 
+                        <ColumnMenu
                           key={column.name}
-                          className={`cursor-pointer select-none whitespace-nowrap
-                            ${frozenColumns.includes(column.name) 
-                              ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
-                          `}
-                          style={{
-                            left: frozenColumns.includes(column.name) 
-                              ? `${frozenColumns.indexOf(column.name) * 150}px` 
-                              : 'auto',
-                            minWidth: '150px'
-                          }}
-                          onClick={() => handleSort(column.name)}
+                          column={column}
+                          onSort={(direction) => handleColumnSort(column.name, direction)}
+                          onEditAll={() => handleColumnEditAll(column.name)}
+                          onEditSelected={() => handleColumnEditAll(column.name)}
+                          onSetNull={() => handleColumnSetNull(column.name, false)}
+                          onSetNullSelected={() => handleColumnSetNull(column.name, true)}
+                          onHide={() => handleVisibilityChange(column.name, false)}
+                          hasSelectedRows={selectedRows.size > 0}
                         >
-                          <div className="flex items-center">
-                            {column.name}
-                            {sortColumn === column.name && (
-                              sortDirection === 'asc' ? (
-                                <ChevronUp className="ml-1 h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                              )
-                            )}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {column.type}
-                            {column.nullable && ' (nullable)'}
-                          </div>
-                        </TableHead>
+                          <TableHead 
+                            className={`cursor-pointer select-none whitespace-nowrap
+                              ${frozenColumns.includes(column.name) 
+                                ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
+                            `}
+                            style={{
+                              left: frozenColumns.includes(column.name) 
+                                ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
+                                : 'auto',
+                              minWidth: '150px'
+                            }}
+                            onClick={() => handleSort(column.name)}
+                          >
+                            <div className="flex items-center">
+                              {column.name}
+                              {sortColumn === column.name && (
+                                sortDirection === 'asc' ? (
+                                  <ChevronUp className="ml-1 h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="ml-1 h-4 w-4" />
+                                )
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {column.type}
+                              {column.nullable && ' (nullable)'}
+                            </div>
+                          </TableHead>
+                        </ColumnMenu>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -702,11 +872,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                   {rowsToDisplay.map((row) => (
                     <TableRow 
                       key={row.__id}
-                      className={`${
-                        selectedRows.has(row.__id) ? 'bg-blue-50 dark:bg-blue-950' : ''
-                      } ${
-                        modifiedRows.has(row.__id) ? 'animate-[pulse_2s_ease-in-out]' : ''
-                      } hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}
+                      className={getRowClasses(row.__id)}
                     >
                       <TableCell 
                         className="sticky left-0 z-10 bg-white dark:bg-gray-800 w-10"
@@ -725,7 +891,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                               className={getCellClasses(row.__id, column.name)}
                               style={{
                                 left: frozenColumns.includes(column.name) 
-                                  ? `${frozenColumns.indexOf(column.name) * 150}px` 
+                                  ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
                                   : 'auto'
                               }}
                               onClick={() => editMode && startEdit(row.__id, column.name, row[column.name])}
@@ -735,6 +901,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
                                 renderCellEditor(row.__id, column.name, row[column.name], column.type)
                               ) : (
                                 renderCellValue(row[column.name], column.type)
+                              )}
+                              {modifiedRows.has(row.__id) && lastSavedRows.has(row.__id) && (
+                                <span className="absolute -right-1 -top-1 text-green-500">
+                                  <Check className="h-4 w-4" />
+                                </span>
                               )}
                             </TableCell>
                           );
