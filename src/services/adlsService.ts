@@ -1,4 +1,3 @@
-
 import { ADLSConnection, ADLSCredentials, Dataset, DatasetPreview, DataRow, FilterOptions } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 
@@ -48,20 +47,25 @@ class ADLSService {
         format: 'delta',
         columns: [
           { name: 'id', type: 'integer', nullable: false, stats: { min: 1, max: 10000, count: 1000, nullCount: 0 } },
+          { name: 'customer_number', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
           { name: 'name', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
           { name: 'email', type: 'string', nullable: true, stats: { count: 1000, nullCount: 20 } },
           { name: 'age', type: 'integer', nullable: true, stats: { min: 18, max: 95, count: 1000, nullCount: 15 } },
+          { name: 'gender', type: 'string', nullable: true, stats: { count: 1000, nullCount: 5 } },
           { name: 'active', type: 'boolean', nullable: false, stats: { count: 1000, nullCount: 0 } },
           { name: 'registration_date', type: 'date', nullable: false, stats: { count: 1000, nullCount: 0 } },
           { name: 'last_login', type: 'timestamp', nullable: true, stats: { count: 1000, nullCount: 5 } },
           { name: 'account_balance', type: 'decimal', nullable: false, stats: { min: 0, max: 10000, count: 1000, nullCount: 0 } },
+          { name: 'lifetime_value', type: 'decimal', nullable: true, stats: { min: 0, max: 25000, count: 1000, nullCount: 10 } },
           { name: 'subscription_tier', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
           { name: 'address', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
           { name: 'city', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
           { name: 'state', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
           { name: 'postal_code', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
           { name: 'country', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
-          { name: 'phone', type: 'string', nullable: true, stats: { count: 1000, nullCount: 40 } }
+          { name: 'phone', type: 'string', nullable: true, stats: { count: 1000, nullCount: 40 } },
+          { name: 'preferred_language', type: 'string', nullable: true, stats: { count: 1000, nullCount: 20 } },
+          { name: 'marketing_consent', type: 'boolean', nullable: false, stats: { count: 1000, nullCount: 0 } }
         ],
         rowCount: 1000,
         lastModified: new Date('2023-06-15')
@@ -91,7 +95,13 @@ class ADLSService {
           { name: 'timestamp', type: 'timestamp', nullable: false },
           { name: 'is_online', type: 'boolean', nullable: false },
           { name: 'shipping_cost', type: 'decimal', nullable: true },
-          { name: 'delivery_date', type: 'date', nullable: true }
+          { name: 'delivery_date', type: 'date', nullable: true },
+          { name: 'order_source', type: 'string', nullable: true },
+          { name: 'channel_id', type: 'integer', nullable: true },
+          { name: 'promotion_code', type: 'string', nullable: true },
+          { name: 'customer_rating', type: 'integer', nullable: true },
+          { name: 'exchange_rate', type: 'decimal', nullable: true },
+          { name: 'currency', type: 'string', nullable: false }
         ],
         rowCount: 5000,
         lastModified: new Date('2023-07-20')
@@ -103,17 +113,25 @@ class ADLSService {
         format: 'delta',
         columns: [
           { name: 'product_id', type: 'string', nullable: false },
+          { name: 'sku', type: 'string', nullable: false },
           { name: 'name', type: 'string', nullable: false },
+          { name: 'description', type: 'string', nullable: true },
           { name: 'category', type: 'string', nullable: true },
+          { name: 'subcategory', type: 'string', nullable: true },
           { name: 'price', type: 'decimal', nullable: false },
+          { name: 'cost', type: 'decimal', nullable: false },
           { name: 'stock_quantity', type: 'integer', nullable: false },
           { name: 'supplier_id', type: 'string', nullable: false },
           { name: 'supplier_name', type: 'string', nullable: false },
+          { name: 'supplier_contact', type: 'string', nullable: true },
           { name: 'reorder_level', type: 'integer', nullable: false },
           { name: 'reorder_quantity', type: 'integer', nullable: false },
           { name: 'last_restock_date', type: 'date', nullable: true },
           { name: 'expiration_date', type: 'date', nullable: true },
           { name: 'warehouse_location', type: 'string', nullable: false },
+          { name: 'shelf_position', type: 'string', nullable: true },
+          { name: 'weight', type: 'decimal', nullable: true },
+          { name: 'dimensions', type: 'string', nullable: true },
           { name: 'is_active', type: 'boolean', nullable: false },
           { name: 'created_date', type: 'timestamp', nullable: false },
           { name: 'modified_date', type: 'timestamp', nullable: false }

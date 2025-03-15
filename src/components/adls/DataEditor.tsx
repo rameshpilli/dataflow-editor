@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange } from '@/types/adls';
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
   Table, 
   TableBody, 
@@ -8,11 +9,26 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import { ResizableColumn } from '@/components/ui/resizable-column';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy, Edit, FileDown, Check, MoveHorizontal, Maximize, Minimize } from 'lucide-react';
+import { 
+  ChevronUp, 
+  ChevronDown, 
+  Filter, 
+  Save, 
+  Undo2, 
+  ArrowLeftCircle, 
+  Columns, 
+  Calendar, 
+  Copy, 
+  Edit, 
+  FileDown, 
+  Check, 
+  MoveHorizontal
+} from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -30,6 +46,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import TableColumnManager from './TableColumnManager';
 import ColumnMenu from './ColumnMenu';
 import BulkEditDialog from './BulkEditDialog';
+import ZoomControls from './ZoomControls';
 import { toast } from '@/hooks/use-toast';
 
 interface DataEditorProps {
@@ -90,11 +107,29 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [lastSavedRows, setLastSavedRows] = useState<Set<string>>(new Set());
   const [fadeTimeout, setFadeTimeout] = useState<NodeJS.Timeout | null>(null);
   const [fullWidthTable, setFullWidthTable] = useState(false);
-  
-  const tableRef = useRef<HTMLDivElement>(null);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
 
+  const tableRef = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize column widths
   useEffect(() => {
     if (dataPreview?.columns) {
+      const initialWidths: Record<string, number> = {};
+      dataPreview.columns.forEach(col => {
+        // Set default width based on column type
+        if (col.type === 'boolean') {
+          initialWidths[col.name] = 100;
+        } else if (col.type === 'integer' || col.type === 'decimal') {
+          initialWidths[col.name] = 120;
+        } else if (col.type === 'timestamp' || col.type === 'date') {
+          initialWidths[col.name] = 180;
+        } else {
+          initialWidths[col.name] = 150;
+        }
+      });
+      setColumnWidths(prev => ({...prev, ...initialWidths}));
       setVisibleColumns(dataPreview.columns.map(col => col.name));
     }
   }, [dataPreview?.columns]);
@@ -354,6 +389,92 @@ const DataEditor: React.FC<DataEditorProps> = ({
     });
   };
 
+  const handleResizeColumn = (columnName: string, width: number) => {
+    setColumnWidths(prev => ({
+      ...prev,
+      [columnName]: width
+    }));
+  };
+
+  const handleFitColumnsToContent = () => {
+    // In a real app, this would calculate optimal widths based on content
+    const newWidths: Record<string, number> = {};
+    dataPreview?.columns.forEach(col => {
+      // Calculate width based on column type and content
+      if (col.type === 'boolean') {
+        newWidths[col.name] = 100;
+      } else if (col.type === 'integer') {
+        newWidths[col.name] = 120;
+      } else if (col.type === 'decimal') {
+        newWidths[col.name] = 140;
+      } else if (col.type === 'timestamp' || col.type === 'date') {
+        newWidths[col.name] = 180;
+      } else {
+        // For string columns, calculate based on content length
+        const maxContentLength = Math.max(
+          col.name.length * 10,
+          ...rowsToDisplay.map(row => {
+            const value = row[col.name];
+            return value ? String(value).length * 8 : 0;
+          })
+        );
+        newWidths[col.name] = Math.min(Math.max(maxContentLength, 100), 300);
+      }
+    });
+    
+    setColumnWidths(newWidths);
+    toast({
+      title: "Columns resized",
+      description: "Column widths have been adjusted to fit content",
+      duration: 2000
+    });
+  };
+
+  const handleZoomChange = (newZoom: number) => {
+    setZoomLevel(newZoom);
+  };
+
+  const handleFitToScreen = () => {
+    // Reset zoom and make all columns visible
+    setZoomLevel(100);
+    if (dataPreview?.columns) {
+      setVisibleColumns(dataPreview.columns.map(col => col.name));
+    }
+    handleFitColumnsToContent();
+    toast({
+      title: "View reset",
+      description: "Table has been fit to screen with all columns visible",
+      duration: 2000
+    });
+  };
+
+  const handleFocusSelection = () => {
+    if (selectedRows.size === 0) return;
+    
+    // Zoom in slightly and scroll to the first selected row
+    setZoomLevel(125);
+    
+    // Find the first selected row element and scroll to it
+    const firstSelectedRowId = Array.from(selectedRows)[0];
+    const rowElement = document.getElementById(`row-${firstSelectedRowId}`);
+    
+    if (rowElement && tableContainerRef.current) {
+      rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Highlight the row momentarily
+      rowElement.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+      setTimeout(() => {
+        rowElement.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+      }, 2000);
+      
+      toast({
+        title: "Focused on selection",
+        description: `Zoomed in and centered on selected row(s)`,
+        duration: 2000
+      });
+    }
+  };
+
   const renderCellEditor = (rowId: string, columnName: string, value: any, columnType: string) => {
     switch (columnType) {
       case 'boolean':
@@ -554,14 +675,21 @@ const DataEditor: React.FC<DataEditorProps> = ({
               </Select>
             </div>
 
+            <ZoomControls 
+              zoomLevel={zoomLevel}
+              onZoomChange={handleZoomChange}
+              onFitToScreen={handleFitToScreen}
+              onFocusSelection={handleFocusSelection}
+              disableFocus={selectedRows.size === 0}
+            />
+            
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setFullWidthTable(!fullWidthTable)}
-              title={fullWidthTable ? "Switch to standard width" : "Expand table width"}
+              onClick={handleFitColumnsToContent}
             >
-              {fullWidthTable ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
-              {fullWidthTable ? "Standard Width" : "Full Width"}
+              <MoveHorizontal className="mr-2 h-4 w-4" />
+              Fit Columns
             </Button>
             
             <Button 
@@ -661,107 +789,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
               </DialogContent>
             </Dialog>
             
-            <Dialog open={showFilters} onOpenChange={setShowFilters}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Filter Data</DialogTitle>
-                  <DialogDescription>
-                    Add filters to narrow down the displayed data
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-1 gap-2">
-                    <Label htmlFor="filter-column">Column</Label>
-                    <Select value={filterColumn} onValueChange={setFilterColumn}>
-                      <SelectTrigger id="filter-column">
-                        <SelectValue placeholder="Select column" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dataset.columns.map(column => (
-                          <SelectItem key={column.name} value={column.name}>
-                            {column.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    <Label htmlFor="filter-operation">Operation</Label>
-                    <Select value={filterOperation} onValueChange={(val: any) => setFilterOperation(val)}>
-                      <SelectTrigger id="filter-operation">
-                        <SelectValue placeholder="Select operation" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="equals">Equals</SelectItem>
-                        <SelectItem value="contains">Contains</SelectItem>
-                        <SelectItem value="startsWith">Starts With</SelectItem>
-                        <SelectItem value="endsWith">Ends With</SelectItem>
-                        <SelectItem value="greaterThan">Greater Than</SelectItem>
-                        <SelectItem value="lessThan">Less Than</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    <Label htmlFor="filter-value">Value</Label>
-                    <Input
-                      id="filter-value"
-                      value={filterValue}
-                      onChange={(e) => setFilterValue(e.target.value)}
-                      placeholder="Filter value"
-                    />
-                  </div>
-                </div>
-                {filters.length > 0 && (
-                  <div className="border rounded-md p-4 mb-4">
-                    <h4 className="font-medium mb-2">Active Filters</h4>
-                    <div className="space-y-2">
-                      {filters.map((filter, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span>
-                            {filter.column} {filter.operation} "{filter.value}"
-                          </span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => removeFilter(index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <DialogFooter>
-                  <Button type="button" onClick={addFilter}>
-                    Add Filter
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setFilters([])}>
-                    Clear All
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            
-            <TableColumnManager
-              columns={dataPreview.columns}
-              visibleColumns={visibleColumns}
-              frozenColumns={frozenColumns}
-              onVisibilityChange={handleVisibilityChange}
-              onFreezeChange={handleFreezeChange}
-              onReorder={handleColumnReorder}
-              open={showColumnManager}
-              onOpenChange={setShowColumnManager}
-            />
-            
-            <BulkEditDialog
-              open={showBulkEditDialog}
-              onOpenChange={setShowBulkEditDialog}
-              selectedRows={selectedRowsData}
-              columns={dataPreview.columns}
-              onApplyBulkEdit={handleBulkEdit}
-            />
-            
             <Button 
               variant="outline" 
               size="sm"
@@ -782,17 +809,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-md overflow-hidden">
+          <div 
+            className="border rounded-md overflow-hidden"
+            ref={tableContainerRef}
+          >
             <div 
               className="overflow-x-auto" 
               style={{ maxHeight: '70vh' }}
               ref={tableRef}
             >
-              <Table fullWidth={fullWidthTable}>
+              <Table 
+                zoomLevel={zoomLevel} 
+                fullWidth={fullWidthTable}
+                columnResizing={true}
+              >
                 <TableHeader className="sticky top-0 z-20 bg-white dark:bg-gray-800">
                   <TableRow>
                     <TableHead 
                       className="sticky left-0 z-30 bg-white dark:bg-gray-800 w-10"
+                      minWidth={40}
                     >
                       <Checkbox 
                         checked={
@@ -819,34 +854,40 @@ const DataEditor: React.FC<DataEditorProps> = ({
                           onHide={() => handleVisibilityChange(column.name, false)}
                           hasSelectedRows={selectedRows.size > 0}
                         >
-                          <TableHead 
-                            className={`cursor-pointer select-none whitespace-nowrap
-                              ${frozenColumns.includes(column.name) 
-                                ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
-                            `}
-                            style={{
-                              left: frozenColumns.includes(column.name) 
-                                ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
-                                : 'auto',
-                              minWidth: '150px'
-                            }}
-                            onClick={() => handleSort(column.name)}
+                          <ResizableColumn
+                            width={columnWidths[column.name] || 150}
+                            minWidth={100}
+                            onResize={(width) => handleResizeColumn(column.name, width)}
                           >
-                            <div className="flex items-center">
-                              {column.name}
-                              {sortColumn === column.name && (
-                                sortDirection === 'asc' ? (
-                                  <ChevronUp className="ml-1 h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="ml-1 h-4 w-4" />
-                                )
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {column.type}
-                              {column.nullable && ' (nullable)'}
-                            </div>
-                          </TableHead>
+                            <TableHead 
+                              className={`cursor-pointer select-none whitespace-nowrap overflow-visible
+                                ${frozenColumns.includes(column.name) 
+                                  ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
+                              `}
+                              style={{
+                                left: frozenColumns.includes(column.name) 
+                                  ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
+                                  : 'auto'
+                              }}
+                              onClick={() => handleSort(column.name)}
+                              width={columnWidths[column.name] || 150}
+                            >
+                              <div className="flex items-center">
+                                {column.name}
+                                {sortColumn === column.name && (
+                                  sortDirection === 'asc' ? (
+                                    <ChevronUp className="ml-1 h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="ml-1 h-4 w-4" />
+                                  )
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {column.type}
+                                {column.nullable && ' (nullable)'}
+                              </div>
+                            </TableHead>
+                          </ResizableColumn>
                         </ColumnMenu>
                     ))}
                   </TableRow>
@@ -856,10 +897,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
                     <TableRow 
                       key={row.__id}
                       className={getRowClasses(row.__id)}
+                      id={`row-${row.__id}`}
                     >
                       <TableCell 
                         className="sticky left-0 z-10 bg-white dark:bg-gray-800 w-10"
                         onClick={() => toggleRowSelection(row.__id)}
+                        minWidth={40}
                       >
                         <Checkbox checked={selectedRows.has(row.__id)} />
                       </TableCell>
@@ -875,10 +918,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
                               style={{
                                 left: frozenColumns.includes(column.name) 
                                   ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
-                                  : 'auto'
+                                  : 'auto',
+                                width: columnWidths[column.name] || 150
                               }}
                               onClick={() => editMode && startEdit(row.__id, column.name, row[column.name])}
                               title={`Original value: ${row[column.name]}`}
+                              width={columnWidths[column.name] || 150}
                             >
                               {isEditing ? (
                                 renderCellEditor(row.__id, column.name, row[column.name], column.type)
@@ -909,19 +954,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
               </Table>
             </div>
           </div>
-          {fullWidthTable && (
-            <div className="flex justify-end mt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setFullWidthTable(false)}
-                className="text-xs"
-              >
-                <Minimize className="mr-1 h-3 w-3" />
-                Return to standard width
-              </Button>
-            </div>
-          )}
         </CardContent>
         <CardFooter className="flex justify-between">
           <div className="flex items-center">
@@ -990,6 +1022,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
           </Pagination>
         </CardFooter>
       </Card>
+      
+      <TableColumnManager
+        columns={dataPreview.columns}
+        visibleColumns={visibleColumns}
+        frozenColumns={frozenColumns}
+        onVisibilityChange={handleVisibilityChange}
+        onFreezeChange={handleFreezeChange}
+        onReorder={handleColumnReorder}
+        open={showColumnManager}
+        onOpenChange={setShowColumnManager}
+      />
+      
+      <BulkEditDialog
+        open={showBulkEditDialog}
+        onOpenChange={setShowBulkEditDialog}
+        selectedRows={selectedRowsData}
+        columns={dataPreview.columns}
+        onApplyBulkEdit={handleBulkEdit}
+      />
     </div>
   );
 };

@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { Database, FileType, Maximize, Minimize } from 'lucide-react';
+import { Database, FileType, ZoomIn, ZoomOut } from 'lucide-react';
 import { useState } from 'react';
+import ZoomControls from './ZoomControls';
 
 interface DatasetListProps {
   datasets: Dataset[];
@@ -15,7 +16,7 @@ interface DatasetListProps {
 }
 
 const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, isLoading }) => {
-  const [fullWidthTable, setFullWidthTable] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
 
   if (isLoading) {
     return (
@@ -49,20 +50,18 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
             Select a dataset to view and edit its data
           </CardDescription>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setFullWidthTable(!fullWidthTable)}
-          title={fullWidthTable ? "Switch to standard width" : "Expand table width"}
-        >
-          {fullWidthTable ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
-          {fullWidthTable ? "Standard Width" : "Full Width"}
-        </Button>
+        <ZoomControls
+          zoomLevel={zoomLevel}
+          onZoomChange={setZoomLevel}
+          onFitToScreen={() => setZoomLevel(100)}
+          onFocusSelection={() => {}}
+          disableFocus={true}
+        />
       </CardHeader>
       <CardContent>
         <div className="border rounded-md overflow-hidden">
           <div className="overflow-x-auto">
-            <Table fullWidth={fullWidthTable}>
+            <Table zoomLevel={zoomLevel} fullWidth={true}>
               <TableHeader>
                 <TableRow>
                   <TableHead>Type</TableHead>
