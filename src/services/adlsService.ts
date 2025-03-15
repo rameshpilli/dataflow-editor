@@ -51,7 +51,17 @@ class ADLSService {
           { name: 'name', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
           { name: 'email', type: 'string', nullable: true, stats: { count: 1000, nullCount: 20 } },
           { name: 'age', type: 'integer', nullable: true, stats: { min: 18, max: 95, count: 1000, nullCount: 15 } },
-          { name: 'active', type: 'boolean', nullable: false, stats: { count: 1000, nullCount: 0 } }
+          { name: 'active', type: 'boolean', nullable: false, stats: { count: 1000, nullCount: 0 } },
+          { name: 'registration_date', type: 'date', nullable: false, stats: { count: 1000, nullCount: 0 } },
+          { name: 'last_login', type: 'timestamp', nullable: true, stats: { count: 1000, nullCount: 5 } },
+          { name: 'account_balance', type: 'decimal', nullable: false, stats: { min: 0, max: 10000, count: 1000, nullCount: 0 } },
+          { name: 'subscription_tier', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
+          { name: 'address', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
+          { name: 'city', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
+          { name: 'state', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
+          { name: 'postal_code', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
+          { name: 'country', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
+          { name: 'phone', type: 'string', nullable: true, stats: { count: 1000, nullCount: 40 } }
         ],
         rowCount: 1000,
         lastModified: new Date('2023-06-15')
@@ -65,8 +75,23 @@ class ADLSService {
           { name: 'transaction_id', type: 'string', nullable: false },
           { name: 'customer_id', type: 'integer', nullable: false },
           { name: 'product_id', type: 'string', nullable: false },
+          { name: 'product_name', type: 'string', nullable: false },
+          { name: 'category', type: 'string', nullable: false },
+          { name: 'subcategory', type: 'string', nullable: true },
           { name: 'amount', type: 'decimal', nullable: false },
-          { name: 'timestamp', type: 'timestamp', nullable: false }
+          { name: 'quantity', type: 'integer', nullable: false },
+          { name: 'unit_price', type: 'decimal', nullable: false },
+          { name: 'discount_amount', type: 'decimal', nullable: true },
+          { name: 'tax_amount', type: 'decimal', nullable: false },
+          { name: 'total_amount', type: 'decimal', nullable: false },
+          { name: 'payment_method', type: 'string', nullable: false },
+          { name: 'store_id', type: 'integer', nullable: false },
+          { name: 'store_location', type: 'string', nullable: false },
+          { name: 'sales_person', type: 'string', nullable: true },
+          { name: 'timestamp', type: 'timestamp', nullable: false },
+          { name: 'is_online', type: 'boolean', nullable: false },
+          { name: 'shipping_cost', type: 'decimal', nullable: true },
+          { name: 'delivery_date', type: 'date', nullable: true }
         ],
         rowCount: 5000,
         lastModified: new Date('2023-07-20')
@@ -81,7 +106,17 @@ class ADLSService {
           { name: 'name', type: 'string', nullable: false },
           { name: 'category', type: 'string', nullable: true },
           { name: 'price', type: 'decimal', nullable: false },
-          { name: 'stock_quantity', type: 'integer', nullable: false }
+          { name: 'stock_quantity', type: 'integer', nullable: false },
+          { name: 'supplier_id', type: 'string', nullable: false },
+          { name: 'supplier_name', type: 'string', nullable: false },
+          { name: 'reorder_level', type: 'integer', nullable: false },
+          { name: 'reorder_quantity', type: 'integer', nullable: false },
+          { name: 'last_restock_date', type: 'date', nullable: true },
+          { name: 'expiration_date', type: 'date', nullable: true },
+          { name: 'warehouse_location', type: 'string', nullable: false },
+          { name: 'is_active', type: 'boolean', nullable: false },
+          { name: 'created_date', type: 'timestamp', nullable: false },
+          { name: 'modified_date', type: 'timestamp', nullable: false }
         ],
         rowCount: 500,
         lastModified: new Date('2023-08-05')

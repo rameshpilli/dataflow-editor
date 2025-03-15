@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy, Edit, FileDown, Check } from 'lucide-react';
+import { ChevronUp, ChevronDown, Filter, Save, Undo2, ArrowLeftCircle, Columns, Calendar, Copy, Edit, FileDown, Check, MoveHorizontal, Maximize, Minimize } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -89,6 +89,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [lastSavedRows, setLastSavedRows] = useState<Set<string>>(new Set());
   const [fadeTimeout, setFadeTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [fullWidthTable, setFullWidthTable] = useState(false);
   
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -552,6 +553,16 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setFullWidthTable(!fullWidthTable)}
+              title={fullWidthTable ? "Switch to standard width" : "Expand table width"}
+            >
+              {fullWidthTable ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
+              {fullWidthTable ? "Standard Width" : "Full Width"}
+            </Button>
             
             <Button 
               variant="outline" 
@@ -777,7 +788,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               style={{ maxHeight: '70vh' }}
               ref={tableRef}
             >
-              <Table>
+              <Table fullWidth={fullWidthTable}>
                 <TableHeader className="sticky top-0 z-20 bg-white dark:bg-gray-800">
                   <TableRow>
                     <TableHead 
@@ -898,6 +909,19 @@ const DataEditor: React.FC<DataEditorProps> = ({
               </Table>
             </div>
           </div>
+          {fullWidthTable && (
+            <div className="flex justify-end mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setFullWidthTable(false)}
+                className="text-xs"
+              >
+                <Minimize className="mr-1 h-3 w-3" />
+                Return to standard width
+              </Button>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between">
           <div className="flex items-center">
