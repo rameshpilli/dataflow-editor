@@ -11,7 +11,14 @@ import {
 import { ResizableColumn } from '@/components/ui/resizable-column';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   ChevronUp, 
@@ -27,7 +34,8 @@ import {
   FileDown, 
   Check, 
   MoveHorizontal,
-  Expand
+  Expand,
+  ListFilter
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -54,6 +62,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import TableColumnManager from './TableColumnManager';
 import ColumnMenu from './ColumnMenu';
 import BulkEditDialog from './BulkEditDialog';
@@ -225,6 +241,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
     setPage(1);
+    toast({
+      title: "Page size updated",
+      description: `Showing ${newSize} items per page`,
+    });
   };
 
   const handleSort = (columnName: string) => {
@@ -400,8 +420,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Button variant="ghost" size="sm" onClick={onGoBack} className="mr-2">
-              <ArrowLeftCircle className="mr-2 h-4 w-4" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onGoBack} 
+              className="mr-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-800/30 border-blue-200 dark:border-blue-800 transition-all duration-200 font-medium"
+            >
+              <ArrowLeftCircle className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
               Back to Datasets
             </Button>
             <CardTitle>{dataset.name}</CardTitle>
@@ -591,28 +616,51 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Button>
           )}
         </div>
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => handlePageChange(page - 1)}
-                className={cn(page === 1 && "pointer-events-none opacity-50")}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink isActive>{page}</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => handlePageChange(page + 1)}
-                className={cn(
-                  (!dataPreview || page * pageSize >= dataPreview.totalRows) && 
-                  "pointer-events-none opacity-50"
-                )}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <div className="flex items-center gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8">
+                <ListFilter className="mr-2 h-4 w-4" />
+                {pageSize} per page
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Page Size</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handlePageSizeChange(10)} className={pageSize === 10 ? "bg-accent" : ""}>
+                10 rows
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePageSizeChange(50)} className={pageSize === 50 ? "bg-accent" : ""}>
+                50 rows
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePageSizeChange(100)} className={pageSize === 100 ? "bg-accent" : ""}>
+                100 rows
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => handlePageChange(page - 1)}
+                  className={cn(page === 1 && "pointer-events-none opacity-50")}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink isActive>{page}</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => handlePageChange(page + 1)}
+                  className={cn(
+                    (!dataPreview || page * pageSize >= dataPreview.totalRows) && 
+                    "pointer-events-none opacity-50"
+                  )}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       </CardFooter>
 
       <Dialog open={showColumnManager} onOpenChange={setShowColumnManager}>
