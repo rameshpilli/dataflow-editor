@@ -1,523 +1,343 @@
-import { ADLSConnection, ADLSCredentials, Dataset, DatasetPreview, DataRow, FilterOptions, TempStorage, Comment, DatasetColumn } from '@/types/adls';
-import { toast } from '@/hooks/use-toast';
+import { ADLSConnection, Dataset, DatasetColumn, DatasetPreview, DataRow, FilterOptions, ValidationResult } from '@/types/adls';
+import { v4 as uuidv4 } from 'uuid';
 
-// This is a mock service - in a real app, this would connect to Azure SDK
-class ADLSService {
-  private connections: ADLSConnection[] = [];
-  private tempStorage: Map<string, TempStorage> = new Map(); // Store temporary data by dataset ID
-  private comments: Map<string, Comment[]> = new Map(); // Store comments by dataset ID
-
-  // Connect to ADLS
-  async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Validation
-    if (!credentials.useManagedIdentity && 
-        (!credentials.connectionString && (!credentials.accountName || !credentials.accountKey))) {
-      throw new Error('Invalid credentials: Please provide either connection string or account name and key');
-    }
-    
-    const connection: ADLSConnection = {
-      id: `conn_${Date.now()}`,
-      name,
-      credentials,
-      isConnected: true,
-      lastConnected: new Date()
-    };
-    
-    this.connections.push(connection);
-    return connection;
+// Mock connections
+const mockConnections: ADLSConnection[] = [
+  {
+    id: '1',
+    name: 'Production Data Lake',
+    credentials: {
+      accountName: 'prodadls',
+      useManagedIdentity: true
+    },
+    isConnected: true,
+    lastConnected: new Date('2023-06-15')
+  },
+  {
+    id: '2',
+    name: 'Development Storage',
+    credentials: {
+      accountName: 'devadls',
+      accountKey: 'mock-key-123'
+    },
+    isConnected: false
+  },
+  {
+    id: '3',
+    name: 'Test Environment',
+    credentials: {
+      connectionString: 'DefaultEndpointsProtocol=https;AccountName=testadls;AccountKey=mock-key-456'
+    },
+    isConnected: true,
+    lastConnected: new Date('2023-07-01')
   }
+];
 
-  // List available datasets
-  async listDatasets(connectionId: string): Promise<Dataset[]> {
-    const connection = this.connections.find(c => c.id === connectionId);
-    if (!connection || !connection.isConnected) {
-      throw new Error('Not connected to ADLS');
-    }
+// Mock datasets
+const mockDatasets: Dataset[] = [
+  {
+    id: '1',
+    name: 'Customer Data',
+    path: '/data/customers',
+    format: 'delta',
+    columns: [
+      { name: 'customer_id', type: 'string', nullable: false },
+      { name: 'name', type: 'string', nullable: false },
+      { name: 'email', type: 'string', nullable: true },
+      { name: 'signup_date', type: 'date', nullable: false },
+      { name: 'last_login', type: 'timestamp', nullable: true },
+      { name: 'account_status', type: 'string', nullable: false }
+    ],
+    rowCount: 10000,
+    repairedCount: 150,
+    lastModified: new Date('2023-07-10')
+  },
+  {
+    id: '2',
+    name: 'Transaction History',
+    path: '/data/transactions',
+    format: 'parquet',
+    columns: [
+      { name: 'transaction_id', type: 'string', nullable: false },
+      { name: 'customer_id', type: 'string', nullable: false },
+      { name: 'amount', type: 'double', nullable: false },
+      { name: 'currency', type: 'string', nullable: false },
+      { name: 'timestamp', type: 'timestamp', nullable: false },
+      { name: 'status', type: 'string', nullable: false }
+    ],
+    rowCount: 50000,
+    repairedCount: 320,
+    lastModified: new Date('2023-07-12')
+  },
+  {
+    id: '3',
+    name: 'Product Catalog',
+    path: '/data/products',
+    format: 'delta',
+    columns: [
+      { name: 'product_id', type: 'string', nullable: false },
+      { name: 'name', type: 'string', nullable: false },
+      { name: 'description', type: 'string', nullable: true },
+      { name: 'price', type: 'double', nullable: false },
+      { name: 'category', type: 'string', nullable: false },
+      { name: 'in_stock', type: 'boolean', nullable: false },
+      { name: 'created_at', type: 'timestamp', nullable: false }
+    ],
+    rowCount: 5000,
+    repairedCount: 0,
+    lastModified: new Date('2023-07-05')
+  }
+];
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+// Generate mock data for a dataset
+const generateMockData = (dataset: Dataset, count: number): DataRow[] => {
+  const rows: DataRow[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const row: DataRow = { __id: uuidv4() };
     
-    // Return mock datasets with repair count
-    const datasets: Dataset[] = [
-      {
-        id: 'dataset_1',
-        name: 'Customer Data',
-        path: '/data/customers',
-        format: 'delta' as const,
-        columns: [
-          { name: 'id', type: 'integer', nullable: false, stats: { min: 1, max: 10000, count: 1000, nullCount: 0 } },
-          { name: 'customer_number', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
-          { name: 'name', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
-          { name: 'email', type: 'string', nullable: true, stats: { count: 1000, nullCount: 20 } },
-          { name: 'age', type: 'integer', nullable: true, stats: { min: 18, max: 95, count: 1000, nullCount: 15 } },
-          { name: 'gender', type: 'string', nullable: true, stats: { count: 1000, nullCount: 5 } },
-          { name: 'active', type: 'boolean', nullable: false, stats: { count: 1000, nullCount: 0 } },
-          { name: 'registration_date', type: 'date', nullable: false, stats: { count: 1000, nullCount: 0 } },
-          { name: 'last_login', type: 'timestamp', nullable: true, stats: { count: 1000, nullCount: 5 } },
-          { name: 'account_balance', type: 'decimal', nullable: false, stats: { min: 0, max: 10000, count: 1000, nullCount: 0 } },
-          { name: 'lifetime_value', type: 'decimal', nullable: true, stats: { min: 0, max: 25000, count: 1000, nullCount: 10 } },
-          { name: 'subscription_tier', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
-          { name: 'address', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
-          { name: 'city', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
-          { name: 'state', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
-          { name: 'postal_code', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
-          { name: 'country', type: 'string', nullable: true, stats: { count: 1000, nullCount: 30 } },
-          { name: 'phone', type: 'string', nullable: true, stats: { count: 1000, nullCount: 40 } },
-          { name: 'preferred_language', type: 'string', nullable: true, stats: { count: 1000, nullCount: 20 } },
-          { name: 'marketing_consent', type: 'boolean', nullable: false, stats: { count: 1000, nullCount: 0 } }
-        ],
-        rowCount: 1000,
-        repairedCount: this.getTempStorage('dataset_1')?.repairedCount || 0,
-        lastModified: new Date('2023-06-15')
-      },
-      {
-        id: 'dataset_2',
-        name: 'Sales Transactions',
-        path: '/data/sales',
-        format: 'parquet' as const,
-        columns: [
-          { name: 'transaction_id', type: 'string', nullable: false },
-          { name: 'customer_id', type: 'integer', nullable: false },
-          { name: 'product_id', type: 'string', nullable: false },
-          { name: 'product_name', type: 'string', nullable: false },
-          { name: 'category', type: 'string', nullable: false },
-          { name: 'subcategory', type: 'string', nullable: true },
-          { name: 'amount', type: 'decimal', nullable: false },
-          { name: 'quantity', type: 'integer', nullable: false },
-          { name: 'unit_price', type: 'decimal', nullable: false },
-          { name: 'discount_amount', type: 'decimal', nullable: true },
-          { name: 'tax_amount', type: 'decimal', nullable: false },
-          { name: 'total_amount', type: 'decimal', nullable: false },
-          { name: 'payment_method', type: 'string', nullable: false },
-          { name: 'store_id', type: 'integer', nullable: false },
-          { name: 'store_location', type: 'string', nullable: false },
-          { name: 'sales_person', type: 'string', nullable: true },
-          { name: 'timestamp', type: 'timestamp', nullable: false },
-          { name: 'is_online', type: 'boolean', nullable: false },
-          { name: 'shipping_cost', type: 'decimal', nullable: true },
-          { name: 'delivery_date', type: 'date', nullable: true },
-          { name: 'order_source', type: 'string', nullable: true },
-          { name: 'channel_id', type: 'integer', nullable: true },
-          { name: 'promotion_code', type: 'string', nullable: true },
-          { name: 'customer_rating', type: 'integer', nullable: true },
-          { name: 'exchange_rate', type: 'decimal', nullable: true },
-          { name: 'currency', type: 'string', nullable: false }
-        ],
-        rowCount: 5000,
-        repairedCount: this.getTempStorage('dataset_2')?.repairedCount || 0,
-        lastModified: new Date('2023-07-20')
-      },
-      {
-        id: 'dataset_3',
-        name: 'Product Inventory',
-        path: '/data/inventory',
-        format: 'delta' as const,
-        columns: [
-          { name: 'product_id', type: 'string', nullable: false },
-          { name: 'sku', type: 'string', nullable: false },
-          { name: 'name', type: 'string', nullable: false },
-          { name: 'description', type: 'string', nullable: true },
-          { name: 'category', type: 'string', nullable: true },
-          { name: 'subcategory', type: 'string', nullable: true },
-          { name: 'price', type: 'decimal', nullable: false },
-          { name: 'cost', type: 'decimal', nullable: false },
-          { name: 'stock_quantity', type: 'integer', nullable: false },
-          { name: 'supplier_id', type: 'string', nullable: false },
-          { name: 'supplier_name', type: 'string', nullable: false },
-          { name: 'supplier_contact', type: 'string', nullable: true },
-          { name: 'reorder_level', type: 'integer', nullable: false },
-          { name: 'reorder_quantity', type: 'integer', nullable: false },
-          { name: 'last_restock_date', type: 'date', nullable: true },
-          { name: 'expiration_date', type: 'date', nullable: true },
-          { name: 'warehouse_location', type: 'string', nullable: false },
-          { name: 'shelf_position', type: 'string', nullable: true },
-          { name: 'weight', type: 'decimal', nullable: true },
-          { name: 'dimensions', type: 'string', nullable: true },
-          { name: 'is_active', type: 'boolean', nullable: false },
-          { name: 'created_date', type: 'timestamp', nullable: false },
-          { name: 'modified_date', type: 'timestamp', nullable: false }
-        ],
-        rowCount: 500,
-        repairedCount: this.getTempStorage('dataset_3')?.repairedCount || 0,
-        lastModified: new Date('2023-08-05')
-      },
-      // New sample dataset with long path and only 10 records
-      {
-        id: 'dataset_4',
-        name: 'Sample Long Path Data',
-        path: '/data/inventory/data/inventory/data/inventory/data/inventory/data/inventory/data/inventory',
-        format: 'delta' as const,
-        columns: [
-          { name: 'id', type: 'integer', nullable: false },
-          { name: 'name', type: 'string', nullable: false },
-          { name: 'description', type: 'string', nullable: true },
-          { name: 'category', type: 'string', nullable: false },
-          { name: 'created_date', type: 'date', nullable: false },
-          { name: 'is_active', type: 'boolean', nullable: false }
-        ],
-        rowCount: 10,
-        repairedCount: this.getTempStorage('dataset_4')?.repairedCount || 0,
-        lastModified: new Date('2024-01-10')
+    dataset.columns.forEach(column => {
+      switch (column.type) {
+        case 'string':
+          row[column.name] = column.name.includes('id') 
+            ? `ID-${Math.floor(Math.random() * 10000)}`
+            : column.name.includes('name') 
+              ? `Sample ${column.name} ${i}`
+              : column.name.includes('email')
+                ? `user${i}@example.com`
+                : `Value ${i} for ${column.name}`;
+          break;
+        case 'integer':
+        case 'int':
+          row[column.name] = Math.floor(Math.random() * 1000);
+          break;
+        case 'double':
+        case 'float':
+          row[column.name] = parseFloat((Math.random() * 1000).toFixed(2));
+          break;
+        case 'boolean':
+          row[column.name] = Math.random() > 0.5;
+          break;
+        case 'date':
+          const date = new Date();
+          date.setDate(date.getDate() - Math.floor(Math.random() * 365));
+          row[column.name] = date.toISOString().split('T')[0];
+          break;
+        case 'timestamp':
+          const timestamp = new Date();
+          timestamp.setDate(timestamp.getDate() - Math.floor(Math.random() * 365));
+          timestamp.setHours(Math.floor(Math.random() * 24));
+          row[column.name] = timestamp.toISOString();
+          break;
+        default:
+          row[column.name] = `Value ${i} for ${column.name}`;
       }
-    ];
-    
-    return datasets;
-  }
-
-  // Get dataset preview with pagination
-  async getDatasetPreview(
-    connectionId: string, 
-    datasetId: string, 
-    page: number = 1, 
-    pageSize: number = 10,
-    sortColumn?: string,
-    sortDirection?: 'asc' | 'desc',
-    filters?: FilterOptions[]
-  ): Promise<DatasetPreview> {
-    const connection = this.connections.find(c => c.id === connectionId);
-    if (!connection || !connection.isConnected) {
-      throw new Error('Not connected to ADLS');
-    }
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Get mock dataset
-    const datasets = await this.listDatasets(connectionId);
-    const dataset = datasets.find(d => d.id === datasetId);
-    
-    if (!dataset) {
-      throw new Error('Dataset not found');
-    }
-
-    // Generate mock rows
-    const totalRows = dataset.rowCount || 100;
-    const startRow = (page - 1) * pageSize;
-    const endRow = Math.min(startRow + pageSize, totalRows);
-    
-    let rows: DataRow[] = [];
-    
-    for (let i = startRow; i < endRow; i++) {
-      const row: DataRow = { __id: `row_${i}` };
       
-      dataset.columns.forEach(column => {
-        switch (column.type) {
-          case 'integer':
-            row[column.name] = i + Math.floor(Math.random() * 100);
-            break;
-          case 'decimal':
-            row[column.name] = (i * 10.5 + Math.random() * 100).toFixed(2);
-            break;
-          case 'string':
-            row[column.name] = `${column.name}_value_${i}`;
-            break;
-          case 'boolean':
-            row[column.name] = Math.random() > 0.5;
-            break;
-          case 'timestamp':
-            const date = new Date();
-            date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-            row[column.name] = date.toISOString();
-            break;
+      // Make some values null based on nullable property
+      if (column.nullable && Math.random() > 0.9) {
+        row[column.name] = null;
+      }
+    });
+    
+    rows.push(row);
+  }
+  
+  return rows;
+};
+
+// API functions
+export const getConnections = async (): Promise<ADLSConnection[]> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  return [...mockConnections];
+};
+
+export const getConnection = async (id: string): Promise<ADLSConnection | null> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return mockConnections.find(conn => conn.id === id) || null;
+};
+
+export const createConnection = async (connection: Omit<ADLSConnection, 'id'>): Promise<ADLSConnection> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  const newConnection: ADLSConnection = {
+    ...connection,
+    id: uuidv4(),
+    isConnected: false
+  };
+  mockConnections.push(newConnection);
+  return newConnection;
+};
+
+export const updateConnection = async (id: string, connection: Partial<ADLSConnection>): Promise<ADLSConnection> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  const index = mockConnections.findIndex(conn => conn.id === id);
+  if (index === -1) throw new Error('Connection not found');
+  
+  mockConnections[index] = {
+    ...mockConnections[index],
+    ...connection,
+    id
+  };
+  
+  return mockConnections[index];
+};
+
+export const deleteConnection = async (id: string): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  const index = mockConnections.findIndex(conn => conn.id === id);
+  if (index === -1) return false;
+  
+  mockConnections.splice(index, 1);
+  return true;
+};
+
+export const testConnection = async (connection: ADLSConnection): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  // Simulate connection test (90% success rate)
+  return Math.random() > 0.1;
+};
+
+export const getDatasets = async (): Promise<Dataset[]> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  return [...mockDatasets];
+};
+
+export const getDataset = async (id: string): Promise<Dataset | null> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return mockDatasets.find(dataset => dataset.id === id) || null;
+};
+
+export const getDatasetPreview = async (
+  datasetId: string,
+  page: number,
+  pageSize: number,
+  sortColumn?: string,
+  sortDirection?: 'asc' | 'desc',
+  filters?: FilterOptions[]
+): Promise<DatasetPreview> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  const dataset = mockDatasets.find(d => d.id === datasetId);
+  if (!dataset) throw new Error('Dataset not found');
+  
+  // Generate mock data
+  let rows = generateMockData(dataset, 1000);
+  
+  // Apply filters if provided
+  if (filters && filters.length > 0) {
+    rows = rows.filter(row => {
+      return filters.every(filter => {
+        const value = row[filter.column];
+        if (value === null || value === undefined) return false;
+        
+        switch (filter.operation) {
+          case 'equals':
+            return String(value) === String(filter.value);
+          case 'contains':
+            return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+          case 'startsWith':
+            return String(value).toLowerCase().startsWith(String(filter.value).toLowerCase());
+          case 'endsWith':
+            return String(value).toLowerCase().endsWith(String(filter.value).toLowerCase());
+          case 'greaterThan':
+            return Number(value) > Number(filter.value);
+          case 'lessThan':
+            return Number(value) < Number(filter.value);
           default:
-            row[column.name] = `${column.name}_${i}`;
-        }
-        
-        // Apply null values based on nullable status
-        if (column.nullable && Math.random() > 0.9) {
-          row[column.name] = null;
+            return true;
         }
       });
-      
-      rows.push(row);
-    }
-    
-    // Apply any temporarily saved changes to the preview data
-    const tempData = this.tempStorage.get(datasetId);
-    if (tempData) {
-      rows = rows.map(row => {
-        const savedRow = tempData.modifiedRows.get(row.__id);
-        if (savedRow) {
-          return { ...savedRow, __modified: true };
-        }
-        return row;
-      });
-    }
-    
-    // Apply sorting if specified
-    if (sortColumn && sortDirection) {
-      rows.sort((a, b) => {
-        const valueA = a[sortColumn];
-        const valueB = b[sortColumn];
-        
-        if (valueA === null) return sortDirection === 'asc' ? -1 : 1;
-        if (valueB === null) return sortDirection === 'asc' ? 1 : -1;
-        
-        if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
-        if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    
-    // Apply filtering if specified
-    if (filters && filters.length > 0) {
-      rows = rows.filter(row => {
-        return filters.every(filter => {
-          const value = row[filter.column];
-          
-          if (value === null || value === undefined) return false;
-          
-          switch (filter.operation) {
-            case 'equals':
-              return value === filter.value;
-            case 'contains':
-              return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
-            case 'startsWith':
-              return String(value).toLowerCase().startsWith(String(filter.value).toLowerCase());
-            case 'endsWith':
-              return String(value).toLowerCase().endsWith(String(filter.value).toLowerCase());
-            case 'greaterThan':
-              return value > filter.value;
-            case 'lessThan':
-              return value < filter.value;
-            default:
-              return true;
-          }
-        });
-      });
-    }
-    
-    return {
-      columns: dataset.columns,
-      rows,
-      totalRows,
-      page,
-      pageSize
-    };
+    });
   }
-
-  // Save changes to temp storage
-  async saveChangesToTemp(connectionId: string, datasetId: string, modifiedRows: DataRow[]): Promise<boolean> {
-    const connection = this.connections.find(c => c.id === connectionId);
-    if (!connection || !connection.isConnected) {
-      throw new Error('Not connected to ADLS');
-    }
-
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Create or update temp storage
-    let storage = this.tempStorage.get(datasetId);
-    
-    if (!storage) {
-      // Get dataset info to know total row count
-      const datasets = await this.listDatasets(connectionId);
-      const dataset = datasets.find(d => d.id === datasetId);
+  
+  // Apply sorting if provided
+  if (sortColumn) {
+    rows.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
       
-      if (!dataset) {
-        throw new Error('Dataset not found');
+      // Handle null values
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+      
+      // Compare based on type
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
       
-      storage = {
-        datasetId,
-        modifiedRows: new Map(),
-        totalRowCount: dataset.rowCount || 0,
-        repairedCount: 0,
-        lastSaved: new Date()
-      };
-      
-      this.tempStorage.set(datasetId, storage);
-    }
-    
-    // Update stored rows
-    modifiedRows.forEach(row => {
-      // If this is a new modified row, increment the repaired count
-      if (!storage!.modifiedRows.has(row.__id)) {
-        storage!.repairedCount++;
+      // Default string comparison
+      const aStr = String(aValue).toLowerCase();
+      const bStr = String(bValue).toLowerCase();
+      return sortDirection === 'asc' 
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
+    });
+  }
+  
+  // Calculate total rows and pages
+  const totalRows = rows.length;
+  const totalPages = Math.ceil(totalRows / pageSize);
+  
+  // Paginate
+  const startIndex = (page - 1) * pageSize;
+  const paginatedRows = rows.slice(startIndex, startIndex + pageSize);
+  
+  return {
+    columns: dataset.columns,
+    rows: paginatedRows,
+    totalRows,
+    page,
+    pageSize,
+    totalPages
+  };
+};
+
+export const updateDatasetRow = async (
+  datasetId: string,
+  rowId: string,
+  columnName: string,
+  newValue: any
+): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  // In a real implementation, this would update the data in ADLS
+  return true;
+};
+
+export const saveDatasetChanges = async (
+  datasetId: string,
+  changes: { rowId: string, columnName: string, newValue: any }[]
+): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  // In a real implementation, this would commit the changes to ADLS
+  return true;
+};
+
+export const validateDataset = async (datasetId: string): Promise<ValidationResult> => {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Mock validation result
+  return {
+    isValid: Math.random() > 0.3, // 70% chance of being valid
+    errors: Math.random() > 0.3 ? [] : [
+      {
+        rowId: uuidv4(),
+        columnName: 'email',
+        message: 'Invalid email format',
+        severity: 'error'
+      },
+      {
+        rowId: uuidv4(),
+        columnName: 'customer_id',
+        message: 'ID format does not match expected pattern',
+        severity: 'warning'
       }
-      storage!.modifiedRows.set(row.__id, { ...row });
-    });
-    
-    storage.lastSaved = new Date();
-    
-    toast({
-      title: "Changes saved to temporary storage",
-      description: `${storage.repairedCount} of ${storage.totalRowCount} rows repaired`,
-    });
-    
-    // If all rows are repaired, prompt to commit
-    if (storage.repairedCount >= storage.totalRowCount) {
-      toast({
-        title: "All rows repaired",
-        description: "You can now commit all changes to the ADLS delta table",
-        variant: "default",
-      });
-    }
-    
-    return true;
-  }
+    ]
+  };
+};
 
-  // Get temporary storage info for a dataset
-  getTempStorage(datasetId: string): TempStorage | undefined {
-    return this.tempStorage.get(datasetId);
-  }
-
-  // Commit all temporary changes to ADLS
-  async commitChangesToADLS(connectionId: string, datasetId: string): Promise<boolean> {
-    const connection = this.connections.find(c => c.id === connectionId);
-    if (!connection || !connection.isConnected) {
-      throw new Error('Not connected to ADLS');
-    }
-
-    const storage = this.tempStorage.get(datasetId);
-    if (!storage) {
-      throw new Error('No temporary changes to commit');
-    }
-
-    // Check if all records are repaired
-    if (storage.repairedCount < storage.totalRowCount) {
-      throw new Error(`Cannot commit changes: only ${storage.repairedCount} of ${storage.totalRowCount} rows have been repaired`);
-    }
-
-    // Simulate API call with longer delay for commit
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Simulate success (always succeed when all rows are repaired)
-    toast({
-      title: "Changes committed successfully",
-      description: `Updated ${storage.repairedCount} rows in ADLS delta table`,
-      variant: "default",
-    });
-    
-    // Clear temporary storage after successful commit
-    this.tempStorage.delete(datasetId);
-    
-    return true;
-  }
-
-  // Legacy save method - now simulate failure with specific error
-  async saveChanges(connectionId: string, datasetId: string, changes: DataRow[]): Promise<boolean> {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Always throw an error to force using the new temp storage approach
-    throw new Error('Failed to save changes. Azure service responded with: Insufficient permissions');
-  }
-
-  // Disconnect from ADLS
-  async disconnect(connectionId: string): Promise<boolean> {
-    const connectionIndex = this.connections.findIndex(c => c.id === connectionId);
-    
-    if (connectionIndex === -1) {
-      throw new Error('Connection not found');
-    }
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    this.connections[connectionIndex].isConnected = false;
-    return true;
-  }
-
-  // Add a comment to a dataset
-  async addComment(datasetId: string, text: string, rowId?: string, columnName?: string): Promise<Comment> {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Create the comment object
-    const newComment: Comment = {
-      id: `comment_${Date.now()}`,
-      text,
-      createdAt: new Date(),
-      createdBy: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).username : 'Anonymous',
-      rowId,
-      columnName,
-      resolved: false
-    };
-    
-    // Get existing comments or create a new array
-    const existingComments = this.comments.get(datasetId) || [];
-    
-    // Add the new comment
-    this.comments.set(datasetId, [...existingComments, newComment]);
-    
-    return newComment;
-  }
-
-  // Get all comments for a dataset
-  async getComments(datasetId: string): Promise<Comment[]> {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Return the comments or an empty array if none exist
-    return this.comments.get(datasetId) || [];
-  }
-
-  // Resolve a comment
-  async resolveComment(datasetId: string, commentId: string): Promise<Comment> {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Get existing comments
-    const existingComments = this.comments.get(datasetId) || [];
-    
-    // Find the comment to resolve
-    const commentIndex = existingComments.findIndex(c => c.id === commentId);
-    
-    if (commentIndex === -1) {
-      throw new Error('Comment not found');
-    }
-    
-    // Update the comment
-    const updatedComment: Comment = {
-      ...existingComments[commentIndex],
-      resolved: true,
-      resolvedAt: new Date(),
-      resolvedBy: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).username : 'Anonymous'
-    };
-    
-    // Update the comments array
-    existingComments[commentIndex] = updatedComment;
-    this.comments.set(datasetId, existingComments);
-    
-    return updatedComment;
-  }
-
-  // Update a column's validation rules
-  async updateColumn(connectionId: string, datasetId: string, updatedColumn: DatasetColumn): Promise<Dataset> {
-    const connection = this.connections.find(c => c.id === connectionId);
-    if (!connection || !connection.isConnected) {
-      throw new Error('Not connected to ADLS');
-    }
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Get available datasets
-    const datasets = await this.listDatasets(connectionId);
-    
-    // Find the dataset to update
-    const datasetIndex = datasets.findIndex(d => d.id === datasetId);
-    
-    if (datasetIndex === -1) {
-      throw new Error('Dataset not found');
-    }
-    
-    // Find the column to update
-    const columnIndex = datasets[datasetIndex].columns.findIndex(c => c.name === updatedColumn.name);
-    
-    if (columnIndex === -1) {
-      throw new Error('Column not found');
-    }
-    
-    // Update the column
-    datasets[datasetIndex].columns[columnIndex] = updatedColumn;
-    
-    return datasets[datasetIndex];
-  }
-}
-
-export const adlsService = new ADLSService();
+export const repairDataset = async (datasetId: string): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  // In a real implementation, this would trigger a repair job
+  return true;
+};
