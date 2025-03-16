@@ -95,12 +95,14 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                           <FileType className="h-5 w-5 text-green-500" />
                         )}
                       </TableCell>
-                      <TableCell className="font-medium">{dataset.name}</TableCell>
+                      <TableCell className="font-medium max-w-[180px] truncate">
+                        {dataset.name}
+                      </TableCell>
                       <TableCell>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="font-mono text-xs truncate max-w-xs cursor-help">
+                              <div className="font-mono text-xs truncate max-w-[180px] cursor-help">
                                 {dataset.path}
                               </div>
                             </TooltipTrigger>
