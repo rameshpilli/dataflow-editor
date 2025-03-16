@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -76,25 +75,45 @@ const ADLSManager: React.FC = () => {
   };
 
   const handleSaveChanges = async () => {
-    const success = await saveChanges();
-    if (success) {
+    try {
+      const success = await saveChanges();
+      if (success) {
+        toast({
+          title: "Changes saved",
+          description: `Successfully saved changes to temporary storage`,
+        });
+      }
+      return success;
+    } catch (err) {
+      console.error("Error saving changes:", err);
       toast({
-        title: "Changes saved",
-        description: `Successfully saved changes to temporary storage`,
+        variant: "destructive",
+        title: "Error saving changes",
+        description: err instanceof Error ? err.message : "Unknown error occurred",
       });
+      return false;
     }
-    return success;
   };
 
   const handleCommitChanges = async () => {
-    const success = await commitChanges();
-    if (success) {
+    try {
+      const success = await commitChanges();
+      if (success) {
+        toast({
+          title: "Changes committed",
+          description: `Successfully committed all changes to ADLS delta table`,
+        });
+      }
+      return success;
+    } catch (err) {
+      console.error("Error committing changes:", err);
       toast({
-        title: "Changes committed",
-        description: `Successfully committed all changes to ADLS delta table`,
+        variant: "destructive",
+        title: "Error committing changes",
+        description: err instanceof Error ? err.message : "Unknown error occurred",
       });
+      return false;
     }
-    return success;
   };
 
   return (

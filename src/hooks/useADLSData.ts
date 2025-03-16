@@ -282,6 +282,11 @@ export function useADLSData() {
         setSelectedDataset(updatedSelectedDataset);
       }
       
+      toast({
+        title: "Changes saved",
+        description: `Updated ${modifiedRowsArray.length} rows in temporary storage (${updatedStorage?.repairedCount || 0}/${selectedDataset.rowCount || 0} rows total)`,
+      });
+      
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save changes';
