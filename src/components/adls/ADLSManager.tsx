@@ -173,66 +173,58 @@ const ADLSManager: React.FC = () => {
         <div className="space-y-6 bg-white dark:bg-gray-800/90 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-scale-in">
           {filteredDatasets.length > 0 ? (
             <>
-              <div className="flex justify-between items-center mb-4">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg px-4 py-3 shadow-sm border border-blue-100 dark:border-blue-800/50 transition-all duration-200 hover:shadow-md">
-                  <div className="flex items-center">
-                    <DatabaseIcon className="h-5 w-5 mr-3 text-blue-600 dark:text-blue-400" />
-                    <div>
-                      <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                        Connected to: {connection.name}
-                      </h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {connection.credentials.useManagedIdentity 
-                          ? 'Using Azure Managed Identity' 
-                          : connection.credentials.connectionString 
-                            ? 'Using Connection String' 
-                            : 'Using Account Key'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
               <DatasetList 
                 datasets={filteredDatasets}
                 onSelectDataset={handleSelectDataset}
                 isLoading={isLoading}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-                disconnectButton={
-                  <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors btn-feedback"
-                        aria-label="Disconnect from ADLS"
-                      >
-                        <LogOut className="mr-2 h-4 w-4 text-red-500" />
-                        Disconnect
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Disconnect from ADLS</DialogTitle>
-                        <DialogDescription>
-                          Are you sure you want to disconnect? Any unsaved changes will be lost.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
-                          Cancel
-                        </Button>
+                connectionInfo={
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                      Connected to: {connection.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {connection.credentials.useManagedIdentity 
+                        ? 'Using Azure Managed Identity' 
+                        : connection.credentials.connectionString 
+                          ? 'Using Connection String' 
+                          : 'Using Account Key'}
+                    </p>
+                    <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
+                      <DialogTrigger asChild>
                         <Button 
-                          variant="destructive" 
-                          onClick={handleDisconnect}
-                          className="btn-feedback"
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors btn-feedback"
+                          aria-label="Disconnect from ADLS"
                         >
+                          <LogOut className="mr-2 h-4 w-4 text-red-500" />
                           Disconnect
                         </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Disconnect from ADLS</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to disconnect? Any unsaved changes will be lost.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
+                            Cancel
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleDisconnect}
+                            className="btn-feedback"
+                          >
+                            Disconnect
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 }
               />
             </>

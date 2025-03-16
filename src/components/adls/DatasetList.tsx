@@ -16,7 +16,7 @@ interface DatasetListProps {
   isLoading: boolean;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  disconnectButton?: React.ReactNode;
+  connectionInfo?: React.ReactNode;
 }
 
 const DatasetList: React.FC<DatasetListProps> = ({ 
@@ -25,7 +25,7 @@ const DatasetList: React.FC<DatasetListProps> = ({
   isLoading, 
   searchQuery, 
   onSearchChange,
-  disconnectButton
+  connectionInfo
 }) => {
   if (isLoading) {
     return (
@@ -59,8 +59,12 @@ const DatasetList: React.FC<DatasetListProps> = ({
             Select a dataset to view and edit its data
           </CardDescription>
         </div>
-        <div className="flex items-center gap-3">
-          {disconnectButton}
+        <div className="flex items-center gap-5">
+          {connectionInfo && (
+            <div className="mr-2">
+              {connectionInfo}
+            </div>
+          )}
           <div className="relative w-60">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
