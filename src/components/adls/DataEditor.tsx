@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -120,6 +119,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [editMode, setEditMode] = useState(true);
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -322,6 +322,16 @@ const DataEditor: React.FC<DataEditorProps> = ({
     }
   };
 
+  const handleToggleEditMode = () => {
+    setEditMode(prev => !prev);
+    toast({
+      title: editMode ? "Edit mode disabled" : "Edit mode enabled",
+      description: editMode 
+        ? "Cells are now read-only" 
+        : "You can now edit cells by clicking on them",
+    });
+  };
+
   const handleCellClick = (rowId: string, columnName: string) => {
     setSelectedCellId(`${rowId}-${columnName}`);
   };
@@ -380,6 +390,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
             onToggleFullscreen={handleToggleFullscreen}
             isFullscreen={isFullscreen}
             disableFocus={selectedRows.size === 0}
+            editMode={editMode}
+            onToggleEditMode={handleToggleEditMode}
           />
         </div>
 
@@ -461,12 +473,18 @@ const DataEditor: React.FC<DataEditorProps> = ({
                         )}
                         onClick={() => handleCellClick(row.__id, column.name)}
                       >
-                        <Input
-                          type="text"
-                          value={row[column.name] || ''}
-                          className="w-full h-8 rounded-none border-0 shadow-none focus:ring-0 p-0"
-                          onChange={(e) => onCellUpdate(row.__id, column.name, e.target.value)}
-                        />
+                        {editMode ? (
+                          <Input
+                            type="text"
+                            value={row[column.name] || ''}
+                            className="w-full h-8 rounded-none border-0 shadow-none focus:ring-0 p-0"
+                            onChange={(e) => onCellUpdate(row.__id, column.name, e.target.value)}
+                          />
+                        ) : (
+                          <div className="w-full h-8 p-1 overflow-hidden text-ellipsis">
+                            {row[column.name] || ''}
+                          </div>
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
