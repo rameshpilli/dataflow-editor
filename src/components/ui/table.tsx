@@ -128,8 +128,10 @@ const TableHead = React.forwardRef<
   React.ThHTMLAttributes<HTMLTableCellElement> & {
     minWidth?: number;
     width?: number;
+    isSorted?: boolean;
+    sortDirection?: 'asc' | 'desc';
   }
->(({ className, minWidth, width, ...props }, ref) => (
+>(({ className, minWidth, width, isSorted, sortDirection, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
@@ -137,6 +139,7 @@ const TableHead = React.forwardRef<
       "whitespace-nowrap bg-gray-200/95 dark:bg-gray-700/95 border-r last:border-r-0 backdrop-blur-sm", 
       "group hover:bg-gray-300/95 dark:hover:bg-gray-600/95",
       "first:rounded-tl-sm last:rounded-tr-sm",
+      isSorted && "bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700 shadow-[inset_0_-2px_0_0_rgba(59,130,246,0.5)]",
       "table-header-cell",
       className
     )}
@@ -148,6 +151,7 @@ const TableHead = React.forwardRef<
       overflow: "hidden"
     }}
     role="columnheader"
+    aria-sort={sortDirection ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
     {...props}
   />
 ))

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -37,7 +38,10 @@ import {
   Expand,
   ListFilter,
   ShieldCheck,
-  PenLine
+  PenLine,
+  Download,
+  FileText,
+  SearchIcon
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -74,6 +78,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import TableColumnManager from './TableColumnManager';
 import ColumnMenu from './ColumnMenu';
 import BulkEditDialog from './BulkEditDialog';
@@ -105,6 +110,118 @@ interface DataEditorProps {
 
 const STORAGE_KEY_PREFIX = 'adls-editor-';
 
+// Helper function to safely store in localStorage
+const safeLocalStorageSet = (key: string, value: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn(`Error saving to localStorage for key ${key}:`, error);
+  }
+};
+
+// Helper function to safely get from localStorage
+const safeLocalStorageGet = <T,>(key: string, defaultValue: T): T => {
+  if (typeof window === 'undefined') return defaultValue;
+  
+  try {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue === null) return defaultValue;
+    return JSON.parse(storedValue);
+  } catch (error) {
+    console.warn(`Error parsing localStorage for key ${key}:`, error);
+    return defaultValue;
+  }
+};
+
+// Function to export data as CSV
+const exportToCSV = (data: DataRow[], columns: DatasetColumn[], filename: string) => {
+  if (!data || !data.length) {
+    toast({
+      title: "Export failed",
+      description: "No data available to export",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  const visibleColumns = columns.map(col => col.name);
+  
+  // Create CSV header
+  const header = visibleColumns.join(',');
+  
+  // Create CSV rows
+  const csvRows = data.map(row => {
+    return visibleColumns.map(colName => {
+      const value = row[colName];
+      // Handle null, undefined, and escape commas and quotes
+      if (value === null || value === undefined) return '';
+      const valueStr = String(value);
+      return valueStr.includes(',') || valueStr.includes('"') 
+        ? `"${valueStr.replace(/"/g, '""')}"` 
+        : valueStr;
+    }).join(',');
+  });
+  
+  // Combine header and rows
+  const csvContent = [header, ...csvRows].join('\n');
+  
+  // Create a blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  toast({
+    title: "Export successful",
+    description: `Dataset exported as ${filename}.csv`,
+  });
+};
+
+// Function to export data as JSON
+const exportToJSON = (data: DataRow[], columns: DatasetColumn[], filename: string) => {
+  if (!data || !data.length) {
+    toast({
+      title: "Export failed",
+      description: "No data available to export",
+      variant: "destructive"
+    });
+    return;
+  }
+  
+  const visibleColumns = columns.map(col => col.name);
+  
+  // Filter data to only include visible columns
+  const filteredData = data.map(row => {
+    const filteredRow: Record<string, any> = {};
+    visibleColumns.forEach(colName => {
+      filteredRow[colName] = row[colName];
+    });
+    return filteredRow;
+  });
+  
+  // Create a blob and download
+  const jsonContent = JSON.stringify(filteredData, null, 2);
+  const blob = new Blob([jsonContent], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.json`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  toast({
+    title: "Export successful",
+    description: `Dataset exported as ${filename}.json`,
+  });
+};
+
 const DataEditor: React.FC<DataEditorProps> = ({ 
   dataset, 
   dataPreview, 
@@ -120,38 +237,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
   onLoadData,
   onGoBack
 }) => {
-  const getInitialState = <T,>(key: string, defaultValue: T): T => {
-    if (typeof window === 'undefined') return defaultValue;
-    
-    try {
-      const storedValue = localStorage.getItem(`${STORAGE_KEY_PREFIX}${dataset.id}-${key}`);
-      if (storedValue === null) return defaultValue;
-      return JSON.parse(storedValue);
-    } catch (error) {
-      console.warn(`Error parsing localStorage for key ${key}:`, error);
-      return defaultValue;
-    }
-  };
-
-  const [page, setPage] = useState(() => getInitialState('page', 1));
-  const [pageSize, setPageSize] = useState(() => getInitialState('pageSize', 10));
+  const [page, setPage] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, 1));
+  const [pageSize, setPageSize] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, 10));
   const [sortColumn, setSortColumn] = useState<string | undefined>(() => 
-    getInitialState('sortColumn', undefined)
+    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, undefined)
   );
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | undefined>(() => 
-    getInitialState('sortDirection', undefined)
+    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, undefined)
   );
   const [columnWidths, setColumnWidths] = useState<{ [columnName: string]: number }>(() =>
-    getInitialState('columnWidths', {})
+    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, {})
   );
-  const [zoomLevel, setZoomLevel] = useState(() => getInitialState('zoomLevel', 100));
+  const [zoomLevel, setZoomLevel] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, 100));
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => 
-    getInitialState('visibleColumns', dataset.columns.map(col => col.name))
+    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, dataset.columns.map(col => col.name))
   );
   const [isColumnResizing, setIsColumnResizing] = useState(false);
   const [filters, setFilters] = useState<FilterOptions[]>(() => 
-    getInitialState('filters', [])
+    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, [])
   );
   const [showFilters, setShowFilters] = useState(false);
   const [filterColumn, setFilterColumn] = useState<string | null>(null);
@@ -164,32 +268,31 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [bulkEditValue, setBulkEditValue] = useState<string>('');
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [frozenColumns, setFrozenColumns] = useState<string[]>(() => 
-    getInitialState('frozenColumns', [])
+    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, [])
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [editMode, setEditMode] = useState(() => getInitialState('editMode', false));
+  const [editMode, setEditMode] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, false));
   const [repairedCount, setRepairedCount] = useState(0);
   const [showBackConfirmation, setShowBackConfirmation] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
+  const [columnFilters, setColumnFilters] = useState<{[key: string]: {value: string, active: boolean}}>({});
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (dataset.id) {
-      try {
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, JSON.stringify(page));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, JSON.stringify(pageSize));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, JSON.stringify(sortColumn));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, JSON.stringify(sortDirection));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, JSON.stringify(columnWidths));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, JSON.stringify(zoomLevel));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, JSON.stringify(visibleColumns));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, JSON.stringify(filters));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, JSON.stringify(frozenColumns));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, JSON.stringify(editMode));
-      } catch (error) {
-        console.warn("Error saving to localStorage:", error);
-      }
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, page);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, pageSize);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, sortColumn);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, sortDirection);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, columnWidths);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, zoomLevel);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, visibleColumns);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, filters);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, frozenColumns);
+      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, editMode);
     }
   }, [
     dataset.id, 
@@ -249,8 +352,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   const handleSort = (columnName: string) => {
     if (sortColumn === columnName) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : undefined);
-      setSortColumn(undefined);
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(undefined);
+        setSortDirection(undefined);
+      }
     } else {
       setSortColumn(columnName);
       setSortDirection('asc');
@@ -259,7 +366,9 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   const getSortIndicator = (columnName: string) => {
     if (sortColumn === columnName) {
-      return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 inline-block ml-1" /> : <ChevronDown className="h-4 w-4 inline-block ml-1" />;
+      return sortDirection === 'asc' 
+        ? <ChevronUp className="h-4 w-4 inline-block ml-1 text-blue-600 dark:text-blue-400" /> 
+        : <ChevronDown className="h-4 w-4 inline-block ml-1 text-blue-600 dark:text-blue-400" />;
     }
     return null;
   };
@@ -333,6 +442,35 @@ const DataEditor: React.FC<DataEditorProps> = ({
     setFilterColumn(null);
     setFilterValue('');
     setFilterOperation('equals');
+    setPage(1);
+    setColumnFilters({});
+  };
+
+  const handleColumnFilter = (columnName: string, value: string) => {
+    const newColumnFilters = { ...columnFilters };
+    
+    if (value === '') {
+      // Remove filter if value is empty
+      delete newColumnFilters[columnName];
+    } else {
+      newColumnFilters[columnName] = { 
+        value, 
+        active: true 
+      };
+    }
+    
+    setColumnFilters(newColumnFilters);
+    
+    // Apply the filters to the main filter state
+    const newFilters = Object.entries(newColumnFilters)
+      .filter(([_, filter]) => filter.active)
+      .map(([column, filter]) => ({
+        column,
+        operation: 'contains' as FilterOptions['operation'],
+        value: filter.value
+      }));
+    
+    setFilters(newFilters);
     setPage(1);
   };
 
@@ -437,6 +575,24 @@ const DataEditor: React.FC<DataEditorProps> = ({
     setShowBackConfirmation(false);
   };
 
+  const handleExport = () => {
+    setShowExportDialog(true);
+  };
+
+  const handleExportData = () => {
+    if (!dataPreview || !dataset) return;
+    
+    const filename = `${dataset.name}-export-${new Date().toISOString().split('T')[0]}`;
+    
+    if (exportFormat === 'csv') {
+      exportToCSV(dataPreview.rows, dataset.columns.filter(col => visibleColumns.includes(col.name)), filename);
+    } else {
+      exportToJSON(dataPreview.rows, dataset.columns.filter(col => visibleColumns.includes(col.name)), filename);
+    }
+    
+    setShowExportDialog(false);
+  };
+
   return (
     <Card className={cn("h-full flex flex-col", isFullscreen && "fixed inset-0 z-50")} ref={containerRef}>
       <CardHeader className="pb-2">
@@ -501,9 +657,14 @@ const DataEditor: React.FC<DataEditorProps> = ({
               <Filter className="mr-2 h-4 w-4" />
               Filters
             </Button>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Export
+            </Button>
             {filters.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearFilters}>
                 Clear Filters
+                <Badge variant="outline" className="ml-2 bg-blue-50 dark:bg-blue-900/20">{filters.length}</Badge>
               </Button>
             )}
           </div>
@@ -548,32 +709,66 @@ const DataEditor: React.FC<DataEditorProps> = ({
                         index === 0 && !frozenColumns.includes(column.name) && "pl-4"
                       )}
                     >
-                      <button 
-                        onClick={() => handleSort(column.name)} 
-                        className="flex items-center whitespace-nowrap"
-                        style={{ width: '100%' }}
-                      >
-                        {column.name}
-                        {getSortIndicator(column.name)}
-                      </button>
-                      <ColumnMenu 
-                        column={column} 
-                        onSort={handleColumnMenuSort}
-                        onEditAll={() => handleOpenBulkEditDialog(column.name)}
-                        onEditSelected={selectedRows.size > 0 ? () => handleOpenBulkEditDialog(column.name) : undefined}
-                        onSetNull={() => {/* Implementation */}}
-                        onSetNullSelected={selectedRows.size > 0 ? () => {/* Implementation */} : undefined}
-                        onHide={() => toggleColumnVisibility(column.name, false)}
-                        hasSelectedRows={selectedRows.size > 0}
-                      >
-                        <Button variant="ghost" size="sm" className="p-0 h-6 w-6">
-                          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3.5 5.5C3.5 5.22386 3.72386 5 4 5H11C11.2761 5 11.5 5.22386 11.5 5.5C11.5 5.77614 11.2761 6 11 6H4C3.72386 6 3.5 5.77614 3.5 5.5Z" fill="currentColor" />
-                            <path d="M3.5 7.5C3.5 7.22386 3.72386 7 4 7H11C11.2761 7 11.5 7.22386 11.5 7.5C11.5 7.77614 11.2761 8 11 8H4C3.72386 8 3.5 7.77614 3.5 7.5Z" fill="currentColor" />
-                            <path d="M3.5 9.5C3.5 9.22386 3.72386 9 4 9H11C11.2761 9 11.5 9.22386 11.5 9.5C11.5 9.77614 11.2761 10 11 10H4C3.72386 10 3.5 9.77614 3.5 9.5Z" fill="currentColor" />
-                          </svg>
-                        </Button>
-                      </ColumnMenu>
+                      <div className="flex flex-col space-y-1 w-full">
+                        <div className="flex items-center justify-between w-full">
+                          <button 
+                            onClick={() => handleSort(column.name)} 
+                            className="flex items-center whitespace-nowrap font-medium"
+                            title={`Sort by ${column.name}`}
+                          >
+                            <span className={cn(
+                              "transition-colors hover:text-blue-600 dark:hover:text-blue-400",
+                              sortColumn === column.name ? "text-blue-600 dark:text-blue-400" : ""
+                            )}>
+                              {column.name}
+                            </span>
+                            <div className="w-6 h-4 flex items-center justify-center">
+                              {getSortIndicator(column.name)}
+                            </div>
+                          </button>
+                          <ColumnMenu 
+                            column={column} 
+                            onSort={handleColumnMenuSort}
+                            onEditAll={() => handleOpenBulkEditDialog(column.name)}
+                            onEditSelected={selectedRows.size > 0 ? () => handleOpenBulkEditDialog(column.name) : undefined}
+                            onSetNull={() => {/* Implementation */}}
+                            onSetNullSelected={selectedRows.size > 0 ? () => {/* Implementation */} : undefined}
+                            onHide={() => toggleColumnVisibility(column.name, false)}
+                            hasSelectedRows={selectedRows.size > 0}
+                          >
+                            <Button variant="ghost" size="sm" className="p-0 h-6 w-6 opacity-60 hover:opacity-100 transition-opacity">
+                              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3.5 5.5C3.5 5.22386 3.72386 5 4 5H11C11.2761 5 11.5 5.22386 11.5 5.5C11.5 5.77614 11.2761 6 11 6H4C3.72386 6 3.5 5.77614 3.5 5.5Z" fill="currentColor" />
+                                <path d="M3.5 7.5C3.5 7.22386 3.72386 7 4 7H11C11.2761 7 11.5 7.22386 11.5 7.5C11.5 7.77614 11.2761 8 11 8H4C3.72386 8 3.5 7.77614 3.5 7.5Z" fill="currentColor" />
+                                <path d="M3.5 9.5C3.5 9.22386 3.72386 9 4 9H11C11.2761 9 11.5 9.22386 11.5 9.5C11.5 9.77614 11.2761 10 11 10H4C3.72386 10 3.5 9.77614 3.5 9.5Z" fill="currentColor" />
+                              </svg>
+                            </Button>
+                          </ColumnMenu>
+                        </div>
+                        
+                        {/* Column filter input */}
+                        <div className="relative w-full flex items-center">
+                          <SearchIcon className="absolute left-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                          <Input
+                            placeholder={`Filter...`}
+                            value={columnFilters[column.name]?.value || ''}
+                            onChange={(e) => handleColumnFilter(column.name, e.target.value)}
+                            className="h-6 text-xs pl-5 py-1 border-gray-200 focus:border-blue-300 dark:border-gray-700 dark:focus:border-blue-600"
+                          />
+                          {columnFilters[column.name]?.value && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleColumnFilter(column.name, '')}
+                              className="absolute right-0 top-0 h-6 w-6 p-0"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" />
+                              </svg>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>
@@ -783,6 +978,58 @@ const DataEditor: React.FC<DataEditorProps> = ({
           <DialogFooter>
             <Button type="submit" onClick={handleApplyFilter} disabled={!filterColumn || isApplyingFilters}>
               Apply Filter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Data</DialogTitle>
+            <DialogDescription>
+              Choose an export format for your dataset.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="format" className="text-right">
+                Format
+              </Label>
+              <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'csv' | 'json')}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="csv">CSV</SelectItem>
+                  <SelectItem value="json">JSON</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="flex items-start gap-3">
+                <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                <div>
+                  <p className="font-medium mb-1">Export Options</p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Only visible columns will be exported</li>
+                    <li>• Current sorting will be applied</li>
+                    <li>• Current page data only ({dataPreview?.rows.length || 0} rows)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleExportData} 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export as {exportFormat.toUpperCase()}
             </Button>
           </DialogFooter>
         </DialogContent>
