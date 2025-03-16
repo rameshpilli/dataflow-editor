@@ -112,20 +112,6 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
           </TooltipTrigger>
           <TooltipContent>Fit to Screen</TooltipContent>
         </Tooltip>
-        
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onFocusSelection}
-              disabled={disableFocus}
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Focus on Selection</TooltipContent>
-        </Tooltip>
 
         {onToggleFullscreen && (
           <Tooltip>
