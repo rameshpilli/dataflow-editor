@@ -340,8 +340,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
     setPageSize(newSize);
     setPage(1);
     
-    if (isFullscreen && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
+    if (isFullscreen) {
+      setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }, 10);
     }
     
     toast({
@@ -867,10 +871,14 @@ const DataEditor: React.FC<DataEditorProps> = ({
               <SelectTrigger className="w-[80px] h-8">
                 <SelectValue placeholder={pageSize} />
               </SelectTrigger>
-              <SelectContent className={cn(
-                "z-[9999]", 
-                isFullscreen && "absolute"
-              )}>
+              <SelectContent 
+                className={cn(
+                  "z-[99999]",
+                  isFullscreen && "fixed"
+                )}
+                align="start"
+                side="top"
+              >
                 <SelectItem value="10">10</SelectItem>
                 <SelectItem value="25">25</SelectItem>
                 <SelectItem value="50">50</SelectItem>
@@ -978,15 +986,17 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Pagination>
           )}
           
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {dataPreview ? (
-              <>
-                Showing {((page - 1) * pageSize) + 1}-
-                {Math.min(page * pageSize, dataPreview.totalRows)} of {dataPreview.totalRows} rows
-              </>
-            ) : (
-              'No data'
-            )}
+          <div className="flex items-center">
+            <Badge variant="outline" className="bg-white/80 dark:bg-gray-800/80 py-1.5 px-3 shadow-sm border-blue-100 dark:border-blue-900/30 text-blue-800 dark:text-blue-200 font-medium">
+              {dataPreview ? (
+                <>
+                  {((page - 1) * pageSize) + 1}-
+                  {Math.min(page * pageSize, dataPreview.totalRows)} of {dataPreview.totalRows.toLocaleString()} rows
+                </>
+              ) : (
+                'No data'
+              )}
+            </Badge>
           </div>
         </div>
       </CardFooter>
@@ -995,3 +1005,4 @@ const DataEditor: React.FC<DataEditorProps> = ({
 };
 
 export default DataEditor;
+
