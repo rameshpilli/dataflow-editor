@@ -583,7 +583,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
             disabled={changes.length === 0 || isSaving}
           >
             <Undo2 className="mr-2 h-4 w-4" />
-            Discard Changes
+            Discard
           </Button>
           <Button
             variant="default"
@@ -592,7 +592,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
             disabled={changes.length === 0 || isSaving}
           >
             <Save className="mr-2 h-4 w-4" />
-            Save Changes
+            Save
           </Button>
           {canCommit && (
             <Button
