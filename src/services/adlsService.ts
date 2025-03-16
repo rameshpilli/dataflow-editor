@@ -208,9 +208,10 @@ const getDataset = async (id: string): Promise<Dataset | null> => {
 };
 
 const getDatasetPreview = async (
+  connectionId: string,
   datasetId: string,
-  page: number,
-  pageSize: number,
+  page: number = 1,
+  pageSize: number = 10,
   sortColumn?: string,
   sortDirection?: 'asc' | 'desc',
   filters?: FilterOptions[]

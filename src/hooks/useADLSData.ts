@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { adlsService } from '@/services/adlsService';
 import { 
@@ -150,6 +149,8 @@ export function useADLSData() {
         setCanCommit(false);
       }
       
+      // Fix: We were passing 7 arguments, but getDatasetPreview expects 3-6 arguments
+      // The first argument should be the connection ID, not the connection object itself
       const preview = await adlsService.getDatasetPreview(
         connection.id,
         datasetId,
@@ -164,7 +165,7 @@ export function useADLSData() {
       
       // If there's temp storage, update modifiedRows to match
       if (storageInfo) {
-        // Fixed: Cast the keys to strings explicitly
+        // Cast the keys to strings explicitly
         const modifiedRowIds = new Set<string>(
           Array.from(storageInfo.modifiedRows.keys()).map(key => String(key))
         );
