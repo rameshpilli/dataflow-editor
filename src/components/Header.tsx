@@ -15,6 +15,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+// Version constant
+const APP_VERSION = "v1.2.3";
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -105,22 +109,31 @@ const Header = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center text-xs font-medium text-blue-600 dark:text-blue-300">
-                  {user?.username?.charAt(0).toUpperCase()}
-                </div>
+                <Avatar className="w-6 h-6">
+                  <AvatarFallback className="bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300 text-xs font-medium">
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <span className="hidden md:inline ml-1 mr-1">{user?.username}</span>
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-default flex flex-col items-start">
+                <div className="text-xs text-muted-foreground mt-1 mb-1 pl-6 w-full">
+                  <Badge variant="outline" className="bg-blue-50/50 dark:bg-blue-900/10 border-blue-200/50 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 font-mono">
+                    {APP_VERSION}
+                  </Badge>
+                </div>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
+              <DropdownMenuItem onClick={logout} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
