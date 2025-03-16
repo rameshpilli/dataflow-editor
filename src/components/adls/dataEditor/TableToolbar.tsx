@@ -9,23 +9,29 @@ import {
   Upload, 
   Undo2, 
   SlidersHorizontal, 
-  Save
+  Save,
+  Maximize2
 } from 'lucide-react';
 import { useDataEditor } from '../DataEditorContext';
 import { Toggle } from '@/components/ui/toggle';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TableToolbarProps {
   showColumnManager: boolean;
   setShowColumnManager: (show: boolean) => void;
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 const TableToolbar: React.FC<TableToolbarProps> = ({
   showColumnManager,
   setShowColumnManager,
   showFilters,
-  setShowFilters
+  setShowFilters,
+  isFullscreen,
+  onToggleFullscreen
 }) => {
   const { 
     editMode, 
@@ -74,27 +80,57 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
           Edit Mode
         </Toggle>
         
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 hover:bg-slate-100 dark:hover:bg-slate-700"
-          disabled={changes.length === 0}
-          onClick={handleSaveChanges}
-        >
-          <Save className="h-4 w-4 mr-2" />
-          Save
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700 p-0"
+                disabled={changes.length === 0}
+                onClick={handleSaveChanges}
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Save Changes</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 hover:bg-slate-100 dark:hover:bg-slate-700"
-          disabled={changes.length === 0}
-          onClick={onDiscardChanges}
-        >
-          <Undo2 className="h-4 w-4 mr-2" />
-          Discard
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700 p-0"
+                disabled={changes.length === 0}
+                onClick={onDiscardChanges}
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Discard Changes</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        {onToggleFullscreen && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700 p-0"
+                  onClick={onToggleFullscreen}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Toggle Fullscreen</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
     </div>
   );

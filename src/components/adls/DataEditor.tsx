@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -55,7 +54,6 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
     onGoBack
   } = props;
 
-  // UI state
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showBackConfirmation, setShowBackConfirmation] = useState(false);
@@ -64,22 +62,18 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
   const [bulkEditColumn, setBulkEditColumn] = useState<string | null>(null);
   const [bulkEditValue, setBulkEditValue] = useState<string>('');
   
-  // Mock data for TableColumnManager (this should come from context or props in a real app)
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     dataset.columns.map(col => col.name)
   );
   const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
   
-  // Mock selected rows for BulkEditDialog (this should come from context or props)
   const [selectedRows, setSelectedRows] = useState<DataRow[]>([]);
 
-  // Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
 
-  // Fullscreen handling
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) {
@@ -135,7 +129,6 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
     });
   };
 
-  // TableColumnManager handlers
   const handleVisibilityChange = (columnName: string, isVisible: boolean) => {
     if (isVisible) {
       setVisibleColumns(prev => [...prev, columnName]);
@@ -153,14 +146,11 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
   };
 
   const handleColumnReorder = (sourceIndex: number, destinationIndex: number) => {
-    // Implementation would go here
     console.log('Reordering columns', sourceIndex, destinationIndex);
   };
 
-  // BulkEdit handlers
   const handleBulkEditApply = (columnName: string, value: any, setNull: boolean) => {
     console.log('Applying bulk edit', { columnName, value, setNull });
-    // Implementation would go here
   };
 
   return (
@@ -198,6 +188,8 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
             setShowColumnManager={setShowColumnManager}
             showFilters={showFilters}
             setShowFilters={setShowFilters}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={handleToggleFullscreen}
           />
 
           <ScrollArea 
@@ -225,7 +217,6 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
         </CardFooter>
       </Card>
 
-      {/* Dialogs */}
       <TableColumnManager 
         open={showColumnManager} 
         onOpenChange={() => setShowColumnManager(false)}
