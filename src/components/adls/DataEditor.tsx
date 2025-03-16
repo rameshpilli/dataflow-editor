@@ -577,22 +577,22 @@ const DataEditor: React.FC<DataEditorProps> = ({
       <CardFooter className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Button
-            variant="secondary"
-            size="sm"
+            variant="outline"
+            size="icon"
             onClick={onDiscardChanges}
             disabled={changes.length === 0 || isSaving}
+            title="Discard changes"
           >
-            <Undo2 className="mr-2 h-4 w-4" />
-            Discard
+            <Undo2 className="h-4 w-4" />
           </Button>
           <Button
             variant="default"
-            size="sm"
+            size="icon"
             onClick={onSaveChanges}
             disabled={changes.length === 0 || isSaving}
+            title="Save changes"
           >
-            <Save className="mr-2 h-4 w-4" />
-            Save
+            <Save className="h-4 w-4" />
           </Button>
           {canCommit && (
             <Button
