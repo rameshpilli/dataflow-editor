@@ -42,9 +42,10 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
                   id="edit-mode"
                   checked={editMode}
                   onCheckedChange={onToggleEditMode}
+                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-200 dark:data-[state=unchecked]:bg-gray-700"
                 />
                 <Label htmlFor="edit-mode" className="text-sm cursor-pointer flex items-center">
-                  <PencilLine className={`h-4 w-4 mr-1 ${editMode ? 'text-green-500' : 'text-gray-500'}`} />
+                  <PencilLine className="h-4 w-4 mr-1 text-gray-500" />
                   Edit Mode
                 </Label>
               </div>
