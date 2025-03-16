@@ -98,7 +98,7 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
                 onClick={onToggleFullscreen}
                 className={cn(
                   "h-8 w-8 transition-all duration-300",
-                  isFullscreen && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                  isFullscreen ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : ""
                 )}
               >
                 {isFullscreen ? 

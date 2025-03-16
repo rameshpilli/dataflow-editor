@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -270,6 +269,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (dataset.id) {
@@ -312,6 +312,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) {
         setIsFullscreen(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(err => {
+            console.error(`Error attempting to exit fullscreen: ${err.message}`);
+          });
+        }
       }
     };
 
@@ -388,6 +393,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
           });
         }
       }
+      
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const event = new Event('resize');
+          window.dispatchEvent(event);
+        }
+      }, 100);
       
       return newState;
     });
@@ -600,11 +612,14 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   return (
-    <Card className={cn(
-      "h-full flex flex-col relative",
-      isFullscreen && "fixed inset-0 z-50 rounded-none border-none"
-    )} ref={containerRef}>
-      <CardHeader className={cn("pb-2", isFullscreen && "py-2")}>
+    <Card 
+      className={cn(
+        "h-full flex flex-col relative transition-all duration-300",
+        isFullscreen && "fixed inset-0 z-50 rounded-none border-none"
+      )} 
+      ref={containerRef}
+    >
+      <CardHeader className={cn("pb-2 transition-all duration-200", isFullscreen && "py-2")}>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Button 
@@ -646,10 +661,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
           {dataPreview ? `Displaying ${dataPreview.rows.length} of ${dataPreview.totalRows} rows` : 'Loading data...'}
         </CardDescription>
       </CardHeader>
-      <CardContent className={cn(
-        "overflow-hidden flex-grow pb-4",
-        isFullscreen ? "h-[calc(100vh-128px)]" : "h-[calc(100vh-300px)]"
-      )}>
+      <CardContent 
+        className={cn(
+          "overflow-hidden flex-grow pb-1 transition-all duration-300 ease-in-out",
+          isFullscreen ? "h-[calc(100vh-130px)]" : "h-[calc(100vh-300px)]"
+        )}
+      >
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)}>
@@ -684,10 +701,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
           />
         </div>
 
-        <ScrollArea className={cn(
-          "transition-all duration-300 ease-in-out",
-          isFullscreen ? "h-[calc(100vh-172px)]" : "h-[calc(100vh-340px)]"
-        )}>
+        <ScrollArea 
+          className={cn(
+            "transition-all duration-300 ease-in-out",
+            isFullscreen ? "h-[calc(100vh-190px)]" : "h-[calc(100vh-340px)]"
+          )}
+          ref={scrollAreaRef}
+        >
           <div className="relative">
             <Table 
               fullWidth
@@ -801,10 +821,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
           </div>
         </ScrollArea>
       </CardContent>
-      <CardFooter className={cn(
-        "flex justify-between items-center",
-        isFullscreen && "py-2"
-      )}>
+      <CardFooter 
+        className={cn(
+          "flex justify-between items-center transition-all duration-300",
+          isFullscreen && "py-2"
+        )}
+      >
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
