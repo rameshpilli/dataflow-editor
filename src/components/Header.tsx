@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -125,12 +124,11 @@ const Header = () => {
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-default flex flex-col items-start">
-                <div className="text-xs text-muted-foreground mt-1 mb-1 pl-6 w-full">
-                  <Badge variant="outline" className="bg-blue-50/50 dark:bg-blue-900/10 border-blue-200/50 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 font-mono">
-                    {APP_VERSION}
-                  </Badge>
-                </div>
+              <DropdownMenuItem className="cursor-pointer flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Version</span>
+                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 font-mono px-2 py-0.5">
+                  {APP_VERSION}
+                </Badge>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="cursor-pointer">
