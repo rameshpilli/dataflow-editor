@@ -35,7 +35,8 @@ import {
   Check, 
   MoveHorizontal,
   Expand,
-  ListFilter
+  ListFilter,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -70,6 +71,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import TableColumnManager from './TableColumnManager';
 import ColumnMenu from './ColumnMenu';
 import BulkEditDialog from './BulkEditDialog';
@@ -426,9 +429,27 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Button>
             <CardTitle>{dataset.name}</CardTitle>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              <span className="font-medium">Repaired:</span> {repairedCount} / {dataset.rowCount || 0}
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg px-4 py-2 shadow-sm border border-blue-100 dark:border-blue-800/50">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                <div>
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Data Repair Progress</div>
+                  <div className="flex items-center gap-3">
+                    <Progress 
+                      value={dataset.rowCount ? (repairedCount / dataset.rowCount) * 100 : 0} 
+                      className="h-2 w-24 bg-blue-100 dark:bg-blue-900/50"
+                    />
+                    <div className="flex items-center">
+                      <Badge variant="outline" className="bg-white dark:bg-gray-800 text-xs font-semibold py-0 h-5 border-blue-200 dark:border-blue-800">
+                        <span className="text-indigo-600 dark:text-indigo-400">{repairedCount}</span>
+                        <span className="text-gray-500 dark:text-gray-400">/</span>
+                        <span className="text-gray-600 dark:text-gray-300">{dataset.rowCount || 0}</span>
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             {isFullscreen && (
               <Button variant="ghost" size="sm" onClick={handleToggleFullscreen}>
