@@ -142,7 +142,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
     getInitialState('frozenColumns', [])
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [editMode, setEditMode] = useState(() => getInitialState('editMode', true));
+  const [editMode, setEditMode] = useState(() => getInitialState('editMode', false)); // Edit mode disabled by default
+  const [repairedCount, setRepairedCount] = useState(0);
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +177,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
     frozenColumns,
     editMode
   ]);
+
+  // Update repaired count from changes
+  useEffect(() => {
+    setRepairedCount(modifiedRows.size);
+  }, [modifiedRows]);
 
   useEffect(() => {
     if (dataset.id) {
@@ -400,12 +406,17 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Button>
             <CardTitle>{dataset.name}</CardTitle>
           </div>
-          {isFullscreen && (
-            <Button variant="ghost" size="sm" onClick={handleToggleFullscreen}>
-              <Expand className="h-4 w-4 mr-2" />
-              Exit Fullscreen
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="font-medium">Repaired:</span> {repairedCount} / {dataset.rowCount || 0}
+            </div>
+            {isFullscreen && (
+              <Button variant="ghost" size="sm" onClick={handleToggleFullscreen}>
+                <Expand className="h-4 w-4 mr-2" />
+                Exit Fullscreen
+              </Button>
+            )}
+          </div>
         </div>
         <CardDescription>
           {dataPreview ? `Displaying ${dataPreview.rows.length} of ${dataPreview.totalRows} rows` : 'Loading data...'}

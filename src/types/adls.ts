@@ -33,6 +33,7 @@ export interface Dataset {
   format: 'delta' | 'parquet';
   columns: DatasetColumn[];
   rowCount?: number;
+  repairedCount?: number;
   lastModified?: Date;
 }
 

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Expand, Pencil } from 'lucide-react';
+import { ZoomIn, ZoomOut, Expand, Pencil, PencilLine } from 'lucide-react';
 import { 
   Select, 
   SelectContent, 
@@ -110,12 +110,15 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center space-x-2 px-2">
-                <Label htmlFor="edit-mode" className="text-sm cursor-pointer">Edit Mode</Label>
                 <Switch
                   id="edit-mode"
                   checked={editMode}
                   onCheckedChange={onToggleEditMode}
                 />
+                <Label htmlFor="edit-mode" className="text-sm cursor-pointer flex items-center">
+                  <PencilLine className={`h-4 w-4 mr-1 ${editMode ? 'text-green-500' : 'text-gray-500'}`} />
+                  Edit Mode
+                </Label>
               </div>
             </TooltipTrigger>
             <TooltipContent>{editMode ? 'Disable Edit Mode' : 'Enable Edit Mode'}</TooltipContent>
