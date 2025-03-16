@@ -334,7 +334,7 @@ class ADLSService {
       toast({
         title: "All rows repaired",
         description: "You can now commit all changes to the ADLS delta table",
-        variant: "success",
+        variant: "default",
       });
     }
     
