@@ -680,7 +680,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
       <CardContent 
         className={cn(
           "overflow-hidden flex-grow pb-1 transition-all duration-300 ease-in-out",
-          isFullscreen ? "h-[calc(100vh-130px)]" : "h-[calc(100vh-300px)]"
+          isFullscreen ? "h-[calc(100vh-190px)]" : "h-[calc(100vh-350px)]"
         )}
         ref={mainContentRef}
       >
@@ -1113,4 +1113,3 @@ const DataEditor: React.FC<DataEditorProps> = ({
 };
 
 export default DataEditor;
-
