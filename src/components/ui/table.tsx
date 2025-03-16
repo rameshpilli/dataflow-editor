@@ -28,7 +28,7 @@ const Table = React.forwardRef<
   ...props 
 }, ref) => (
   <div className={cn(
-    "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200 dark:border-gray-700 transition-shadow duration-200 hover:shadow-md",
+    "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200/80 dark:border-gray-700/80 transition-shadow duration-200 hover:shadow-md",
     fullWidth ? "max-w-none" : "",
   )}>
     <table
@@ -37,10 +37,10 @@ const Table = React.forwardRef<
         "w-full caption-bottom text-sm border-collapse",
         columnResizing ? "table-fixed" : "",
         alternateRowColors ? "even:[&_tr:nth-child(even)]:bg-gray-50 dark:even:[&_tr:nth-child(even)]:bg-gray-800/30" : "",
-        striped ? "[&_tbody_tr:nth-child(odd)]:bg-gray-50 dark:[&_tbody_tr:nth-child(odd)]:bg-gray-900/40" : "",
+        striped ? "[&_tbody_tr:nth-child(odd)]:bg-gray-50/70 dark:[&_tbody_tr:nth-child(odd)]:bg-gray-900/40" : "",
         compact ? "[&_th]:py-2 [&_td]:py-2" : "",
         borderless ? "border-none [&_tr]:border-none [&_th]:border-none [&_td]:border-none" : "[&_th]:border-b [&_td]:border-b [&_tr:last-child_td]:border-b-0",
-        hoverable ? "[&_tbody_tr]:hover:bg-blue-50/80 dark:[&_tbody_tr]:hover:bg-blue-900/30 [&_tbody_tr]:transition-colors duration-150" : "",
+        hoverable ? "[&_tbody_tr]:hover:bg-blue-50/90 dark:[&_tbody_tr]:hover:bg-blue-900/40 [&_tbody_tr]:transition-colors duration-150" : "",
         className
       )}
       style={{ 
@@ -62,7 +62,7 @@ const TableHeader = React.forwardRef<
   <thead 
     ref={ref} 
     className={cn(
-      "[&_tr]:border-b sticky top-0 bg-gray-200/95 dark:bg-gray-800/95 z-10 backdrop-blur-sm shadow-md", 
+      "[&_tr]:border-b sticky top-0 bg-gradient-to-r from-gray-100/95 to-gray-200/95 dark:from-gray-800/95 dark:to-gray-700/95 z-10 backdrop-blur-sm shadow-md", 
       className
     )}
     role="rowgroup"
@@ -136,7 +136,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-10 px-2 text-left align-middle font-semibold text-gray-800 dark:text-gray-200 [&:has([role=checkbox])]:pr-0 transition-colors select-none",
-      "whitespace-nowrap bg-gray-200/95 dark:bg-gray-700/95 border-r last:border-r-0 backdrop-blur-sm", 
+      "whitespace-nowrap bg-gradient-to-r from-gray-100/95 to-gray-200/95 dark:from-gray-800/95 dark:to-gray-700/95 border-r last:border-r-0 backdrop-blur-sm", 
       "group hover:bg-gray-300/95 dark:hover:bg-gray-600/95",
       "first:rounded-tl-sm last:rounded-tr-sm",
       isSorted && "bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700 shadow-[inset_0_-2px_0_0_rgba(59,130,246,0.5)]",
@@ -170,7 +170,7 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       "p-2 align-middle [&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap border-r last:border-r-0 transition-colors", 
+      "whitespace-nowrap border-r last:border-r-0 transition-colors border-gray-100 dark:border-gray-800", 
       isEditing ? "bg-blue-600 dark:bg-blue-700 text-white shadow-inner" : "", 
       isNumeric ? "text-right font-mono text-sm tabular-nums" : "",
       className

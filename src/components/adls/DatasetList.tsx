@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { Database, FileType, ShieldCheck, Search } from 'lucide-react';
+import { Database, FileType, ShieldCheck, Search, ExternalLink } from 'lucide-react';
 import ZoomControls from './ZoomControls';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
@@ -51,41 +51,42 @@ const DatasetList: React.FC<DatasetListProps> = ({
   }
 
   return (
-    <Card className="shadow-lg border border-blue-100 dark:border-blue-900/40 overflow-hidden">
-      <CardHeader className="flex flex-col space-y-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-blue-900/40">
+    <Card className="shadow-lg border border-blue-100 dark:border-blue-900/40 overflow-hidden rounded-xl">
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-blue-900/40 py-5">
         <div className="flex flex-row items-center justify-between w-full">
-          <div>
-            <CardTitle className="text-blue-700 dark:text-blue-300">Available Datasets</CardTitle>
-            <CardDescription>
+          <div className="flex-1">
+            <CardTitle className="text-blue-700 dark:text-blue-300 text-2xl">Available Datasets</CardTitle>
+            <CardDescription className="text-blue-600/70 dark:text-blue-400/70 mt-1">
               Select a dataset to view and edit its data
             </CardDescription>
           </div>
           
           {connectionInfo && (
-            <div>
+            <div className="flex-none">
               {connectionInfo}
             </div>
           )}
         </div>
         
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between w-full mt-4">
           <ZoomControls />
           
-          <div className="relative w-60">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="relative w-80">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500" />
             <Input
               placeholder="Search datasets..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-8 py-1 h-8 text-sm border-gray-200 dark:border-gray-700"
+              className="pl-10 py-2 h-10 text-sm rounded-full border-blue-200/80 bg-white/90 dark:bg-blue-950/30 dark:border-blue-800/50 text-blue-800 dark:text-blue-200 shadow-sm transition-all duration-200 hover:shadow focus:border-blue-400 dark:focus:border-blue-600 focus:ring-2 focus:ring-blue-300/30 dark:focus:ring-blue-700/30"
               id="dataset-search"
             />
             {searchQuery && (
               <button 
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-600 transition-colors"
                 onClick={() => onSearchChange('')}
+                aria-label="Clear search"
               >
-                <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="14" height="14" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" />
                 </svg>
               </button>
@@ -98,14 +99,14 @@ const DatasetList: React.FC<DatasetListProps> = ({
           <Table fullWidth={true} hoverable={true} striped={true} compact={true}>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-blue-700 dark:text-blue-300">Type</TableHead>
-                <TableHead className="w-[180px] text-blue-700 dark:text-blue-300">Name</TableHead>
-                <TableHead className="w-[180px] text-blue-700 dark:text-blue-300">Path</TableHead>
-                <TableHead className="text-blue-700 dark:text-blue-300">Columns</TableHead>
-                <TableHead className="text-blue-700 dark:text-blue-300">Count</TableHead>
-                <TableHead className="text-blue-700 dark:text-blue-300">Repaired</TableHead>
-                <TableHead className="text-blue-700 dark:text-blue-300">Last Modified</TableHead>
-                <TableHead className="text-blue-700 dark:text-blue-300"></TableHead>
+                <TableHead className="text-blue-700 dark:text-blue-300 font-semibold">Type</TableHead>
+                <TableHead className="w-[180px] text-blue-700 dark:text-blue-300 font-semibold">Name</TableHead>
+                <TableHead className="w-[180px] text-blue-700 dark:text-blue-300 font-semibold">Path</TableHead>
+                <TableHead className="text-blue-700 dark:text-blue-300 font-semibold text-center">Columns</TableHead>
+                <TableHead className="text-blue-700 dark:text-blue-300 font-semibold text-center">Count</TableHead>
+                <TableHead className="text-blue-700 dark:text-blue-300 font-semibold">Repaired</TableHead>
+                <TableHead className="text-blue-700 dark:text-blue-300 font-semibold">Last Modified</TableHead>
+                <TableHead className="text-blue-700 dark:text-blue-300 font-semibold"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -122,19 +123,23 @@ const DatasetList: React.FC<DatasetListProps> = ({
                   <TableRow key={dataset.id} className="transition-all duration-150">
                     <TableCell>
                       {dataset.format === 'delta' ? (
-                        <Database className="h-5 w-5 text-blue-500 drop-shadow-sm" />
+                        <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-md inline-flex">
+                          <Database className="h-5 w-5 text-blue-500 drop-shadow-sm" />
+                        </div>
                       ) : (
-                        <FileType className="h-5 w-5 text-green-500 drop-shadow-sm" />
+                        <div className="p-1.5 bg-green-50 dark:bg-green-900/30 rounded-md inline-flex">
+                          <FileType className="h-5 w-5 text-green-500 drop-shadow-sm" />
+                        </div>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium max-w-[180px] truncate">
+                    <TableCell className="font-medium max-w-[180px] truncate text-blue-800 dark:text-blue-200">
                       {dataset.name}
                     </TableCell>
                     <TableCell>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="font-mono text-xs truncate max-w-[180px] cursor-help">
+                            <div className="font-mono text-xs truncate max-w-[180px] cursor-help bg-gray-50 dark:bg-gray-800/40 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">
                               {dataset.path}
                             </div>
                           </TooltipTrigger>
@@ -144,8 +149,16 @@ const DatasetList: React.FC<DatasetListProps> = ({
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell className="font-semibold text-blue-700 dark:text-blue-300">{dataset.columns.length}</TableCell>
-                    <TableCell className="font-mono tabular-nums">{dataset.rowCount?.toLocaleString() || 'Unknown'}</TableCell>
+                    <TableCell className="font-semibold text-blue-700 dark:text-blue-300 text-center">
+                      <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full">
+                        {dataset.columns.length}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-mono tabular-nums text-center">
+                      <span className="px-2.5 py-1 bg-gray-50 dark:bg-gray-800/30 text-gray-700 dark:text-gray-300 rounded-full">
+                        {dataset.rowCount?.toLocaleString() || 'Unknown'}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <ShieldCheck className={`h-4 w-4 mr-1.5 ${repairPercentage === 100 ? 'text-green-500' : 'text-amber-500'}`} />
@@ -166,10 +179,11 @@ const DatasetList: React.FC<DatasetListProps> = ({
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 dark:hover:from-blue-800/40 dark:hover:to-indigo-800/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm"
+                        className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 dark:hover:from-blue-800/40 dark:hover:to-indigo-800/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm hover:shadow transition-all duration-200 group"
                         onClick={() => onSelectDataset(dataset)}
                       >
                         View Data
+                        <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
                       </Button>
                     </TableCell>
                   </TableRow>
