@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Expand, PencilLine } from 'lucide-react';
+import { Expand, PencilLine, ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 
 interface ZoomControlsProps {
   zoomLevel?: number;
@@ -19,6 +20,9 @@ interface ZoomControlsProps {
 }
 
 const ZoomControls: React.FC<ZoomControlsProps> = ({ 
+  zoomLevel = 100,
+  onZoomChange,
+  onFitToScreen,
   onFocusSelection,
   onToggleFullscreen,
   isFullscreen = false,
@@ -48,6 +52,42 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
           </Tooltip>
         )}
         
+        {onZoomChange && (
+          <div className="flex items-center gap-1 px-2 border-l border-gray-200 dark:border-gray-700">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onZoomChange(Math.max(50, zoomLevel - 10))}
+                  className="h-8 w-8"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Zoom Out</TooltipContent>
+            </Tooltip>
+            
+            <div className="w-16 text-xs text-center font-medium">
+              {zoomLevel}%
+            </div>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onZoomChange(Math.min(200, zoomLevel + 10))}
+                  className="h-8 w-8"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Zoom In</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+        
         {onToggleFullscreen && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -55,8 +95,12 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
                 variant="ghost" 
                 size="icon" 
                 onClick={onToggleFullscreen}
+                className="h-8 w-8"
               >
-                <Expand className="h-4 w-4" />
+                {isFullscreen ? 
+                  <Minimize2 className="h-4 w-4" /> : 
+                  <Maximize2 className="h-4 w-4" />
+                }
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</TooltipContent>

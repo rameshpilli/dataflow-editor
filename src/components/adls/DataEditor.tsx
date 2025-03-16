@@ -371,7 +371,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   const handleToggleFullscreen = () => {
-    setIsFullscreen(prev => !prev);
+    setIsFullscreen(prev => {
+      const newState = !prev;
+      
+      if (newState) {
+        if (containerRef.current?.requestFullscreen) {
+          containerRef.current.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable fullscreen: ${err.message}`);
+          });
+        }
+      } else {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(err => {
+            console.error(`Error attempting to exit fullscreen: ${err.message}`);
+          });
+        }
+      }
+      
+      return newState;
+    });
   };
 
   const handleFitToScreen = () => {
@@ -581,7 +599,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   return (
-    <Card className={cn("h-full flex flex-col", isFullscreen && "fixed inset-0 z-50")} ref={containerRef}>
+    <Card className={cn(
+      "h-full flex flex-col relative",
+      isFullscreen && "fixed inset-0 z-50 rounded-none border-none"
+    )} ref={containerRef}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -618,12 +639,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 </div>
               </div>
             </div>
-            {isFullscreen && (
-              <Button variant="ghost" size="sm" onClick={handleToggleFullscreen}>
-                <Expand className="h-4 w-4 mr-2" />
-                Exit Fullscreen
-              </Button>
-            )}
           </div>
         </div>
         <CardDescription>
