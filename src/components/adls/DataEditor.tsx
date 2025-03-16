@@ -857,235 +857,78 @@ const DataEditor: React.FC<DataEditorProps> = ({
               className={isFullscreen ? "h-[calc(100vh-200px)]" : "h-[70vh]"}
               ref={tableRef}
             >
-              <Table 
-                zoomLevel={zoomLevel} 
-                fullWidth={fullWidthTable}
-                columnResizing={true}
-                className="w-full"
-              >
-                <TableHeader>
-                  <TableRow>
-                    <TableHead 
-                      className="sticky left-0 z-30 bg-white dark:bg-gray-800"
-                      minWidth={40}
-                      width={40}
-                    >
-                      <Checkbox 
-                        checked={
-                          rowsToDisplay.length > 0 && 
-                          selectedRows.size === rowsToDisplay.length
-                        }
-                        onCheckedChange={(checked) => {
-                          toggleAllRowsSelection(checked === true);
-                        }}
-                        aria-label="Select all rows"
-                      />
-                    </TableHead>
-                    {dataPreview.columns
-                      .filter(column => visibleColumns.includes(column.name))
-                      .map((column) => (
-                        <ColumnMenu
-                          key={column.name}
-                          column={column}
-                          onSort={(direction) => handleColumnSort(column.name, direction)}
-                          onEditAll={() => handleColumnEditAll(column.name)}
-                          onEditSelected={() => handleColumnEditAll(column.name)}
-                          onSetNull={() => handleColumnSetNull(column.name, false)}
-                          onSetNullSelected={() => handleColumnSetNull(column.name, true)}
-                          onHide={() => handleVisibilityChange(column.name, false)}
-                          hasSelectedRows={selectedRows.size > 0}
-                        >
-                          <ResizableColumn
-                            width={columnWidths[column.name] || 150}
-                            minWidth={100}
-                            onResize={(width) => handleResizeColumn(column.name, width)}
-                          >
-                            <TableHead 
-                              className={`cursor-pointer select-none
-                                ${frozenColumns.includes(column.name) 
-                                  ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
-                              `}
-                              style={{
-                                left: frozenColumns.includes(column.name) 
-                                  ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
-                                  : 'auto'
-                              }}
-                              onClick={() => handleSort(column.name)}
-                              width={columnWidths[column.name] || 150}
-                            >
-                              <div className="flex flex-row items-center gap-1">
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
-                                <span className="text-xs text-gray-500">
-                                  ({column.type}{column.nullable ? ', nullable' : ''})
-                                </span>
-                                {sortColumn === column.name && (
-                                  <div className="ml-1">
-                                    {sortDirection === 'asc' ? (
-                                      <ChevronUp className="h-4 w-4 flex-shrink-0" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </TableHead>
-                          </ResizableColumn>
-                        </ColumnMenu>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rowsToDisplay.map((row) => (
-                    <TableRow 
-                      key={row.__id}
-                      className={getRowClasses(row.__id)}
-                      id={`row-${row.__id}`}
-                    >
-                      <TableCell 
-                        className="sticky left-0 z-10 bg-white dark:bg-gray-800"
-                        onClick={() => toggleRowSelection(row.__id)}
+              <div className="min-w-full">
+                <Table 
+                  zoomLevel={zoomLevel} 
+                  fullWidth={fullWidthTable}
+                  columnResizing={true}
+                  className="w-full"
+                >
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead 
+                        className="sticky left-0 z-30 bg-white dark:bg-gray-800"
+                        minWidth={40}
                         width={40}
                       >
-                        <Checkbox checked={selectedRows.has(row.__id)} />
-                      </TableCell>
+                        <Checkbox 
+                          checked={
+                            rowsToDisplay.length > 0 && 
+                            selectedRows.size === rowsToDisplay.length
+                          }
+                          onCheckedChange={(checked) => {
+                            toggleAllRowsSelection(checked === true);
+                          }}
+                          aria-label="Select all rows"
+                        />
+                      </TableHead>
                       {dataPreview.columns
                         .filter(column => visibleColumns.includes(column.name))
-                        .map((column) => {
-                          const isEditing = editCell?.rowId === row.__id && editCell?.columnName === column.name;
-                          
-                          return (
-                            <TableCell 
-                              key={`${row.__id}-${column.name}`}
-                              className={getCellClasses(row.__id, column.name)}
-                              style={{
-                                left: frozenColumns.includes(column.name) 
-                                  ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
-                                  : 'auto',
-                              }}
-                              onClick={() => editMode && startEdit(row.__id, column.name, row[column.name])}
-                              title={`${column.name}: ${row[column.name]}`}
+                        .map((column) => (
+                          <ColumnMenu
+                            key={column.name}
+                            column={column}
+                            onSort={(direction) => handleColumnSort(column.name, direction)}
+                            onEditAll={() => handleColumnEditAll(column.name)}
+                            onEditSelected={() => handleColumnEditAll(column.name)}
+                            onSetNull={() => handleColumnSetNull(column.name, false)}
+                            onSetNullSelected={() => handleColumnSetNull(column.name, true)}
+                            onHide={() => handleVisibilityChange(column.name, false)}
+                            hasSelectedRows={selectedRows.size > 0}
+                          >
+                            <ResizableColumn
                               width={columnWidths[column.name] || 150}
+                              minWidth={100}
+                              onResize={(width) => handleResizeColumn(column.name, width)}
                             >
-                              {isEditing ? (
-                                renderCellEditor(row.__id, column.name, row[column.name], column.type)
-                              ) : (
-                                <div className="truncate">
-                                  {renderCellValue(row[column.name], column.type)}
+                              <TableHead 
+                                className={`cursor-pointer select-none
+                                  ${frozenColumns.includes(column.name) 
+                                    ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
+                                `}
+                                style={{
+                                  left: frozenColumns.includes(column.name) 
+                                    ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
+                                    : 'auto'
+                                }}
+                                onClick={() => handleSort(column.name)}
+                                width={columnWidths[column.name] || 150}
+                              >
+                                <div className="flex flex-row items-center gap-1">
+                                  <span className="font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
+                                  <span className="text-xs text-gray-500">
+                                    ({column.type}{column.nullable ? ', nullable' : ''})
+                                  </span>
+                                  {sortColumn === column.name && (
+                                    <div className="ml-1">
+                                      {sortDirection === 'asc' ? (
+                                        <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              {modifiedRows.has(row.__id) && lastSavedRows.has(row.__id) && (
-                                <span className="absolute -right-1 -top-1 text-green-500">
-                                  <Check className="h-4 w-4" />
-                                </span>
-                              )}
-                            </TableCell>
-                          );
-                      })}
-                    </TableRow>
-                  ))}
-                  {rowsToDisplay.length === 0 && (
-                    <TableRow>
-                      <TableCell 
-                        colSpan={visibleColumns.length + 1} 
-                        className="text-center py-8"
-                      >
-                        No data found matching the current filters
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </div>
-        </CardContent>
-        <CardFooter className={`flex justify-between ${isFullscreen ? 'sticky bottom-0 z-50 bg-background' : ''}`}>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-500 mr-4">
-              {rowsToDisplay.length} of {dataPreview.totalRows} rows
-              {selectedRows.size > 0 && ` (${selectedRows.size} selected)`}
-              {modifiedRows.size > 0 && ` (${modifiedRows.size} modified)`}
-            </span>
-            <Select 
-              value={pageSize.toString()} 
-              onValueChange={(value) => setPageSize(parseInt(value))}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Rows per page" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 per page</SelectItem>
-                <SelectItem value="25">25 per page</SelectItem>
-                <SelectItem value="50">50 per page</SelectItem>
-                <SelectItem value="100">100 per page</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => handlePageChange(Math.max(1, page - 1))} 
-                  className={page === 1 ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-              
-              {Array.from({ length: Math.min(5, getTotalPages()) }, (_, i) => {
-                let pageNum = page;
-                if (getTotalPages() <= 5) {
-                  pageNum = i + 1;
-                } else {
-                  const leftOffset = Math.min(2, page - 1);
-                  pageNum = page - leftOffset + i;
-                  
-                  if (pageNum > getTotalPages()) {
-                    pageNum = getTotalPages() - (4 - i);
-                  }
-                }
-                
-                return (
-                  <PaginationItem key={i}>
-                    <PaginationLink 
-                      onClick={() => handlePageChange(pageNum)}
-                      isActive={pageNum === page}
-                    >
-                      {pageNum}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => handlePageChange(Math.min(getTotalPages(), page + 1))} 
-                  className={page >= getTotalPages() ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </CardFooter>
-      </Card>
-      
-      <TableColumnManager
-        columns={dataPreview.columns}
-        visibleColumns={visibleColumns}
-        frozenColumns={frozenColumns}
-        onVisibilityChange={handleVisibilityChange}
-        onFreezeChange={handleFreezeChange}
-        onReorder={handleColumnReorder}
-        open={showColumnManager}
-        onOpenChange={setShowColumnManager}
-      />
-      
-      <BulkEditDialog
-        open={showBulkEditDialog}
-        onOpenChange={setShowBulkEditDialog}
-        selectedRows={selectedRowsData}
-        columns={dataPreview.columns}
-        onApplyBulkEdit={handleBulkEdit}
-      />
-    </div>
-  );
-};
-
-export default DataEditor;
+                              </TableHead>
+                            </ResizableColumn>
+                          </ColumnMenu>

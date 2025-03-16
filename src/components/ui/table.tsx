@@ -15,25 +15,19 @@ const Table = React.forwardRef<
     "relative w-full overflow-auto", 
     fullWidth ? "max-w-none" : "",
   )}>
-    <div style={{ 
-      width: zoomLevel > 100 ? `${zoomLevel}%` : '100%',
-      overflowX: "auto",
-      overflowY: "auto"
-    }}>
-      <table
-        ref={ref}
-        className={cn(
-          "w-full caption-bottom text-sm",
-          columnResizing ? "table-fixed" : "",
-          className
-        )}
-        style={{ 
-          fontSize: `${zoomLevel / 100}rem`,
-          tableLayout: columnResizing ? "fixed" : "auto"
-        }}
-        {...props}
-      />
-    </div>
+    <table
+      ref={ref}
+      className={cn(
+        "w-full caption-bottom text-sm",
+        columnResizing ? "table-fixed" : "",
+        className
+      )}
+      style={{ 
+        fontSize: `${zoomLevel / 100}rem`,
+        tableLayout: columnResizing ? "fixed" : "auto"
+      }}
+      {...props}
+    />
   </div>
 ))
 Table.displayName = "Table"
@@ -109,11 +103,9 @@ const TableHead = React.forwardRef<
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
       maxWidth: width ? `${width}px` : undefined,
-      transform: "none",
-      direction: "ltr",
-      unicodeBidi: "normal",
-      textOrientation: "mixed",
+      // Explicitly enforce horizontal text orientation
       writingMode: "horizontal-tb",
+      textOrientation: "mixed",
       textOverflow: "ellipsis",
       overflow: "hidden"
     }}
