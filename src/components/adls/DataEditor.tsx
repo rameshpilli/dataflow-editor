@@ -37,6 +37,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -109,6 +119,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [zoomLevel, setZoomLevel] = useState(100);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showBackConfirmDialog, setShowBackConfirmDialog] = useState(false);
 
   const tableRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -633,6 +644,27 @@ const DataEditor: React.FC<DataEditorProps> = ({
     return baseClass;
   };
 
+  const handleBackClick = () => {
+    if (changes.length > 0) {
+      setShowBackConfirmDialog(true);
+    } else {
+      onGoBack();
+    }
+  };
+
+  const handleConfirmBack = () => {
+    setShowBackConfirmDialog(false);
+    onGoBack();
+  };
+
+  const handleSaveAndGoBack = async () => {
+    const success = await onSaveChanges();
+    if (success) {
+      onGoBack();
+    }
+    setShowBackConfirmDialog(false);
+  };
+
   if (isLoading) {
     return (
       <div className="water-blue-bg min-h-screen p-4">
@@ -674,7 +706,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={onGoBack}
+              onClick={handleBackClick}
               className="mr-2"
             >
               <ArrowLeftCircle className="mr-2 h-4 w-4" />
@@ -861,7 +893,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               className={isFullscreen ? "h-[calc(100vh-200px)]" : "h-[70vh]"}
               ref={tableRef}
             >
-              <div className="min-w-full">
+              <div className="min-w-max overflow-auto">
                 <Table 
                   zoomLevel={zoomLevel} 
                   fullWidth={fullWidthTable}
@@ -964,6 +996,26 @@ const DataEditor: React.FC<DataEditorProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showBackConfirmDialog} onOpenChange={setShowBackConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have {changes.length} unsaved changes. Do you want to save before going back?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowBackConfirmDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmBack} className="bg-destructive text-destructive-foreground">
+              Discard Changes
+            </AlertDialogAction>
+            <Button onClick={handleSaveAndGoBack} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save & Go Back'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
