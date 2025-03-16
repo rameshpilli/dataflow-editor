@@ -146,9 +146,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
     getInitialState('visibleColumns', dataset.columns.map(col => col.name))
   );
   const [isColumnResizing, setIsColumnResizing] = useState(false);
-  const [alternateRowColors, setAlternateRowColors] = useState(() => 
-    getInitialState('alternateRowColors', false)
-  );
   const [filters, setFilters] = useState<FilterOptions[]>(() => 
     getInitialState('filters', [])
   );
@@ -182,7 +179,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, JSON.stringify(columnWidths));
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, JSON.stringify(zoomLevel));
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, JSON.stringify(visibleColumns));
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-alternateRowColors`, JSON.stringify(alternateRowColors));
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, JSON.stringify(filters));
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, JSON.stringify(frozenColumns));
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, JSON.stringify(editMode));
@@ -199,7 +195,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
     columnWidths, 
     zoomLevel,
     visibleColumns,
-    alternateRowColors,
     filters,
     frozenColumns,
     editMode
@@ -466,10 +461,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 Clear Filters
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setAlternateRowColors(prev => !prev)}>
-              <MoveHorizontal className="mr-2 h-4 w-4" />
-              Alternate Rows
-            </Button>
           </div>
           <ZoomControls 
             zoomLevel={zoomLevel} 
@@ -492,7 +483,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               fullWidth
               zoomLevel={zoomLevel}
               columnResizing={isColumnResizing}
-              alternateRowColors={alternateRowColors}
+              alternateRowColors={false}
               ref={tableRef}
             >
               <TableHeader>
