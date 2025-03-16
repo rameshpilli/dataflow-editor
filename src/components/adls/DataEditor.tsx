@@ -108,9 +108,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [fullWidthTable, setFullWidthTable] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const tableRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (dataPreview?.columns) {
@@ -441,6 +443,52 @@ const DataEditor: React.FC<DataEditorProps> = ({
     });
   };
 
+  const handleToggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    
+    setTimeout(() => {
+      if (editorContainerRef.current) {
+        if (!isFullscreen) {
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          }
+          
+          editorContainerRef.current.requestFullscreen()
+            .catch(err => {
+              toast({
+                title: "Fullscreen error",
+                description: "Could not enter fullscreen mode: " + err.message,
+                variant: "destructive"
+              });
+            });
+        } else {
+          if (document.fullscreenEnabled && document.fullscreenElement) {
+            document.exitFullscreen()
+              .catch(err => {
+                toast({
+                  title: "Fullscreen error",
+                  description: "Could not exit fullscreen mode: " + err.message,
+                  variant: "destructive"
+                });
+              });
+          }
+        }
+      }
+    }, 10);
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const handleFocusSelection = () => {
     if (selectedRows.size === 0) return;
     
@@ -615,9 +663,9 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const selectedRowsData = rowsToDisplay.filter(row => selectedRows.has(row.__id));
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <div className="space-y-4" ref={editorContainerRef}>
+      <Card className={isFullscreen ? "rounded-none border-0" : ""}>
+        <CardHeader className={`flex flex-row items-center justify-between space-y-0 pb-2 ${isFullscreen ? 'sticky top-0 z-50 bg-background' : ''}`}>
           <div>
             <Button 
               variant="ghost" 
@@ -669,7 +717,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
               zoomLevel={zoomLevel}
               onZoomChange={handleZoomChange}
               onFitToScreen={handleFitToScreen}
-              onFocusSelection={handleFocusSelection}
+              onToggleFullscreen={handleToggleFullscreen}
+              isFullscreen={isFullscreen}
               disableFocus={selectedRows.size === 0}
             />
             
@@ -798,13 +847,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className={isFullscreen ? "h-[calc(100vh-180px)]" : ""}>
           <div 
             className="border rounded-md"
             ref={tableContainerRef}
           >
             <ScrollArea 
-              className="h-[70vh]"
+              className={isFullscreen ? "h-[calc(100vh-200px)]" : "h-[70vh]"}
               ref={tableRef}
             >
               <Table 
@@ -949,7 +998,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </ScrollArea>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className={`flex justify-between ${isFullscreen ? 'sticky bottom-0 z-50 bg-background' : ''}`}>
           <div className="flex items-center">
             <span className="text-sm text-gray-500 mr-4">
               {rowsToDisplay.length} of {dataPreview.totalRows} rows
