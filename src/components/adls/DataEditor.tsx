@@ -13,6 +13,7 @@ import TableToolbar from './dataEditor/TableToolbar';
 import DataTable from './dataEditor/DataTable';
 import PaginationControls from './dataEditor/PaginationControls';
 import FilterPanel from './dataEditor/FilterPanel';
+import ZoomControls from './ZoomControls';
 
 interface DataEditorProps {
   dataset: Dataset;
@@ -177,6 +178,13 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
           onBackConfirmation={showBackConfirmation}
           setShowBackConfirmation={setShowBackConfirmation}
         />
+
+        <div className="absolute right-4 top-4 z-50">
+          <ZoomControls 
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={handleToggleFullscreen}
+          />
+        </div>
 
         <CardContent 
           className={cn(
