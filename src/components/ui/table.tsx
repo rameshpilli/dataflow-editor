@@ -60,7 +60,7 @@ const TableHeader = React.forwardRef<
   <thead 
     ref={ref} 
     className={cn(
-      "[&_tr]:border-b sticky top-0 bg-white dark:bg-gray-900 z-10 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 shadow-sm", 
+      "[&_tr]:border-b sticky top-0 bg-gray-100/95 dark:bg-gray-800/95 z-10 backdrop-blur-sm shadow-sm", 
       className
     )} 
     {...props} 
@@ -128,8 +128,8 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-10 px-2 text-left align-middle font-semibold text-gray-700 dark:text-gray-300 [&:has([role=checkbox])]:pr-0 transition-colors select-none",
-      "whitespace-nowrap bg-gray-50/80 dark:bg-gray-800/80 border-r last:border-r-0 backdrop-blur-sm", // Light gray background with right borders
-      "group hover:bg-gray-100 dark:hover:bg-gray-700/80",
+      "whitespace-nowrap bg-gray-200/90 dark:bg-gray-700/90 border-r last:border-r-0 backdrop-blur-sm", // Darker gray background for header
+      "group hover:bg-gray-300/90 dark:hover:bg-gray-600/90",
       className
     )}
     style={{
