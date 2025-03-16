@@ -145,19 +145,19 @@ const generateMockData = (dataset: Dataset, count: number): DataRow[] => {
   return rows;
 };
 
-// API functions
-export const getConnections = async (): Promise<ADLSConnection[]> => {
+// API functions for export
+const getConnections = async (): Promise<ADLSConnection[]> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 800));
   return [...mockConnections];
 };
 
-export const getConnection = async (id: string): Promise<ADLSConnection | null> => {
+const getConnection = async (id: string): Promise<ADLSConnection | null> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   return mockConnections.find(conn => conn.id === id) || null;
 };
 
-export const createConnection = async (connection: Omit<ADLSConnection, 'id'>): Promise<ADLSConnection> => {
+const createConnection = async (connection: Omit<ADLSConnection, 'id'>): Promise<ADLSConnection> => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   const newConnection: ADLSConnection = {
     ...connection,
@@ -168,7 +168,7 @@ export const createConnection = async (connection: Omit<ADLSConnection, 'id'>): 
   return newConnection;
 };
 
-export const updateConnection = async (id: string, connection: Partial<ADLSConnection>): Promise<ADLSConnection> => {
+const updateConnection = async (id: string, connection: Partial<ADLSConnection>): Promise<ADLSConnection> => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   const index = mockConnections.findIndex(conn => conn.id === id);
   if (index === -1) throw new Error('Connection not found');
@@ -182,7 +182,7 @@ export const updateConnection = async (id: string, connection: Partial<ADLSConne
   return mockConnections[index];
 };
 
-export const deleteConnection = async (id: string): Promise<boolean> => {
+const deleteConnection = async (id: string): Promise<boolean> => {
   await new Promise(resolve => setTimeout(resolve, 800));
   const index = mockConnections.findIndex(conn => conn.id === id);
   if (index === -1) return false;
@@ -191,23 +191,23 @@ export const deleteConnection = async (id: string): Promise<boolean> => {
   return true;
 };
 
-export const testConnection = async (connection: ADLSConnection): Promise<boolean> => {
+const testConnection = async (connection: ADLSConnection): Promise<boolean> => {
   await new Promise(resolve => setTimeout(resolve, 1500));
   // Simulate connection test (90% success rate)
   return Math.random() > 0.1;
 };
 
-export const getDatasets = async (): Promise<Dataset[]> => {
+const getDatasets = async (): Promise<Dataset[]> => {
   await new Promise(resolve => setTimeout(resolve, 800));
   return [...mockDatasets];
 };
 
-export const getDataset = async (id: string): Promise<Dataset | null> => {
+const getDataset = async (id: string): Promise<Dataset | null> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   return mockDatasets.find(dataset => dataset.id === id) || null;
 };
 
-export const getDatasetPreview = async (
+const getDatasetPreview = async (
   datasetId: string,
   page: number,
   pageSize: number,
@@ -293,7 +293,7 @@ export const getDatasetPreview = async (
   };
 };
 
-export const updateDatasetRow = async (
+const updateDatasetRow = async (
   datasetId: string,
   rowId: string,
   columnName: string,
@@ -304,7 +304,7 @@ export const updateDatasetRow = async (
   return true;
 };
 
-export const saveDatasetChanges = async (
+const saveDatasetChanges = async (
   datasetId: string,
   changes: { rowId: string, columnName: string, newValue: any }[]
 ): Promise<boolean> => {
@@ -313,7 +313,7 @@ export const saveDatasetChanges = async (
   return true;
 };
 
-export const validateDataset = async (datasetId: string): Promise<ValidationResult> => {
+const validateDataset = async (datasetId: string): Promise<ValidationResult> => {
   await new Promise(resolve => setTimeout(resolve, 2000));
   
   // Mock validation result
@@ -336,8 +336,139 @@ export const validateDataset = async (datasetId: string): Promise<ValidationResu
   };
 };
 
-export const repairDataset = async (datasetId: string): Promise<boolean> => {
+const repairDataset = async (datasetId: string): Promise<boolean> => {
   await new Promise(resolve => setTimeout(resolve, 3000));
   // In a real implementation, this would trigger a repair job
   return true;
+};
+
+// Mock methods for additional functionality
+const connect = async (credentials: any, name: string): Promise<ADLSConnection> => {
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  const newConnection: ADLSConnection = {
+    id: uuidv4(),
+    name,
+    credentials,
+    isConnected: true,
+    lastConnected: new Date()
+  };
+  return newConnection;
+};
+
+const disconnect = async (connectionId: string): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  return true;
+};
+
+const listDatasets = async (connectionId: string): Promise<Dataset[]> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  return [...mockDatasets];
+};
+
+const getTempStorage = (datasetId: string) => {
+  return {
+    datasetId,
+    modifiedRows: new Map<string, DataRow>(),
+    totalRowCount: 1000,
+    repairedCount: 0
+  };
+};
+
+const saveChangesToTemp = async (connectionId: string, datasetId: string, rows: DataRow[]): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  return true;
+};
+
+const commitChangesToADLS = async (connectionId: string, datasetId: string): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  return true;
+};
+
+const getComments = async (datasetId: string) => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return [];
+};
+
+const addComment = async (datasetId: string, text: string, rowId?: string, columnName?: string) => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return {
+    id: uuidv4(),
+    text,
+    createdAt: new Date(),
+    createdBy: 'Current User',
+    rowId,
+    columnName,
+    resolved: false
+  };
+};
+
+const resolveComment = async (datasetId: string, commentId: string) => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return {
+    id: commentId,
+    text: 'Some comment',
+    createdAt: new Date(),
+    createdBy: 'Current User',
+    resolved: true,
+    resolvedAt: new Date(),
+    resolvedBy: 'Current User'
+  };
+};
+
+const updateColumn = async (connectionId: string, datasetId: string, column: DatasetColumn): Promise<Dataset> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  const datasetIndex = mockDatasets.findIndex(d => d.id === datasetId);
+  if (datasetIndex === -1) throw new Error('Dataset not found');
+  
+  const columnIndex = mockDatasets[datasetIndex].columns.findIndex(c => c.name === column.name);
+  if (columnIndex === -1) throw new Error('Column not found');
+  
+  mockDatasets[datasetIndex].columns[columnIndex] = column;
+  
+  return mockDatasets[datasetIndex];
+};
+
+// Export all functions as a single object
+export const adlsService = {
+  getConnections,
+  getConnection,
+  createConnection,
+  updateConnection,
+  deleteConnection,
+  testConnection,
+  getDatasets,
+  getDataset,
+  getDatasetPreview,
+  updateDatasetRow,
+  saveDatasetChanges,
+  validateDataset,
+  repairDataset,
+  connect,
+  disconnect,
+  listDatasets,
+  getTempStorage,
+  saveChangesToTemp,
+  commitChangesToADLS,
+  getComments,
+  addComment,
+  resolveComment,
+  updateColumn
+};
+
+// Also export individual functions for direct import
+export {
+  getConnections,
+  getConnection,
+  createConnection,
+  updateConnection,
+  deleteConnection,
+  testConnection,
+  getDatasets,
+  getDataset,
+  getDatasetPreview,
+  updateDatasetRow,
+  saveDatasetChanges,
+  validateDataset,
+  repairDataset
 };

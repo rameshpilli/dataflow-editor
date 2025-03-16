@@ -164,12 +164,15 @@ export function useADLSData() {
       
       // If there's temp storage, update modifiedRows to match
       if (storageInfo) {
-        const modifiedRowIds = new Set(storageInfo.modifiedRows.keys());
+        // Fixed: Cast the keys to strings explicitly
+        const modifiedRowIds = new Set<string>(
+          Array.from(storageInfo.modifiedRows.keys()).map(key => String(key))
+        );
         setModifiedRows(modifiedRowIds);
       } else {
         // Reset any existing changes when loading a new dataset with no temp storage
         setChanges([]);
-        setModifiedRows(new Set());
+        setModifiedRows(new Set<string>());
       }
       
       // Load comments for this dataset
