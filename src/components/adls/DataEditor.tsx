@@ -171,7 +171,16 @@ const DataEditor: React.FC<DataEditorProps> = ({
       return;
     }
     
-    await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters.length > 0 ? filters : undefined);
+    try {
+      await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters.length > 0 ? filters : undefined);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast({
+        title: "Error loading data",
+        description: error instanceof Error ? error.message : "Failed to load dataset",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSort = (columnName: string) => {
@@ -921,60 +930,56 @@ const DataEditor: React.FC<DataEditorProps> = ({
                       {dataPreview.columns
                         .filter(column => visibleColumns.includes(column.name))
                         .map((column) => (
-                          <ColumnMenu
-                            key={column.name}
-                            column={column}
-                            onSort={(direction) => handleColumnSort(column.name, direction)}
-                            onEditAll={() => handleColumnEditAll(column.name)}
-                            onEditSelected={() => handleColumnEditAll(column.name)}
-                            onSetNull={() => handleColumnSetNull(column.name, false)}
-                            onSetNullSelected={() => handleColumnSetNull(column.name, true)}
-                            onHide={() => handleVisibilityChange(column.name, false)}
-                            hasSelectedRows={selectedRows.size > 0}
+                          <TableHead 
+                            key={`menu-${column.name}`}
+                            className={`cursor-pointer select-none
+                              ${frozenColumns.includes(column.name) 
+                                ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
+                            `}
+                            style={{
+                              left: frozenColumns.includes(column.name) 
+                                ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
+                                : 'auto',
+                              minWidth: columnWidths[column.name] || 150,
+                              width: columnWidths[column.name] || 150
+                            }}
+                            onClick={() => handleSort(column.name)}
                           >
-                            <ResizableColumn
-                              width={columnWidths[column.name] || 150}
-                              minWidth={100}
-                              onResize={(width) => handleResizeColumn(column.name, width)}
+                            <ColumnMenu
+                              key={`menu-${column.name}`}
+                              column={column}
+                              onSort={(direction) => handleColumnSort(column.name, direction)}
+                              onEditAll={() => handleColumnEditAll(column.name)}
+                              onEditSelected={() => handleColumnEditAll(column.name)}
+                              onSetNull={() => handleColumnSetNull(column.name, false)}
+                              onSetNullSelected={() => handleColumnSetNull(column.name, true)}
+                              onHide={() => handleVisibilityChange(column.name, false)}
+                              hasSelectedRows={selectedRows.size > 0}
                             >
-                              <TableHead 
-                                className={`cursor-pointer select-none
-                                  ${frozenColumns.includes(column.name) 
-                                    ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
-                                `}
-                                style={{
-                                  left: frozenColumns.includes(column.name) 
-                                    ? `${frozenColumns.indexOf(column.name) * 150 + 40}px` 
-                                    : 'auto'
-                                }}
-                                onClick={() => handleSort(column.name)}
-                                width={columnWidths[column.name] || 150}
-                              >
-                                <div className="flex flex-row items-center gap-1">
-                                  <span className="font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
-                                  <span className="text-xs text-gray-500">
-                                    ({column.type}{column.nullable ? ', nullable' : ''})
-                                  </span>
-                                  {sortColumn === column.name && (
-                                    <div className="ml-1">
-                                      {sortDirection === 'asc' ? (
-                                        <ChevronUp className="h-4 w-4 flex-shrink-0" />
-                                      ) : (
-                                        <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableHead>
-                            </ResizableColumn>
-                          </ColumnMenu>
+                              <div className="flex flex-row items-center gap-1">
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  ({column.type}{column.nullable ? ', nullable' : ''})
+                                </span>
+                                {sortColumn === column.name && (
+                                  <div className="ml-1">
+                                    {sortDirection === 'asc' ? (
+                                      <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </ColumnMenu>
+                          </TableHead>
                         ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rowsToDisplay.map((row) => (
-                      <TableRow key={row.__id} className={getCellClasses(row.__id, '')}>
-                        <TableCell className="p-2">
+                      <TableRow key={row.__id} id={`row-${row.__id}`} className={getRowClasses(row.__id)}>
+                        <TableCell className="sticky left-0 z-10 bg-white dark:bg-gray-800 p-2">
                           <Checkbox 
                             checked={selectedRows.has(row.__id)}
                             onCheckedChange={(checked) => {
@@ -982,11 +987,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
                             }}
                           />
                         </TableCell>
-                        {dataPreview.columns.map((column) => (
-                          <TableCell key={column.name} className={getCellClasses(row.__id, column.name)}>
-                            {renderCellValue(row[column.name], column.type)}
-                          </TableCell>
-                        ))}
+                        {dataPreview.columns
+                          .filter(column => visibleColumns.includes(column.name))
+                          .map((column) => (
+                            <TableCell 
+                              key={`${row.__id}-${column.name}`} 
+                              className={getCellClasses(row.__id, column.name)}
+                              onClick={() => {
+                                if (editMode && !frozenColumns.includes(column.name)) {
+                                  startEdit(row.__id, column.name, row[column.name]);
+                                }
+                              }}
+                            >
+                              {editCell?.rowId === row.__id && editCell?.columnName === column.name ? (
+                                renderCellEditor(row.__id, column.name, row[column.name], column.type)
+                              ) : (
+                                renderCellValue(row[column.name], column.type)
+                              )}
+                            </TableCell>
+                          ))}
                       </TableRow>
                     ))}
                   </TableBody>

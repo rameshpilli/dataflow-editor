@@ -106,10 +106,27 @@ export function useADLSData() {
       return;
     }
     
+    // If datasetId is empty, just clear the current dataset selection without error
+    if (!datasetId) {
+      setSelectedDataset(null);
+      setDataPreview(null);
+      setChanges([]);
+      setModifiedRows(new Set());
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
     try {
+      // Find and set the selected dataset first
+      const dataset = datasets.find(d => d.id === datasetId);
+      if (!dataset) {
+        throw new Error('Dataset not found');
+      }
+      
+      setSelectedDataset(dataset);
+      
       const preview = await adlsService.getDatasetPreview(
         connection.id,
         datasetId,
@@ -121,10 +138,6 @@ export function useADLSData() {
       );
       
       setDataPreview(preview);
-      
-      // Find and set the selected dataset
-      const dataset = datasets.find(d => d.id === datasetId) || null;
-      setSelectedDataset(dataset);
       
       // Reset any existing changes when loading a new dataset
       setChanges([]);
@@ -141,7 +154,8 @@ export function useADLSData() {
         description: errorMessage,
       });
       
-      throw err;
+      console.error("Dataset loading error:", err);
+      return undefined;
     } finally {
       setIsLoading(false);
     }
