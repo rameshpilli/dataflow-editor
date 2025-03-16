@@ -330,7 +330,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
     if (dataset && dataset.id) {
       await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters);
     }
-  }, [dataset, page, pageSize, sortColumn, sortDirection, filters, onLoadData]);
+  }, [dataset, page, pageSize, sortColumn, sortDirection, filters]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -643,12 +643,17 @@ const DataEditor: React.FC<DataEditorProps> = ({
   return (
     <Card 
       className={cn(
-        "h-full flex flex-col relative transition-all duration-300",
-        isFullscreen && "fixed inset-0 z-50 rounded-none border-none"
+        "h-full flex flex-col relative transition-all duration-300 ease-in-out",
+        isFullscreen 
+          ? "fixed inset-0 z-50 rounded-none border-none shadow-2xl animate-fullscreen-enter" 
+          : "animate-fullscreen-exit"
       )} 
       ref={containerRef}
     >
-      <CardHeader className={cn("pb-2 transition-all duration-200", isFullscreen && "py-2")}>
+      <CardHeader className={cn(
+        "pb-2 transition-all duration-200", 
+        isFullscreen ? "py-2" : ""
+      )}>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Button 
