@@ -15,7 +15,7 @@ const Header = () => {
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Database className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold text-foreground">ADLS Manager</h1>
+          <h1 className="text-xl font-bold text-foreground">Data Editor</h1>
         </div>
         
         <div className="flex items-center gap-4">

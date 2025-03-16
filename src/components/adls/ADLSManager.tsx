@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -119,7 +120,7 @@ const ADLSManager: React.FC = () => {
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Azure Data Lake Storage Manager</h1>
+        <h1 className="text-3xl font-bold mb-2">Data Editor</h1>
         <p className="text-gray-600">
           Connect to ADLS, browse datasets, and edit data with an intuitive interface
         </p>

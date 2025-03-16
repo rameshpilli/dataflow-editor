@@ -28,7 +28,7 @@ const Login = () => {
         
         toast({
           title: "Login successful",
-          description: "Welcome to ADLS Manager",
+          description: `Welcome ${username}`,
         });
         
         navigate('/');
@@ -53,7 +53,7 @@ const Login = () => {
           <div className="flex justify-center mb-2">
             <Database className="h-12 w-12 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">ADLS Manager</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">Data Editor</CardTitle>
           <CardDescription>
             Internal application - Use the test credentials to login
           </CardDescription>
