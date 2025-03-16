@@ -66,8 +66,8 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
               <TableHeader>
                 <TableRow>
                   <TableHead>Type</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="w-1/3">Path</TableHead>
+                  <TableHead className="w-[180px]">Name</TableHead>
+                  <TableHead className="w-[180px]">Path</TableHead>
                   <TableHead>Columns</TableHead>
                   <TableHead>Count</TableHead>
                   <TableHead>Repaired</TableHead>
