@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Expand, Pencil, PencilLine } from 'lucide-react';
+import { Expand, Pencil, PencilLine } from 'lucide-react';
 import { 
   Select, 
   SelectContent, 
@@ -37,33 +37,9 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
   editMode = false,
   onToggleEditMode
 }) => {
-  const handleZoomIn = () => {
-    const newZoom = Math.min(zoomLevel + 25, 200);
-    onZoomChange(newZoom);
-  };
-
-  const handleZoomOut = () => {
-    const newZoom = Math.max(zoomLevel - 25, 50);
-    onZoomChange(newZoom);
-  };
-
   return (
     <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-md border shadow-sm">
       <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleZoomOut} 
-              disabled={zoomLevel <= 50}
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom Out</TooltipContent>
-        </Tooltip>
-
         <div className="flex items-center gap-2 px-2">
           <Slider 
             className="w-24" 
@@ -91,20 +67,6 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
             </SelectContent>
           </Select>
         </div>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleZoomIn}
-              disabled={zoomLevel >= 200}
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom In</TooltipContent>
-        </Tooltip>
         
         {onToggleEditMode && (
           <Tooltip>
