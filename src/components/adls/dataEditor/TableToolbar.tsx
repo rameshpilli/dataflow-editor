@@ -85,8 +85,8 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700 p-0"
+                size="icon"
+                className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700"
                 disabled={changes.length === 0}
                 onClick={handleSaveChanges}
               >
@@ -102,8 +102,8 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700 p-0"
+                size="icon"
+                className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700"
                 disabled={changes.length === 0}
                 onClick={onDiscardChanges}
               >
@@ -120,8 +120,8 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700 p-0"
+                  size="icon"
+                  className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700"
                   onClick={onToggleFullscreen}
                 >
                   <Maximize2 className="h-4 w-4" />
