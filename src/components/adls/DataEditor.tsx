@@ -189,7 +189,7 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
       {/* Dialogs */}
       <TableColumnManager 
         open={showColumnManager} 
-        onClose={() => setShowColumnManager(false)}
+        onOpenChange={() => setShowColumnManager(false)}
       />
 
       <FilterPanel 
@@ -199,8 +199,9 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
 
       <BulkEditDialog 
         open={isBulkEditDialogOpen}
-        column={bulkEditColumn}
-        onClose={() => {
+        columns={dataset.columns}
+        columnName={bulkEditColumn || ''}
+        onOpenChange={() => {
           setIsBulkEditDialogOpen(false);
           setBulkEditColumn(null);
           setBulkEditValue('');
