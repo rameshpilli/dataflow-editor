@@ -33,7 +33,7 @@ const mockConnections: ADLSConnection[] = [
   }
 ];
 
-// Mock datasets
+// Enhanced mock datasets with more columns
 const mockDatasets: Dataset[] = [
   {
     id: '1',
@@ -46,9 +46,18 @@ const mockDatasets: Dataset[] = [
       { name: 'email', type: 'string', nullable: true },
       { name: 'signup_date', type: 'date', nullable: false },
       { name: 'last_login', type: 'timestamp', nullable: true },
-      { name: 'account_status', type: 'string', nullable: false }
+      { name: 'account_status', type: 'string', nullable: false },
+      { name: 'address', type: 'string', nullable: true },
+      { name: 'city', type: 'string', nullable: true },
+      { name: 'state', type: 'string', nullable: true },
+      { name: 'zip_code', type: 'string', nullable: true },
+      { name: 'country', type: 'string', nullable: true },
+      { name: 'phone', type: 'string', nullable: true },
+      { name: 'loyalty_points', type: 'integer', nullable: true },
+      { name: 'referral_code', type: 'string', nullable: true },
+      { name: 'marketing_consent', type: 'boolean', nullable: false }
     ],
-    rowCount: 10000,
+    rowCount: 1000,
     repairedCount: 150,
     lastModified: new Date('2023-07-10')
   },
@@ -63,9 +72,20 @@ const mockDatasets: Dataset[] = [
       { name: 'amount', type: 'double', nullable: false },
       { name: 'currency', type: 'string', nullable: false },
       { name: 'timestamp', type: 'timestamp', nullable: false },
-      { name: 'status', type: 'string', nullable: false }
+      { name: 'status', type: 'string', nullable: false },
+      { name: 'payment_method', type: 'string', nullable: true },
+      { name: 'payment_provider', type: 'string', nullable: true },
+      { name: 'order_id', type: 'string', nullable: true },
+      { name: 'product_count', type: 'integer', nullable: false },
+      { name: 'shipping_cost', type: 'double', nullable: true },
+      { name: 'tax_amount', type: 'double', nullable: true },
+      { name: 'discount_code', type: 'string', nullable: true },
+      { name: 'discount_amount', type: 'double', nullable: true },
+      { name: 'refunded', type: 'boolean', nullable: false },
+      { name: 'refund_reason', type: 'string', nullable: true },
+      { name: 'device_type', type: 'string', nullable: true }
     ],
-    rowCount: 50000,
+    rowCount: 5000,
     repairedCount: 320,
     lastModified: new Date('2023-07-12')
   },
@@ -81,9 +101,17 @@ const mockDatasets: Dataset[] = [
       { name: 'price', type: 'double', nullable: false },
       { name: 'category', type: 'string', nullable: false },
       { name: 'in_stock', type: 'boolean', nullable: false },
-      { name: 'created_at', type: 'timestamp', nullable: false }
+      { name: 'created_at', type: 'timestamp', nullable: false },
+      { name: 'sku', type: 'string', nullable: false },
+      { name: 'manufacturer', type: 'string', nullable: true },
+      { name: 'weight', type: 'double', nullable: true },
+      { name: 'dimensions', type: 'string', nullable: true },
+      { name: 'color', type: 'string', nullable: true },
+      { name: 'material', type: 'string', nullable: true },
+      { name: 'warranty_period', type: 'string', nullable: true },
+      { name: 'image_url', type: 'string', nullable: true }
     ],
-    rowCount: 5000,
+    rowCount: 1500,
     repairedCount: 0,
     lastModified: new Date('2023-07-05')
   }
@@ -105,7 +133,17 @@ const generateMockData = (dataset: Dataset, count: number): DataRow[] => {
               ? `Sample ${column.name} ${i}`
               : column.name.includes('email')
                 ? `user${i}@example.com`
-                : `Value ${i} for ${column.name}`;
+                : column.name.includes('address')
+                  ? `${Math.floor(Math.random() * 9999)} Main St`
+                  : column.name.includes('city')
+                    ? ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][Math.floor(Math.random() * 5)]
+                    : column.name.includes('state')
+                      ? ['NY', 'CA', 'IL', 'TX', 'AZ'][Math.floor(Math.random() * 5)]
+                      : column.name.includes('country')
+                        ? ['USA', 'Canada', 'UK', 'Australia', 'Germany'][Math.floor(Math.random() * 5)]
+                        : column.name.includes('phone')
+                          ? `(${Math.floor(Math.random() * 900) + 100})-${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`
+                          : `Value ${i} for ${column.name}`;
           break;
         case 'integer':
         case 'int':
@@ -221,8 +259,8 @@ const getDatasetPreview = async (
   const dataset = mockDatasets.find(d => d.id === datasetId);
   if (!dataset) throw new Error('Dataset not found');
   
-  // Generate mock data
-  let rows = generateMockData(dataset, 1000);
+  // Generate more mock data (increased from 1000 to 5000 rows)
+  let rows = generateMockData(dataset, 5000);
   
   // Apply filters if provided
   if (filters && filters.length > 0) {

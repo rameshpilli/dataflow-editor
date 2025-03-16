@@ -5,14 +5,45 @@ import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ButtonProps, buttonVariants } from "@/components/ui/button"
 
-const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
-  <nav
-    role="navigation"
-    aria-label="pagination"
-    className={cn("mx-auto flex w-full justify-center", className)}
-    {...props}
-  />
-)
+interface PaginationProps extends React.ComponentProps<"nav"> {
+  totalItems?: number;
+  pageSize?: number;
+  currentPage?: number;
+  siblingCount?: number;
+  showRowsInfo?: boolean;
+}
+
+const Pagination = ({ 
+  className, 
+  totalItems, 
+  pageSize = 10, 
+  currentPage = 1, 
+  siblingCount = 1,
+  showRowsInfo = true,
+  ...props 
+}: PaginationProps) => {
+  // Calculate start and end item numbers
+  const startItem = totalItems ? Math.min(((currentPage - 1) * pageSize) + 1, totalItems) : undefined;
+  const endItem = totalItems ? Math.min(startItem + pageSize - 1, totalItems) : undefined;
+  
+  return (
+    <nav
+      role="navigation"
+      aria-label="pagination"
+      className={cn("mx-auto flex w-full justify-between items-center flex-wrap gap-2", className)}
+      {...props}
+    >
+      {showRowsInfo && startItem !== undefined && endItem !== undefined && totalItems !== undefined && (
+        <div className="text-sm text-muted-foreground whitespace-nowrap">
+          Showing <span className="font-medium text-foreground">{startItem}-{endItem}</span> of <span className="font-medium text-foreground">{totalItems}</span> rows
+        </div>
+      )}
+      <div className="flex items-center ml-auto">
+        {props.children}
+      </div>
+    </nav>
+  )
+}
 Pagination.displayName = "Pagination"
 
 const PaginationContent = React.forwardRef<
@@ -21,7 +52,7 @@ const PaginationContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ul
     ref={ref}
-    className={cn("flex flex-row items-center gap-2", className)}
+    className={cn("flex flex-row items-center gap-1", className)}
     {...props}
   />
 ))
@@ -69,11 +100,11 @@ const PaginationPrevious = ({
   <PaginationLink
     aria-label="Go to previous page"
     size="default"
-    className={cn("h-8 px-3 gap-1 w-auto mr-2", className)}
+    className={cn("h-8 px-2 gap-1 w-auto mr-1", className)}
     {...props}
   >
     <ChevronLeft className="h-4 w-4" />
-    <span className="sr-only md:not-sr-only md:inline-flex">Previous</span>
+    <span className="sr-only md:not-sr-only md:inline-flex">Prev</span>
   </PaginationLink>
 )
 PaginationPrevious.displayName = "PaginationPrevious"
@@ -85,7 +116,7 @@ const PaginationNext = ({
   <PaginationLink
     aria-label="Go to next page"
     size="default"
-    className={cn("h-8 px-3 gap-1 w-auto ml-2", className)}
+    className={cn("h-8 px-2 gap-1 w-auto ml-1", className)}
     {...props}
   >
     <span className="sr-only md:not-sr-only md:inline-flex">Next</span>

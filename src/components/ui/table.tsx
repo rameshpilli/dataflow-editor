@@ -14,6 +14,7 @@ const Table = React.forwardRef<
     striped?: boolean;
     borderless?: boolean;
     hoverable?: boolean;
+    density?: 'default' | 'compact' | 'comfortable';
   }
 >(({ 
   className, 
@@ -25,34 +26,45 @@ const Table = React.forwardRef<
   striped = false,
   borderless = false,
   hoverable = true,
+  density = 'default',
   ...props 
-}, ref) => (
-  <div className={cn(
-    "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200/80 dark:border-gray-700/80 transition-all duration-300 ease-in-out hover:shadow-md",
-    fullWidth ? "max-w-none" : "",
-  )}>
-    <table
-      ref={ref}
-      className={cn(
-        "w-full caption-bottom text-sm border-collapse",
-        columnResizing ? "table-fixed" : "",
-        alternateRowColors ? "even:[&_tr:nth-child(even)]:bg-gray-50 dark:even:[&_tr:nth-child(even)]:bg-gray-800/30" : "",
-        striped ? "[&_tbody_tr:nth-child(odd)]:bg-gray-50/70 dark:[&_tbody_tr:nth-child(odd)]:bg-gray-900/40" : "",
-        compact ? "[&_th]:py-2 [&_td]:py-2" : "",
-        borderless ? "border-none [&_tr]:border-none [&_th]:border-none [&_td]:border-none" : "[&_th]:border-b [&_td]:border-b [&_tr:last-child_td]:border-b-0",
-        hoverable ? "[&_tbody_tr]:hover:bg-blue-50/90 dark:[&_tbody_tr]:hover:bg-blue-900/40 [&_tbody_tr]:transition-colors duration-150" : "",
-        className
-      )}
-      style={{ 
-        fontSize: `${zoomLevel / 100}rem`,
-        tableLayout: columnResizing ? "fixed" : "auto"
-      }}
-      role="grid"
-      aria-label="Data table"
-      {...props}
-    />
-  </div>
-))
+}, ref) => {
+  // Determine padding based on density
+  const densityClasses = {
+    compact: "[&_td]:py-1 [&_th]:py-1.5 [&_td]:px-1.5 [&_th]:px-1.5",
+    comfortable: "[&_td]:py-3 [&_th]:py-3 [&_td]:px-3 [&_th]:px-3",
+    default: "[&_td]:py-2 [&_th]:py-2 [&_td]:px-2 [&_th]:px-2",
+  }
+
+  return (
+    <div className={cn(
+      "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200/80 dark:border-gray-700/80 transition-all duration-300 ease-in-out hover:shadow-md",
+      fullWidth ? "max-w-none" : "",
+    )}>
+      <table
+        ref={ref}
+        className={cn(
+          "w-full caption-bottom text-sm border-collapse",
+          columnResizing ? "table-fixed" : "",
+          alternateRowColors ? "even:[&_tr:nth-child(even)]:bg-gray-50 dark:even:[&_tr:nth-child(even)]:bg-gray-800/30" : "",
+          striped ? "[&_tbody_tr:nth-child(odd)]:bg-gray-50/70 dark:[&_tbody_tr:nth-child(odd)]:bg-gray-900/40" : "",
+          compact ? "[&_th]:py-2 [&_td]:py-2" : "",
+          densityClasses[density],
+          borderless ? "border-none [&_tr]:border-none [&_th]:border-none [&_td]:border-none" : "[&_th]:border-b [&_td]:border-b [&_tr:last-child_td]:border-b-0",
+          hoverable ? "[&_tbody_tr]:hover:bg-blue-50/90 dark:[&_tbody_tr]:hover:bg-blue-900/40 [&_tbody_tr]:transition-colors duration-150" : "",
+          className
+        )}
+        style={{ 
+          fontSize: `${zoomLevel / 100}rem`,
+          tableLayout: columnResizing ? "fixed" : "auto"
+        }}
+        role="grid"
+        aria-label="Data table"
+        {...props}
+      />
+    </div>
+  )
+})
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
