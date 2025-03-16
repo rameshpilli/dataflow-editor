@@ -66,7 +66,7 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                 <TableRow>
                   <TableHead>Type</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Path</TableHead>
+                  <TableHead className="w-1/3">Path</TableHead>
                   <TableHead>Columns</TableHead>
                   <TableHead>Count</TableHead>
                   <TableHead>Repaired</TableHead>
@@ -95,7 +95,9 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                         )}
                       </TableCell>
                       <TableCell className="font-medium">{dataset.name}</TableCell>
-                      <TableCell className="font-mono text-xs">{dataset.path}</TableCell>
+                      <TableCell className="font-mono text-xs break-all max-w-xs overflow-hidden text-ellipsis">
+                        {dataset.path}
+                      </TableCell>
                       <TableCell>{dataset.columns.length}</TableCell>
                       <TableCell>{dataset.rowCount?.toLocaleString() || 'Unknown'}</TableCell>
                       <TableCell>

@@ -1,3 +1,4 @@
+
 import { ADLSConnection, ADLSCredentials, Dataset, DatasetPreview, DataRow, FilterOptions, TempStorage } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 
@@ -142,6 +143,24 @@ class ADLSService {
         rowCount: 500,
         repairedCount: this.getTempStorage('dataset_3')?.repairedCount || 0,
         lastModified: new Date('2023-08-05')
+      },
+      // New sample dataset with long path and only 10 records
+      {
+        id: 'dataset_4',
+        name: 'Sample Long Path Data',
+        path: '/data/inventory/data/inventory/data/inventory/data/inventory/data/inventory',
+        format: 'delta' as const,
+        columns: [
+          { name: 'id', type: 'integer', nullable: false },
+          { name: 'name', type: 'string', nullable: false },
+          { name: 'description', type: 'string', nullable: true },
+          { name: 'category', type: 'string', nullable: false },
+          { name: 'created_date', type: 'date', nullable: false },
+          { name: 'is_active', type: 'boolean', nullable: false }
+        ],
+        rowCount: 10,
+        repairedCount: this.getTempStorage('dataset_4')?.repairedCount || 0,
+        lastModified: new Date('2024-01-10')
       }
     ];
     
