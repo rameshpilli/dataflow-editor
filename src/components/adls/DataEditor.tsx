@@ -17,7 +17,8 @@ import {
   PaginationItem, 
   PaginationLink, 
   PaginationNext, 
-  PaginationPrevious 
+  PaginationPrevious,
+  PaginationEllipsis 
 } from '@/components/ui/pagination';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -52,7 +53,6 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -629,6 +629,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
     setShowExportDialog(false);
   };
 
+  const getTotalPages = useCallback(() => {
+    if (!dataPreview) return 0;
+    if (dataPreview.totalPages !== undefined) return dataPreview.totalPages;
+    return dataPreview.totalRows ? Math.ceil(dataPreview.totalRows / dataPreview.pageSize) : 0;
+  }, [dataPreview]);
+
   return (
     <Card 
       className={cn(
@@ -857,7 +863,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Select>
           </div>
           
-          {dataPreview && dataPreview.totalPages > 0 && (
+          {dataPreview && getTotalPages() > 0 && (
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
@@ -909,7 +915,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 </PaginationItem>
                 
                 {/* Next page if not last */}
-                {page < dataPreview.totalPages && (
+                {page < getTotalPages() && (
                   <PaginationItem>
                     <PaginationLink onClick={() => handlePageChange(page + 1)}>
                       {page + 1}
@@ -918,25 +924,25 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 )}
                 
                 {/* Ellipsis if needed */}
-                {page < dataPreview.totalPages - 2 && (
+                {page < getTotalPages() - 2 && (
                   <PaginationItem>
                     <PaginationEllipsis />
                   </PaginationItem>
                 )}
                 
                 {/* Last page if not current or adjacent */}
-                {page < dataPreview.totalPages - 1 && (
+                {page < getTotalPages() - 1 && (
                   <PaginationItem>
-                    <PaginationLink onClick={() => handlePageChange(dataPreview.totalPages)}>
-                      {dataPreview.totalPages}
+                    <PaginationLink onClick={() => handlePageChange(getTotalPages())}>
+                      {getTotalPages()}
                     </PaginationLink>
                   </PaginationItem>
                 )}
                 
                 <PaginationItem>
                   <PaginationNext 
-                    onClick={() => handlePageChange(Math.min(dataPreview.totalPages, page + 1))}
-                    className={cn("h-8", page >= dataPreview.totalPages && "pointer-events-none opacity-50")}
+                    onClick={() => handlePageChange(Math.min(getTotalPages(), page + 1))}
+                    className={cn("h-8", page >= getTotalPages() && "pointer-events-none opacity-50")}
                   />
                 </PaginationItem>
                 
@@ -944,9 +950,9 @@ const DataEditor: React.FC<DataEditorProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handlePageChange(dataPreview.totalPages)}
-                    disabled={page >= dataPreview.totalPages}
-                    className={cn("h-8 w-8", page >= dataPreview.totalPages && "opacity-50 cursor-not-allowed")}
+                    onClick={() => handlePageChange(getTotalPages())}
+                    disabled={page >= getTotalPages()}
+                    className={cn("h-8 w-8", page >= getTotalPages() && "opacity-50 cursor-not-allowed")}
                     aria-label="Go to last page"
                   >
                     <ChevronLast className="h-4 w-4" />
@@ -973,3 +979,4 @@ const DataEditor: React.FC<DataEditorProps> = ({
 };
 
 export default DataEditor;
+

@@ -1,4 +1,3 @@
-
 export interface ADLSCredentials {
   connectionString?: string;
   accountName?: string;
@@ -74,6 +73,7 @@ export interface DatasetPreview {
   totalRows: number;
   page: number;
   pageSize: number;
+  totalPages: number; // Added totalPages property
 }
 
 export interface TempStorage {
