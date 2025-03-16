@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -42,7 +41,9 @@ import {
   Download,
   FileText,
   SearchIcon,
-  ArrowUpDown
+  ArrowUpDown,
+  ChevronFirst,
+  ChevronLast
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -860,9 +861,22 @@ const DataEditor: React.FC<DataEditorProps> = ({
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handlePageChange(1)}
+                    disabled={page <= 1}
+                    className={cn("h-8 w-8", page <= 1 && "opacity-50 cursor-not-allowed")}
+                    aria-label="Go to first page"
+                  >
+                    <ChevronFirst className="h-4 w-4" />
+                  </Button>
+                </PaginationItem>
+                
+                <PaginationItem>
                   <PaginationPrevious 
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
-                    className={cn(page <= 1 && "pointer-events-none opacity-50")}
+                    className={cn("h-8", page <= 1 && "pointer-events-none opacity-50")}
                   />
                 </PaginationItem>
                 
@@ -922,8 +936,21 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 <PaginationItem>
                   <PaginationNext 
                     onClick={() => handlePageChange(Math.min(dataPreview.totalPages, page + 1))}
-                    className={cn(page >= dataPreview.totalPages && "pointer-events-none opacity-50")}
+                    className={cn("h-8", page >= dataPreview.totalPages && "pointer-events-none opacity-50")}
                   />
+                </PaginationItem>
+                
+                <PaginationItem>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handlePageChange(dataPreview.totalPages)}
+                    disabled={page >= dataPreview.totalPages}
+                    className={cn("h-8 w-8", page >= dataPreview.totalPages && "opacity-50 cursor-not-allowed")}
+                    aria-label="Go to last page"
+                  >
+                    <ChevronLast className="h-4 w-4" />
+                  </Button>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
