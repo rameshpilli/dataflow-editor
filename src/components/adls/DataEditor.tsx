@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -68,8 +67,10 @@ interface DataEditorProps {
   isSaving: boolean;
   changes: DataChange[];
   modifiedRows: Set<string>;
+  canCommit: boolean;
   onCellUpdate: (rowId: string, columnName: string, newValue: any) => void;
   onSaveChanges: () => Promise<boolean>;
+  onCommitChanges: () => Promise<boolean>;
   onDiscardChanges: () => void;
   onLoadData: (
     datasetId: string, 
@@ -91,13 +92,14 @@ const DataEditor: React.FC<DataEditorProps> = ({
   isSaving,
   changes,
   modifiedRows,
+  canCommit,
   onCellUpdate, 
   onSaveChanges,
+  onCommitChanges,
   onDiscardChanges,
   onLoadData,
   onGoBack
 }) => {
-  // Read initial values from localStorage or use defaults
   const getInitialState = <T,>(key: string, defaultValue: T): T => {
     if (typeof window === 'undefined') return defaultValue;
     
@@ -142,13 +144,12 @@ const DataEditor: React.FC<DataEditorProps> = ({
     getInitialState('frozenColumns', [])
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [editMode, setEditMode] = useState(() => getInitialState('editMode', false)); // Edit mode disabled by default
+  const [editMode, setEditMode] = useState(() => getInitialState('editMode', false));
   const [repairedCount, setRepairedCount] = useState(0);
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Persist state to localStorage whenever it changes
   useEffect(() => {
     if (dataset.id) {
       localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, JSON.stringify(page));
@@ -178,7 +179,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
     editMode
   ]);
 
-  // Update repaired count from changes
   useEffect(() => {
     setRepairedCount(modifiedRows.size);
   }, [modifiedRows]);
@@ -214,7 +214,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
-    setPage(1); // Reset to the first page when page size changes
+    setPage(1);
   };
 
   const handleSort = (columnName: string) => {
@@ -247,18 +247,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   const handleFitToScreen = () => {
-    // Implementation for fit to screen functionality
-    console.log("Fit to screen");
-    // This could adjust zoom level to make the table fit in the viewport
     setZoomLevel(100);
   };
 
   const handleFocusSelection = () => {
-    // Implementation for focus on selection functionality
-    console.log("Focus on selection");
-    // This could scroll to and highlight the selected row(s)
     if (selectedRows.size > 0 && tableRef.current) {
-      // Example implementation - find first selected row and scroll to it
       const firstSelectedRow = Array.from(selectedRows)[0];
       const rowElement = tableRef.current.querySelector(`[data-row-id="${firstSelectedRow}"]`);
       if (rowElement) {
@@ -288,7 +281,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
   
   const handleReorderColumns = (sourceIndex: number, destinationIndex: number) => {
-    // Implementation for column reordering
     console.log(`Reorder column from ${sourceIndex} to ${destinationIndex}`);
   };
 
@@ -333,10 +325,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const handleSelectAllRows = () => {
     if (dataPreview) {
       if (selectedRows.size === dataPreview.rows.length) {
-        // If all rows are selected, deselect all
         setSelectedRows(new Set());
       } else {
-        // Otherwise, select all rows
         const allRowIds = dataPreview.rows.map(row => row.__id);
         setSelectedRows(new Set(allRowIds));
       }
@@ -376,7 +366,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
       setSortColumn(undefined);
       setSortDirection(undefined);
     } else {
-      setSortColumn(sortColumn); // Keep current column
+      setSortColumn(sortColumn);
       setSortDirection(direction);
     }
   };
@@ -578,6 +568,18 @@ const DataEditor: React.FC<DataEditorProps> = ({
             <Save className="mr-2 h-4 w-4" />
             Save Changes
           </Button>
+          {canCommit && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onCommitChanges}
+              disabled={isSaving}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Commit to ADLS
+            </Button>
+          )}
         </div>
         <Pagination>
           <PaginationContent>
@@ -603,7 +605,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
         </Pagination>
       </CardFooter>
 
-      {/* Column Manager Dialog */}
       <Dialog open={showColumnManager} onOpenChange={setShowColumnManager}>
         <DialogContent>
           <DialogHeader>
@@ -628,7 +629,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Filter Dialog */}
       <Dialog open={showFilters} onOpenChange={setShowFilters}>
         <DialogContent>
           <DialogHeader>
@@ -689,7 +689,6 @@ const DataEditor: React.FC<DataEditorProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Edit Dialog */}
       <BulkEditDialog
         open={isBulkEditDialogOpen}
         onOpenChange={setIsBulkEditDialogOpen}
@@ -707,3 +706,4 @@ const DataEditor: React.FC<DataEditorProps> = ({
 };
 
 export default DataEditor;
+

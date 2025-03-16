@@ -8,7 +8,8 @@ import {
   DatasetPreview, 
   DataRow, 
   FilterOptions,
-  DataChange
+  DataChange,
+  TempStorage
 } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 
@@ -22,6 +23,8 @@ export function useADLSData() {
   const [changes, setChanges] = useState<DataChange[]>([]);
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
+  const [tempStorage, setTempStorage] = useState<TempStorage | null>(null);
+  const [canCommit, setCanCommit] = useState(false);
 
   // Connect to ADLS
   const connect = useCallback(async (credentials: ADLSCredentials, name: string) => {
@@ -112,6 +115,8 @@ export function useADLSData() {
       setDataPreview(null);
       setChanges([]);
       setModifiedRows(new Set());
+      setTempStorage(null);
+      setCanCommit(false);
       return;
     }
     
@@ -127,6 +132,17 @@ export function useADLSData() {
       
       setSelectedDataset(dataset);
       
+      // Get temp storage info
+      const storageInfo = adlsService.getTempStorage(datasetId);
+      setTempStorage(storageInfo || null);
+      
+      // Check if all rows are repaired
+      if (storageInfo && storageInfo.repairedCount >= (dataset.rowCount || 0)) {
+        setCanCommit(true);
+      } else {
+        setCanCommit(false);
+      }
+      
       const preview = await adlsService.getDatasetPreview(
         connection.id,
         datasetId,
@@ -139,9 +155,15 @@ export function useADLSData() {
       
       setDataPreview(preview);
       
-      // Reset any existing changes when loading a new dataset
-      setChanges([]);
-      setModifiedRows(new Set());
+      // If there's temp storage, update modifiedRows to match
+      if (storageInfo) {
+        const modifiedRowIds = new Set(storageInfo.modifiedRows.keys());
+        setModifiedRows(modifiedRowIds);
+      } else {
+        // Reset any existing changes when loading a new dataset with no temp storage
+        setChanges([]);
+        setModifiedRows(new Set());
+      }
       
       return preview;
     } catch (err) {
@@ -211,7 +233,7 @@ export function useADLSData() {
     });
   }, [dataPreview]);
 
-  // Save changes to the dataset
+  // Save changes to temporary storage
   const saveChanges = useCallback(async () => {
     if (!connection || !selectedDataset || !dataPreview || changes.length === 0) {
       return false;
@@ -224,12 +246,30 @@ export function useADLSData() {
       // Get modified rows
       const modifiedRowsArray = dataPreview.rows.filter(row => modifiedRows.has(row.__id));
       
-      // Save changes to the data lake
-      await adlsService.saveChanges(connection.id, selectedDataset.id, modifiedRowsArray);
+      // Save changes to temporary storage
+      await adlsService.saveChangesToTemp(connection.id, selectedDataset.id, modifiedRowsArray);
       
-      // Clear changes after successful save
+      // Clear changes after successful temp save
       setChanges([]);
-      setModifiedRows(new Set());
+      
+      // Get updated temp storage info
+      const updatedStorage = adlsService.getTempStorage(selectedDataset.id);
+      setTempStorage(updatedStorage || null);
+      
+      // Check if all rows are now repaired
+      if (updatedStorage && updatedStorage.repairedCount >= (selectedDataset.rowCount || 0)) {
+        setCanCommit(true);
+      }
+      
+      // Refresh the dataset list to update repair counts
+      const updatedDatasets = await adlsService.listDatasets(connection.id);
+      setDatasets(updatedDatasets);
+      
+      // Update the selected dataset with the updated repair count
+      const updatedSelectedDataset = updatedDatasets.find(d => d.id === selectedDataset.id);
+      if (updatedSelectedDataset) {
+        setSelectedDataset(updatedSelectedDataset);
+      }
       
       return true;
     } catch (err) {
@@ -247,6 +287,52 @@ export function useADLSData() {
       setIsSaving(false);
     }
   }, [connection, selectedDataset, dataPreview, changes, modifiedRows]);
+
+  // Commit changes to ADLS
+  const commitChanges = useCallback(async () => {
+    if (!connection || !selectedDataset) {
+      return false;
+    }
+    
+    setIsSaving(true);
+    setError(null);
+    
+    try {
+      // Commit changes to ADLS
+      await adlsService.commitChangesToADLS(connection.id, selectedDataset.id);
+      
+      // Clear changes and modified rows after successful commit
+      setChanges([]);
+      setModifiedRows(new Set());
+      setTempStorage(null);
+      setCanCommit(false);
+      
+      // Refresh the dataset list to update repair counts
+      const updatedDatasets = await adlsService.listDatasets(connection.id);
+      setDatasets(updatedDatasets);
+      
+      // Update the selected dataset with the updated repair count
+      const updatedSelectedDataset = updatedDatasets.find(d => d.id === selectedDataset.id);
+      if (updatedSelectedDataset) {
+        setSelectedDataset(updatedSelectedDataset);
+      }
+      
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to commit changes';
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Failed to commit changes",
+        description: errorMessage,
+      });
+      
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [connection, selectedDataset]);
 
   // Discard all changes
   const discardChanges = useCallback(() => {
@@ -277,11 +363,14 @@ export function useADLSData() {
     dataPreview,
     changes,
     modifiedRows,
+    tempStorage,
+    canCommit,
     connect,
     disconnect,
     loadDataset,
     updateCell,
     saveChanges,
+    commitChanges,
     discardChanges
   };
 }

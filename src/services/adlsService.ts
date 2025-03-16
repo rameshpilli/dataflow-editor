@@ -1,9 +1,10 @@
-import { ADLSConnection, ADLSCredentials, Dataset, DatasetPreview, DataRow, FilterOptions } from '@/types/adls';
+import { ADLSConnection, ADLSCredentials, Dataset, DatasetPreview, DataRow, FilterOptions, TempStorage } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 
 // This is a mock service - in a real app, this would connect to Azure SDK
 class ADLSService {
   private connections: ADLSConnection[] = [];
+  private tempStorage: Map<string, TempStorage> = new Map(); // Store temporary data by dataset ID
 
   // Connect to ADLS
   async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
@@ -38,8 +39,8 @@ class ADLSService {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Return mock datasets
-    return [
+    // Return mock datasets with repair count
+    const datasets = [
       {
         id: 'dataset_1',
         name: 'Customer Data',
@@ -68,6 +69,7 @@ class ADLSService {
           { name: 'marketing_consent', type: 'boolean', nullable: false, stats: { count: 1000, nullCount: 0 } }
         ],
         rowCount: 1000,
+        repairedCount: this.getTempStorage('dataset_1')?.repairedCount || 0,
         lastModified: new Date('2023-06-15')
       },
       {
@@ -104,6 +106,7 @@ class ADLSService {
           { name: 'currency', type: 'string', nullable: false }
         ],
         rowCount: 5000,
+        repairedCount: this.getTempStorage('dataset_2')?.repairedCount || 0,
         lastModified: new Date('2023-07-20')
       },
       {
@@ -137,9 +140,12 @@ class ADLSService {
           { name: 'modified_date', type: 'timestamp', nullable: false }
         ],
         rowCount: 500,
+        repairedCount: this.getTempStorage('dataset_3')?.repairedCount || 0,
         lastModified: new Date('2023-08-05')
       }
     ];
+    
+    return datasets;
   }
 
   // Get dataset preview with pagination
@@ -210,6 +216,18 @@ class ADLSService {
       rows.push(row);
     }
     
+    // Apply any temporarily saved changes to the preview data
+    const tempData = this.tempStorage.get(datasetId);
+    if (tempData) {
+      rows = rows.map(row => {
+        const savedRow = tempData.modifiedRows.get(row.__id);
+        if (savedRow) {
+          return { ...savedRow, __modified: true };
+        }
+        return row;
+      });
+    }
+    
     // Apply sorting if specified
     if (sortColumn && sortDirection) {
       rows.sort((a, b) => {
@@ -262,29 +280,112 @@ class ADLSService {
     };
   }
 
-  // Save changes to a dataset
-  async saveChanges(connectionId: string, datasetId: string, changes: DataRow[]): Promise<boolean> {
+  // Save changes to temp storage
+  async saveChangesToTemp(connectionId: string, datasetId: string, modifiedRows: DataRow[]): Promise<boolean> {
     const connection = this.connections.find(c => c.id === connectionId);
     if (!connection || !connection.isConnected) {
       throw new Error('Not connected to ADLS');
     }
 
-    // Simulate API call with potential failure
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Randomly succeed or fail to demonstrate error handling
-    const success = Math.random() > 0.2;
+    // Create or update temp storage
+    let storage = this.tempStorage.get(datasetId);
     
-    if (!success) {
-      throw new Error('Failed to save changes. Azure service responded with: Insufficient permissions');
+    if (!storage) {
+      // Get dataset info to know total row count
+      const datasets = await this.listDatasets(connectionId);
+      const dataset = datasets.find(d => d.id === datasetId);
+      
+      if (!dataset) {
+        throw new Error('Dataset not found');
+      }
+      
+      storage = {
+        datasetId,
+        modifiedRows: new Map(),
+        totalRowCount: dataset.rowCount || 0,
+        repairedCount: 0,
+        lastSaved: new Date()
+      };
+      
+      this.tempStorage.set(datasetId, storage);
     }
     
-    toast({
-      title: "Changes saved successfully",
-      description: `Updated ${changes.length} rows in ${datasetId}`,
+    // Update stored rows
+    modifiedRows.forEach(row => {
+      // If this is a new modified row, increment the repaired count
+      if (!storage!.modifiedRows.has(row.__id)) {
+        storage!.repairedCount++;
+      }
+      storage!.modifiedRows.set(row.__id, { ...row });
     });
     
+    storage.lastSaved = new Date();
+    
+    toast({
+      title: "Changes saved to temporary storage",
+      description: `${storage.repairedCount} of ${storage.totalRowCount} rows repaired`,
+    });
+    
+    // If all rows are repaired, prompt to commit
+    if (storage.repairedCount >= storage.totalRowCount) {
+      toast({
+        title: "All rows repaired",
+        description: "You can now commit all changes to the ADLS delta table",
+        variant: "success",
+      });
+    }
+    
     return true;
+  }
+
+  // Get temporary storage info for a dataset
+  getTempStorage(datasetId: string): TempStorage | undefined {
+    return this.tempStorage.get(datasetId);
+  }
+
+  // Commit all temporary changes to ADLS
+  async commitChangesToADLS(connectionId: string, datasetId: string): Promise<boolean> {
+    const connection = this.connections.find(c => c.id === connectionId);
+    if (!connection || !connection.isConnected) {
+      throw new Error('Not connected to ADLS');
+    }
+
+    const storage = this.tempStorage.get(datasetId);
+    if (!storage) {
+      throw new Error('No temporary changes to commit');
+    }
+
+    // Check if all records are repaired
+    if (storage.repairedCount < storage.totalRowCount) {
+      throw new Error(`Cannot commit changes: only ${storage.repairedCount} of ${storage.totalRowCount} rows have been repaired`);
+    }
+
+    // Simulate API call with longer delay for commit
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Simulate success (always succeed when all rows are repaired)
+    toast({
+      title: "Changes committed successfully",
+      description: `Updated ${storage.repairedCount} rows in ADLS delta table`,
+      variant: "success",
+    });
+    
+    // Clear temporary storage after successful commit
+    this.tempStorage.delete(datasetId);
+    
+    return true;
+  }
+
+  // Legacy save method - now simulate failure with specific error
+  async saveChanges(connectionId: string, datasetId: string, changes: DataRow[]): Promise<boolean> {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Always throw an error to force using the new temp storage approach
+    throw new Error('Failed to save changes. Azure service responded with: Insufficient permissions');
   }
 
   // Disconnect from ADLS

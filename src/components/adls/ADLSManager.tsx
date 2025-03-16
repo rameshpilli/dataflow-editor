@@ -21,11 +21,13 @@ const ADLSManager: React.FC = () => {
     dataPreview,
     changes,
     modifiedRows,
+    canCommit,
     connect,
     disconnect,
     loadDataset,
     updateCell,
     saveChanges,
+    commitChanges,
     discardChanges
   } = useADLSData();
   
@@ -62,7 +64,18 @@ const ADLSManager: React.FC = () => {
     if (success) {
       toast({
         title: "Changes saved",
-        description: `Successfully saved ${changes.length} changes to the dataset`,
+        description: `Successfully saved changes to temporary storage`,
+      });
+    }
+    return success;
+  };
+
+  const handleCommitChanges = async () => {
+    const success = await commitChanges();
+    if (success) {
+      toast({
+        title: "Changes committed",
+        description: `Successfully committed all changes to ADLS delta table`,
       });
     }
     return success;
@@ -148,8 +161,10 @@ const ADLSManager: React.FC = () => {
           isSaving={isSaving}
           changes={changes}
           modifiedRows={modifiedRows}
+          canCommit={canCommit}
           onCellUpdate={updateCell}
           onSaveChanges={handleSaveChanges}
+          onCommitChanges={handleCommitChanges}
           onDiscardChanges={discardChanges}
           onLoadData={loadDataset}
           onGoBack={handleGoBackToDatasets}

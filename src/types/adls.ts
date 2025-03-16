@@ -64,3 +64,11 @@ export interface DatasetPreview {
   page: number;
   pageSize: number;
 }
+
+export interface TempStorage {
+  datasetId: string;
+  modifiedRows: Map<string, DataRow>;
+  totalRowCount: number;
+  repairedCount: number;
+  lastSaved?: Date;
+}
