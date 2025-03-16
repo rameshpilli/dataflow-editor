@@ -16,9 +16,17 @@ interface DatasetListProps {
   isLoading: boolean;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  disconnectButton?: React.ReactNode;
 }
 
-const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, isLoading, searchQuery, onSearchChange }) => {
+const DatasetList: React.FC<DatasetListProps> = ({ 
+  datasets, 
+  onSelectDataset, 
+  isLoading, 
+  searchQuery, 
+  onSearchChange,
+  disconnectButton
+}) => {
   if (isLoading) {
     return (
       <Card className="shadow-md border-opacity-40 overflow-hidden">
@@ -52,6 +60,7 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
           </CardDescription>
         </div>
         <div className="flex items-center gap-3">
+          {disconnectButton}
           <div className="relative w-60">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
