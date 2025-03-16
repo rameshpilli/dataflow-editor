@@ -1,4 +1,8 @@
+
 # Welcome to your Lovable project
+
+## Version
+Current version: 1.2.3 (See version.txt for updates)
 
 ## Project info
 
@@ -36,23 +40,60 @@ npm i
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Setting up on a new machine
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+To set up this project on a new machine, follow these steps:
 
-**Use GitHub Codespaces**
+1. **Prerequisites**:
+   - Install [Node.js](https://nodejs.org/) (v16 or higher recommended)
+   - Install [Git](https://git-scm.com/downloads)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+2. **Clone the repository**:
+   ```sh
+   git clone <YOUR_REPOSITORY_URL>
+   cd <PROJECT_DIRECTORY>
+   ```
+
+3. **Install dependencies**:
+   ```sh
+   npm install
+   ```
+
+4. **Start the development server**:
+   ```sh
+   npm run dev
+   ```
+   This will start the application on http://localhost:8080
+
+5. **For production build**:
+   ```sh
+   npm run build
+   ```
+
+6. **Deploying to production**:
+   - You can deploy the built files from the `dist` directory to any static hosting service
+   - Alternatively, use Lovable's built-in deployment options
+
+## Version Control
+
+This project uses Git for version control. To maintain a clear history:
+
+1. **Commit regularly with meaningful messages**:
+   ```sh
+   git add .
+   git commit -m "A clear description of changes"
+   ```
+
+2. **Push changes to update the Lovable project**:
+   ```sh
+   git push origin main
+   ```
+
+3. **Check the version in version.txt to track major updates**
 
 ## What technologies are used for this project?
 
-This project is built with .
+This project is built with:
 
 - Vite
 - TypeScript
