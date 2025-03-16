@@ -62,6 +62,15 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
   const [isBulkEditDialogOpen, setIsBulkEditDialogOpen] = useState(false);
   const [bulkEditColumn, setBulkEditColumn] = useState<string | null>(null);
   const [bulkEditValue, setBulkEditValue] = useState<string>('');
+  
+  // Mock data for TableColumnManager (this should come from context or props in a real app)
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    dataset.columns.map(col => col.name)
+  );
+  const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
+  
+  // Mock selected rows for BulkEditDialog (this should come from context or props)
+  const [selectedRows, setSelectedRows] = useState<DataRow[]>([]);
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -125,10 +134,32 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
     });
   };
 
-  const handleBulkEditApply = () => {
-    if (bulkEditColumn && dataPreview) {
-      // Implementation would be moved to the context
+  // TableColumnManager handlers
+  const handleVisibilityChange = (columnName: string, isVisible: boolean) => {
+    if (isVisible) {
+      setVisibleColumns(prev => [...prev, columnName]);
+    } else {
+      setVisibleColumns(prev => prev.filter(col => col !== columnName));
     }
+  };
+
+  const handleFreezeChange = (columnName: string, isFrozen: boolean) => {
+    if (isFrozen) {
+      setFrozenColumns(prev => [...prev, columnName]);
+    } else {
+      setFrozenColumns(prev => prev.filter(col => col !== columnName));
+    }
+  };
+
+  const handleColumnReorder = (sourceIndex: number, destinationIndex: number) => {
+    // Implementation would go here
+    console.log('Reordering columns', sourceIndex, destinationIndex);
+  };
+
+  // BulkEdit handlers
+  const handleBulkEditApply = (columnName: string, value: any, setNull: boolean) => {
+    console.log('Applying bulk edit', { columnName, value, setNull });
+    // Implementation would go here
   };
 
   return (
@@ -190,6 +221,12 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
       <TableColumnManager 
         open={showColumnManager} 
         onOpenChange={() => setShowColumnManager(false)}
+        columns={dataset.columns}
+        visibleColumns={visibleColumns}
+        frozenColumns={frozenColumns}
+        onVisibilityChange={handleVisibilityChange}
+        onFreezeChange={handleFreezeChange}
+        onReorder={handleColumnReorder}
       />
 
       <FilterPanel 
@@ -199,16 +236,14 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
 
       <BulkEditDialog 
         open={isBulkEditDialogOpen}
-        columns={dataset.columns}
-        columnName={bulkEditColumn || ''}
         onOpenChange={() => {
           setIsBulkEditDialogOpen(false);
           setBulkEditColumn(null);
           setBulkEditValue('');
         }}
-        value={bulkEditValue}
-        onChange={setBulkEditValue}
-        onApply={handleBulkEditApply}
+        columns={dataset.columns}
+        selectedRows={selectedRows}
+        onApplyBulkEdit={handleBulkEditApply}
       />
     </DataEditorProvider>
   );
