@@ -120,15 +120,22 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
       
       <div className="flex items-center space-x-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Edit Mode</span>
+          <span className={`text-sm font-medium ${editMode ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+            Edit Mode
+            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800">
+              {editMode ? 'ON' : 'OFF'}
+            </span>
+          </span>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Switch
-                  checked={editMode}
-                  onCheckedChange={setEditMode}
-                  aria-label="Toggle edit mode"
-                />
+                <div className={`p-0.5 rounded-md transition-colors ${editMode ? 'bg-blue-100 dark:bg-blue-900/30' : ''}`}>
+                  <Switch
+                    checked={editMode}
+                    onCheckedChange={setEditMode}
+                    aria-label="Toggle edit mode"
+                  />
+                </div>
               </TooltipTrigger>
               <TooltipContent>{editMode ? "Disable edit mode" : "Enable edit mode"}</TooltipContent>
             </Tooltip>

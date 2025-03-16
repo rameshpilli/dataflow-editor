@@ -37,16 +37,21 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
         {onToggleEditMode && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center space-x-2 px-2">
-                <Switch
-                  id="edit-mode"
-                  checked={editMode}
-                  onCheckedChange={onToggleEditMode}
-                  className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-200 dark:data-[state=unchecked]:bg-gray-700"
-                />
+              <div className={`flex items-center space-x-2 px-2 ${editMode ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                <div className={`p-0.5 rounded-md transition-colors ${editMode ? 'bg-blue-100 dark:bg-blue-900/30' : ''}`}>
+                  <Switch
+                    id="edit-mode"
+                    checked={editMode}
+                    onCheckedChange={onToggleEditMode}
+                    className="data-[state=checked]:bg-blue-600 dark:data-[state=checked]:bg-blue-500"
+                  />
+                </div>
                 <Label htmlFor="edit-mode" className="text-sm cursor-pointer flex items-center">
-                  <PencilLine className="h-4 w-4 mr-1 text-gray-500" />
+                  <PencilLine className={`h-4 w-4 mr-1 ${editMode ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
                   Edit Mode
+                  <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800">
+                    {editMode ? 'ON' : 'OFF'}
+                  </span>
                 </Label>
               </div>
             </TooltipTrigger>
