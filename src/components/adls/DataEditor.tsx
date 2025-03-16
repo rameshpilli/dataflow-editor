@@ -36,7 +36,8 @@ import {
   MoveHorizontal,
   Expand,
   ListFilter,
-  ShieldCheck
+  ShieldCheck,
+  PenLine
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -581,10 +582,15 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 {dataPreview?.rows.map(row => (
                   <TableRow key={row.__id} isHighlighted={isRowModified(row.__id)} data-row-id={row.__id}>
                     <TableCell className="w-10 sticky left-0 z-10 bg-inherit">
-                      <Checkbox
-                        checked={selectedRows.has(row.__id)}
-                        onCheckedChange={() => handleSelectRow(row.__id)}
-                      />
+                      <div className="flex items-center">
+                        <Checkbox
+                          checked={selectedRows.has(row.__id)}
+                          onCheckedChange={() => handleSelectRow(row.__id)}
+                        />
+                        {isRowModified(row.__id) && (
+                          <PenLine className="ml-2 h-3.5 w-3.5 text-amber-600 dark:text-amber-500" />
+                        )}
+                      </div>
                     </TableCell>
                     {dataset.columns.filter(col => visibleColumns.includes(col.name)).map((column, index) => (
                       <TableCell 
