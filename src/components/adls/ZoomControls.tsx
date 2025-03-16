@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize2, Monitor, Expand } from 'lucide-react';
+import { ZoomIn, ZoomOut, Monitor } from 'lucide-react';
 import { 
   Select, 
   SelectContent, 
@@ -112,21 +112,6 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
           </TooltipTrigger>
           <TooltipContent>Fit to Screen</TooltipContent>
         </Tooltip>
-
-        {onToggleFullscreen && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onToggleFullscreen}
-              >
-                <Expand className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}</TooltipContent>
-          </Tooltip>
-        )}
       </TooltipProvider>
     </div>
   );
