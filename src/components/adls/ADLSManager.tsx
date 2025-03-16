@@ -3,7 +3,6 @@ import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
 import DatasetList from '@/components/adls/DatasetList';
 import DataEditor from '@/components/adls/DataEditor';
-import KeyboardShortcutsDialog from '@/components/KeyboardShortcutsDialog';
 import { Dataset, ADLSCredentials } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -192,8 +191,6 @@ const ADLSManager: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <KeyboardShortcutsDialog />
-              
               <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
