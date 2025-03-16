@@ -98,13 +98,16 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "overflow-hidden text-ellipsis whitespace-nowrap", // Ensure headers don't wrap
+      "overflow-hidden text-ellipsis whitespace-nowrap", // Ensure headers don't wrap but remain horizontal
       className
     )}
     style={{
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
       maxWidth: width ? `${width}px` : undefined,
+      whiteSpace: "nowrap", // Ensure text stays on a single line (horizontal)
+      textOrientation: "mixed", // Ensure text stays horizontal
+      writingMode: "horizontal-tb" // Explicitly set horizontal text direction
     }}
     {...props}
   />
