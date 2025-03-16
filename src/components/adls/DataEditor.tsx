@@ -837,7 +837,109 @@ const DataEditor: React.FC<DataEditorProps> = ({
         </ScrollArea>
       </CardContent>
       <CardFooter className="pt-4 pb-6 flex-col gap-4" ref={footerRef}>
-        {/* Pagination controls would go here */}
+        <div className="flex justify-between items-center w-full">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400">Rows per page:</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => handlePageSizeChange(Number(value))}
+            >
+              <SelectTrigger className="w-[80px] h-8">
+                <SelectValue placeholder={pageSize} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {dataPreview && dataPreview.totalPages > 0 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => handlePageChange(Math.max(1, page - 1))}
+                    className={cn(page <= 1 && "pointer-events-none opacity-50")}
+                  />
+                </PaginationItem>
+                
+                {/* First page */}
+                {page > 2 && (
+                  <PaginationItem>
+                    <PaginationLink onClick={() => handlePageChange(1)}>1</PaginationLink>
+                  </PaginationItem>
+                )}
+                
+                {/* Ellipsis if needed */}
+                {page > 3 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                
+                {/* Previous page if not first */}
+                {page > 1 && (
+                  <PaginationItem>
+                    <PaginationLink onClick={() => handlePageChange(page - 1)}>
+                      {page - 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+                
+                {/* Current page */}
+                <PaginationItem>
+                  <PaginationLink isActive>{page}</PaginationLink>
+                </PaginationItem>
+                
+                {/* Next page if not last */}
+                {page < dataPreview.totalPages && (
+                  <PaginationItem>
+                    <PaginationLink onClick={() => handlePageChange(page + 1)}>
+                      {page + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+                
+                {/* Ellipsis if needed */}
+                {page < dataPreview.totalPages - 2 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                
+                {/* Last page if not current or adjacent */}
+                {page < dataPreview.totalPages - 1 && (
+                  <PaginationItem>
+                    <PaginationLink onClick={() => handlePageChange(dataPreview.totalPages)}>
+                      {dataPreview.totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => handlePageChange(Math.min(dataPreview.totalPages, page + 1))}
+                    className={cn(page >= dataPreview.totalPages && "pointer-events-none opacity-50")}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+          
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {dataPreview ? (
+              <>
+                Showing {((page - 1) * pageSize) + 1}-
+                {Math.min(page * pageSize, dataPreview.totalRows)} of {dataPreview.totalRows} rows
+              </>
+            ) : (
+              'No data'
+            )}
+          </div>
+        </div>
       </CardFooter>
     </Card>
   );
