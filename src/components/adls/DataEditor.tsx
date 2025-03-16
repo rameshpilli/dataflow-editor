@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -806,4 +807,40 @@ const DataEditor: React.FC<DataEditorProps> = ({
                         )}
                       </div>
                     </TableCell>
-                    {dataset.columns.filter
+                    {dataset.columns.filter(col => visibleColumns.includes(col.name)).map(column => (
+                      <TableCell 
+                        key={`${row.__id}-${column.name}`}
+                        className={cn(
+                          frozenColumns.includes(column.name) && "sticky left-10 z-10",
+                          "transition-colors",
+                          column.type === 'number' ? "text-right font-mono tabular-nums" : "",
+                          selectedCellId === `${row.__id}-${column.name}` && "bg-blue-100 dark:bg-blue-900/40",
+                        )}
+                        onClick={() => handleCellClick(row.__id, column.name)}
+                      >
+                        {editMode ? (
+                          <Input
+                            value={row[column.name] !== null ? String(row[column.name]) : ''}
+                            onChange={e => onCellUpdate(row.__id, column.name, e.target.value)}
+                            className="h-8 bg-transparent border-0 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:ring-1 focus:ring-blue-500"
+                          />
+                        ) : (
+                          <>{row[column.name] !== null ? String(row[column.name]) : ''}</>
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </ScrollArea>
+      </CardContent>
+      <CardFooter className="pt-4 pb-6 flex-col gap-4" ref={footerRef}>
+        {/* Pagination controls would go here */}
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default DataEditor;
