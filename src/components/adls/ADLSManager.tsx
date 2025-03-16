@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
 import DatasetList from '@/components/adls/DatasetList';
@@ -33,6 +33,12 @@ const ADLSManager: React.FC = () => {
   
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
 
+  useEffect(() => {
+    // Debug logging to help diagnose issues
+    console.log("Selected dataset:", selectedDataset ? selectedDataset.id : 'none');
+    console.log("Data preview:", dataPreview ? `${dataPreview.rows.length} rows` : 'none');
+  }, [selectedDataset, dataPreview]);
+
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
       await connect(credentials, name);
@@ -51,7 +57,17 @@ const ADLSManager: React.FC = () => {
   };
 
   const handleSelectDataset = async (dataset: Dataset) => {
-    await loadDataset(dataset.id);
+    console.log("Selecting dataset:", dataset.id);
+    try {
+      await loadDataset(dataset.id);
+    } catch (err) {
+      console.error("Error loading dataset:", err);
+      toast({
+        variant: "destructive",
+        title: "Error loading dataset",
+        description: err instanceof Error ? err.message : "Unknown error occurred",
+      });
+    }
   };
 
   const handleGoBackToDatasets = () => {
@@ -153,7 +169,7 @@ const ADLSManager: React.FC = () => {
         </div>
       )}
       
-      {connection && selectedDataset && (
+      {connection && selectedDataset && dataPreview && (
         <DataEditor 
           dataset={selectedDataset}
           dataPreview={dataPreview}
@@ -169,6 +185,13 @@ const ADLSManager: React.FC = () => {
           onLoadData={loadDataset}
           onGoBack={handleGoBackToDatasets}
         />
+      )}
+      
+      {connection && selectedDataset && !dataPreview && (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium">Loading dataset...</h3>
+          <p className="text-gray-500 mt-2">Please wait while we fetch the data</p>
+        </div>
       )}
     </div>
   );

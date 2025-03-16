@@ -103,8 +103,14 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const getInitialState = <T,>(key: string, defaultValue: T): T => {
     if (typeof window === 'undefined') return defaultValue;
     
-    const storedValue = localStorage.getItem(`${STORAGE_KEY_PREFIX}${dataset.id}-${key}`);
-    return storedValue ? JSON.parse(storedValue) : defaultValue;
+    try {
+      const storedValue = localStorage.getItem(`${STORAGE_KEY_PREFIX}${dataset.id}-${key}`);
+      if (storedValue === null) return defaultValue;
+      return JSON.parse(storedValue);
+    } catch (error) {
+      console.warn(`Error parsing localStorage for key ${key}:`, error);
+      return defaultValue;
+    }
   };
 
   const [page, setPage] = useState(() => getInitialState('page', 1));
@@ -152,17 +158,21 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   useEffect(() => {
     if (dataset.id) {
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, JSON.stringify(page));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, JSON.stringify(pageSize));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, JSON.stringify(sortColumn));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, JSON.stringify(sortDirection));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, JSON.stringify(columnWidths));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, JSON.stringify(zoomLevel));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, JSON.stringify(visibleColumns));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-alternateRowColors`, JSON.stringify(alternateRowColors));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, JSON.stringify(filters));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, JSON.stringify(frozenColumns));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, JSON.stringify(editMode));
+      try {
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, JSON.stringify(page));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, JSON.stringify(pageSize));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, JSON.stringify(sortColumn));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, JSON.stringify(sortDirection));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, JSON.stringify(columnWidths));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, JSON.stringify(zoomLevel));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, JSON.stringify(visibleColumns));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-alternateRowColors`, JSON.stringify(alternateRowColors));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, JSON.stringify(filters));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, JSON.stringify(frozenColumns));
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, JSON.stringify(editMode));
+      } catch (error) {
+        console.warn("Error saving to localStorage:", error);
+      }
     }
   }, [
     dataset.id, 
@@ -184,10 +194,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
   }, [modifiedRows]);
 
   useEffect(() => {
-    if (dataset.id) {
+    if (dataset && dataset.id) {
       loadData();
     }
-  }, [dataset.id, page, pageSize, sortColumn, sortDirection, filters]);
+  }, [dataset, page, pageSize, sortColumn, sortDirection, filters]);
 
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
@@ -203,10 +213,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
   }, [isFullscreen]);
 
   const loadData = useCallback(async () => {
-    if (dataset.id) {
+    if (dataset && dataset.id) {
       await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters);
     }
-  }, [dataset.id, page, pageSize, sortColumn, sortDirection, filters, onLoadData]);
+  }, [dataset, page, pageSize, sortColumn, sortDirection, filters, onLoadData]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -706,4 +716,3 @@ const DataEditor: React.FC<DataEditorProps> = ({
 };
 
 export default DataEditor;
-
