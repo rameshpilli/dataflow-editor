@@ -46,12 +46,11 @@ const ResizableColumn: React.FC<ResizableColumnProps> = ({
     document.removeEventListener('mouseup', stopResizing);
   }, [handleMouseMove]);
 
-  // Instead of wrapping the children, extend them with the resizer
-  // This avoids invalid nesting in table structures
+  // Modified to use adjacent sibling approach
   return (
     <>
       {children}
-      <div 
+      <span 
         className={cn(
           "absolute top-0 right-0 h-full w-2 cursor-col-resize hover:bg-gray-300 dark:hover:bg-gray-600 z-10",
           isResizing ? "bg-primary" : ""

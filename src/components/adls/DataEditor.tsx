@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -28,7 +29,8 @@ import {
   Check, 
   MoveHorizontal,
   Monitor,
-  Maximize2
+  Maximize2,
+  Expand
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { 
@@ -117,14 +119,29 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [bulkEditValue, setBulkEditValue] = useState<string>('');
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const tableRef = useRef<HTMLTableElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (dataset.id) {
       loadData();
     }
   }, [dataset.id, page, pageSize, sortColumn, sortDirection, filters]);
+
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isFullscreen]);
 
   const loadData = useCallback(async () => {
     if (dataset.id) {
@@ -164,6 +181,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   const handleZoomChange = (newZoom: number) => {
     setZoomLevel(newZoom);
+  };
+
+  const handleToggleFullscreen = () => {
+    setIsFullscreen(prev => !prev);
   };
 
   const handleFitToScreen = () => {
@@ -306,20 +327,31 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
   
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={cn("h-full flex flex-col", isFullscreen && "fixed inset-0 z-50")} ref={containerRef}>
       <CardHeader className="pb-2">
-        <div className="flex items-center">
-          <Button variant="ghost" size="sm" onClick={onGoBack} className="mr-2">
-            <ArrowLeftCircle className="mr-2 h-4 w-4" />
-            Back to Datasets
-          </Button>
-          <CardTitle>{dataset.name}</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Button variant="ghost" size="sm" onClick={onGoBack} className="mr-2">
+              <ArrowLeftCircle className="mr-2 h-4 w-4" />
+              Back to Datasets
+            </Button>
+            <CardTitle>{dataset.name}</CardTitle>
+          </div>
+          {isFullscreen && (
+            <Button variant="ghost" size="sm" onClick={handleToggleFullscreen}>
+              <Expand className="h-4 w-4 mr-2" />
+              Exit Fullscreen
+            </Button>
+          )}
         </div>
         <CardDescription>
           {dataPreview ? `Displaying ${dataPreview.rows.length} of ${dataPreview.totalRows} rows` : 'Loading data...'}
         </CardDescription>
       </CardHeader>
-      <CardContent className="overflow-auto h-full flex-grow pb-4">
+      <CardContent className={cn(
+        "overflow-hidden h-full flex-grow pb-4",
+        isFullscreen ? "h-[calc(100vh-170px)]" : "h-[calc(100vh-300px)]"
+      )}>
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)}>
@@ -345,10 +377,15 @@ const DataEditor: React.FC<DataEditorProps> = ({
             onZoomChange={handleZoomChange}
             onFitToScreen={handleFitToScreen}
             onFocusSelection={handleFocusSelection}
+            onToggleFullscreen={handleToggleFullscreen}
+            isFullscreen={isFullscreen}
+            disableFocus={selectedRows.size === 0}
           />
         </div>
 
-        <ScrollArea className="h-[calc(100vh-300px)]">
+        <ScrollArea className={cn(
+          isFullscreen ? "h-[calc(100vh-210px)]" : "h-[calc(100vh-340px)]"
+        )}>
           <div className="relative">
             <Table 
               fullWidth
@@ -359,45 +396,47 @@ const DataEditor: React.FC<DataEditorProps> = ({
             >
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10">
+                  <TableHead className="w-10 sticky left-0 z-20">
                     <Checkbox
                       checked={isAllRowsSelected()}
                       onCheckedChange={handleSelectAllRows}
                     />
                   </TableHead>
-                  {dataset.columns.filter(col => visibleColumns.includes(col.name)).map(column => (
+                  {dataset.columns.filter(col => visibleColumns.includes(col.name)).map((column, index) => (
                     <TableHead 
                       key={column.name}
                       width={columnWidths[column.name] || 150}
+                      className={cn(
+                        frozenColumns.includes(column.name) && "sticky left-10 z-20",
+                        index === 0 && !frozenColumns.includes(column.name) && "pl-4"
+                      )}
                     >
-                      <div className="flex items-center">
-                        <button 
-                          onClick={() => handleSort(column.name)} 
-                          className="flex items-center whitespace-nowrap"
-                          style={{ width: '100%' }}
-                        >
-                          {column.name}
-                          {getSortIndicator(column.name)}
-                        </button>
-                        <ColumnMenu 
-                          column={column} 
-                          onSort={handleColumnMenuSort}
-                          onEditAll={() => handleOpenBulkEditDialog(column.name)}
-                          onEditSelected={selectedRows.size > 0 ? () => handleOpenBulkEditDialog(column.name) : undefined}
-                          onSetNull={() => {/* Implementation */}}
-                          onSetNullSelected={selectedRows.size > 0 ? () => {/* Implementation */} : undefined}
-                          onHide={() => toggleColumnVisibility(column.name, false)}
-                          hasSelectedRows={selectedRows.size > 0}
-                        >
-                          <Button variant="ghost" size="sm" className="p-0 h-6 w-6">
-                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M3.5 5.5C3.5 5.22386 3.72386 5 4 5H11C11.2761 5 11.5 5.22386 11.5 5.5C11.5 5.77614 11.2761 6 11 6H4C3.72386 6 3.5 5.77614 3.5 5.5Z" fill="currentColor" />
-                              <path d="M3.5 7.5C3.5 7.22386 3.72386 7 4 7H11C11.2761 7 11.5 7.22386 11.5 7.5C11.5 7.77614 11.2761 8 11 8H4C3.72386 8 3.5 7.77614 3.5 7.5Z" fill="currentColor" />
-                              <path d="M3.5 9.5C3.5 9.22386 3.72386 9 4 9H11C11.2761 9 11.5 9.22386 11.5 9.5C11.5 9.77614 11.2761 10 11 10H4C3.72386 10 3.5 9.77614 3.5 9.5Z" fill="currentColor" />
-                            </svg>
-                          </Button>
-                        </ColumnMenu>
-                      </div>
+                      <button 
+                        onClick={() => handleSort(column.name)} 
+                        className="flex items-center whitespace-nowrap"
+                        style={{ width: '100%' }}
+                      >
+                        {column.name}
+                        {getSortIndicator(column.name)}
+                      </button>
+                      <ColumnMenu 
+                        column={column} 
+                        onSort={handleColumnMenuSort}
+                        onEditAll={() => handleOpenBulkEditDialog(column.name)}
+                        onEditSelected={selectedRows.size > 0 ? () => handleOpenBulkEditDialog(column.name) : undefined}
+                        onSetNull={() => {/* Implementation */}}
+                        onSetNullSelected={selectedRows.size > 0 ? () => {/* Implementation */} : undefined}
+                        onHide={() => toggleColumnVisibility(column.name, false)}
+                        hasSelectedRows={selectedRows.size > 0}
+                      >
+                        <Button variant="ghost" size="sm" className="p-0 h-6 w-6">
+                          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.5 5.5C3.5 5.22386 3.72386 5 4 5H11C11.2761 5 11.5 5.22386 11.5 5.5C11.5 5.77614 11.2761 6 11 6H4C3.72386 6 3.5 5.77614 3.5 5.5Z" fill="currentColor" />
+                            <path d="M3.5 7.5C3.5 7.22386 3.72386 7 4 7H11C11.2761 7 11.5 7.22386 11.5 7.5C11.5 7.77614 11.2761 8 11 8H4C3.72386 8 3.5 7.77614 3.5 7.5Z" fill="currentColor" />
+                            <path d="M3.5 9.5C3.5 9.22386 3.72386 9 4 9H11C11.2761 9 11.5 9.22386 11.5 9.5C11.5 9.77614 11.2761 10 11 10H4C3.72386 10 3.5 9.77614 3.5 9.5Z" fill="currentColor" />
+                          </svg>
+                        </Button>
+                      </ColumnMenu>
                     </TableHead>
                   ))}
                 </TableRow>
@@ -405,18 +444,20 @@ const DataEditor: React.FC<DataEditorProps> = ({
               <TableBody>
                 {dataPreview?.rows.map(row => (
                   <TableRow key={row.__id} isHighlighted={isRowModified(row.__id)} data-row-id={row.__id}>
-                    <TableCell className="w-10">
+                    <TableCell className="w-10 sticky left-0 z-10 bg-inherit">
                       <Checkbox
                         checked={selectedRows.has(row.__id)}
                         onCheckedChange={() => handleSelectRow(row.__id)}
                       />
                     </TableCell>
-                    {dataset.columns.filter(col => visibleColumns.includes(col.name)).map(column => (
+                    {dataset.columns.filter(col => visibleColumns.includes(col.name)).map((column, index) => (
                       <TableCell 
                         key={`${row.__id}-${column.name}`}
                         width={columnWidths[column.name]}
                         className={cn(
-                          selectedCellId === `${row.__id}-${column.name}` ? "bg-blue-100 dark:bg-blue-900" : ""
+                          selectedCellId === `${row.__id}-${column.name}` ? "bg-blue-100 dark:bg-blue-900" : "",
+                          frozenColumns.includes(column.name) && "sticky left-10 z-10 bg-inherit",
+                          index === 0 && !frozenColumns.includes(column.name) && "pl-4"
                         )}
                         onClick={() => handleCellClick(row.__id, column.name)}
                       >
@@ -536,7 +577,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               </Label>
               <Select 
                 value={filterOperation} 
-                onValueChange={(value: FilterOptions['operation']) => setFilterOperation(value)}
+                onValueChange={(value) => setFilterOperation(value as FilterOptions['operation'])}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select operation" />
