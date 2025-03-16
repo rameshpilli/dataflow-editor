@@ -18,7 +18,7 @@ const Table = React.forwardRef<
     <table
       ref={ref}
       className={cn(
-        "w-full caption-bottom text-sm",
+        "w-full caption-bottom text-sm table-layout-fixed",
         columnResizing ? "table-fixed" : "",
         className
       )}
@@ -98,12 +98,13 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "overflow-hidden text-ellipsis", // Allow horizontal scrolling without text wrapping
+      "overflow-hidden text-ellipsis whitespace-nowrap", // Ensure headers don't wrap
       className
     )}
     style={{
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
+      maxWidth: width ? `${width}px` : undefined,
     }}
     {...props}
   />
@@ -121,7 +122,7 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       "p-4 align-middle [&:has([role=checkbox])]:pr-0",
-      "overflow-hidden text-ellipsis", // Allow horizontal scrolling without text wrapping
+      "overflow-hidden text-ellipsis whitespace-nowrap", // Prevent text wrapping in cells
       className
     )}
     style={{

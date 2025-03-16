@@ -718,6 +718,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
               onZoomChange={handleZoomChange}
               onFitToScreen={handleFitToScreen}
               onToggleFullscreen={handleToggleFullscreen}
+              onFocusSelection={handleFocusSelection}
               isFullscreen={isFullscreen}
               disableFocus={selectedRows.size === 0}
             />
@@ -912,22 +913,21 @@ const DataEditor: React.FC<DataEditorProps> = ({
                               onClick={() => handleSort(column.name)}
                               width={columnWidths[column.name] || 150}
                             >
-                              <div className="flex flex-col">
+                              <div className="flex flex-row items-center gap-1">
                                 <span className="truncate font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
-                                <span className="text-xs text-gray-500 truncate mt-1">
-                                  {column.type}
-                                  {column.nullable && ' (nullable)'}
+                                <span className="text-xs text-gray-500 whitespace-nowrap">
+                                  ({column.type}{column.nullable ? ', nullable' : ''})
                                 </span>
+                                {sortColumn === column.name && (
+                                  <div className="ml-1">
+                                    {sortDirection === 'asc' ? (
+                                      <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              {sortColumn === column.name && (
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                  {sortDirection === 'asc' ? (
-                                    <ChevronUp className="h-4 w-4 flex-shrink-0" />
-                                  ) : (
-                                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                  )}
-                                </div>
-                              )}
                             </TableHead>
                           </ResizableColumn>
                         </ColumnMenu>

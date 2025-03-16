@@ -49,12 +49,16 @@ const ResizableColumn: React.FC<ResizableColumnProps> = ({
   return (
     <div 
       className={cn("relative", className)} 
-      style={{ width: `${width}px`, minWidth: `${minWidth}px` }}
+      style={{ 
+        width: `${width}px`, 
+        minWidth: `${minWidth}px`,
+        display: 'inline-block'  // Ensure this div is inline to work with table
+      }}
     >
       {children}
       <div 
         className={cn(
-          "absolute top-0 right-0 h-full w-2 cursor-col-resize hover:bg-gray-300 dark:hover:bg-gray-600",
+          "absolute top-0 right-0 h-full w-2 cursor-col-resize hover:bg-gray-300 dark:hover:bg-gray-600 z-10",
           isResizing ? "bg-primary" : ""
         )}
         onMouseDown={startResizing}
