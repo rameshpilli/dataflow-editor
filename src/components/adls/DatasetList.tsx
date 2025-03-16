@@ -5,46 +5,59 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { Database, FileType, ZoomIn, ZoomOut } from 'lucide-react';
+import { Database, FileType, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import ZoomControls from './ZoomControls';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 interface DatasetListProps {
   datasets: Dataset[];
   onSelectDataset: (dataset: Dataset) => void;
   isLoading: boolean;
 }
-const DatasetList: React.FC<DatasetListProps> = ({
-  datasets,
-  onSelectDataset,
-  isLoading
-}) => {
+
+const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, isLoading }) => {
   const [zoomLevel, setZoomLevel] = useState(100);
+
   if (isLoading) {
-    return <Card>
+    return (
+      <Card>
         <CardHeader>
           <CardTitle>Loading datasets...</CardTitle>
         </CardHeader>
-      </Card>;
+      </Card>
+    );
   }
+
   if (datasets.length === 0) {
-    return <Card>
+    return (
+      <Card>
         <CardHeader>
           <CardTitle>No datasets found</CardTitle>
           <CardDescription>
             No datasets were found in the connected storage account
           </CardDescription>
         </CardHeader>
-      </Card>;
+      </Card>
+    );
   }
-  return <Card>
+
+  return (
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div className="">
+        <div>
           <CardTitle>Available Datasets</CardTitle>
           <CardDescription>
             Select a dataset to view and edit its data
           </CardDescription>
         </div>
-        <ZoomControls zoomLevel={zoomLevel} onZoomChange={setZoomLevel} onFitToScreen={() => setZoomLevel(100)} onFocusSelection={() => {}} disableFocus={true} />
+        <ZoomControls
+          zoomLevel={zoomLevel}
+          onZoomChange={setZoomLevel}
+          onFitToScreen={() => setZoomLevel(100)}
+          onFocusSelection={() => {}}
+          disableFocus={true}
+        />
       </CardHeader>
       <CardContent>
         <div className="border rounded-md overflow-hidden">
@@ -53,37 +66,87 @@ const DatasetList: React.FC<DatasetListProps> = ({
               <TableHeader>
                 <TableRow>
                   <TableHead>Type</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Path</TableHead>
+                  <TableHead className="w-[180px]">Name</TableHead>
+                  <TableHead className="w-[180px]">Path</TableHead>
                   <TableHead>Columns</TableHead>
-                  <TableHead>Rows</TableHead>
+                  <TableHead>Count</TableHead>
+                  <TableHead>Repaired</TableHead>
                   <TableHead>Last Modified</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {datasets.map(dataset => <TableRow key={dataset.id}>
-                    <TableCell>
-                      {dataset.format === 'delta' ? <Database className="h-5 w-5 text-blue-500" /> : <FileType className="h-5 w-5 text-green-500" />}
-                    </TableCell>
-                    <TableCell className="font-medium">{dataset.name}</TableCell>
-                    <TableCell className="font-mono text-xs">{dataset.path}</TableCell>
-                    <TableCell>{dataset.columns.length}</TableCell>
-                    <TableCell>{dataset.rowCount?.toLocaleString() || 'Unknown'}</TableCell>
-                    <TableCell>
-                      {dataset.lastModified ? format(dataset.lastModified, 'MMM d, yyyy') : 'Unknown'}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => onSelectDataset(dataset)}>
-                        View Data
-                      </Button>
-                    </TableCell>
-                  </TableRow>)}
+                {datasets.map((dataset) => {
+                  // Calculate repair percentage safely
+                  const totalRows = dataset.rowCount || 0;
+                  const repairedRows = dataset.repairedCount || 0;
+                  let repairPercentage = 0;
+                  
+                  if (totalRows > 0 && repairedRows > 0) {
+                    repairPercentage = Math.round((repairedRows / totalRows) * 100);
+                  }
+                    
+                  return (
+                    <TableRow key={dataset.id}>
+                      <TableCell>
+                        {dataset.format === 'delta' ? (
+                          <Database className="h-5 w-5 text-blue-500" />
+                        ) : (
+                          <FileType className="h-5 w-5 text-green-500" />
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium max-w-[180px] truncate">
+                        {dataset.name}
+                      </TableCell>
+                      <TableCell>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="font-mono text-xs truncate max-w-[180px] cursor-help">
+                                {dataset.path}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="font-mono text-xs p-2 max-w-md break-all" side="bottom">
+                              {dataset.path}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
+                      <TableCell>{dataset.columns.length}</TableCell>
+                      <TableCell>{dataset.rowCount?.toLocaleString() || 'Unknown'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <ShieldCheck className={`h-4 w-4 mr-1.5 ${repairPercentage === 100 ? 'text-green-500' : 'text-amber-500'}`} />
+                          {repairedRows.toLocaleString()} 
+                          {totalRows > 0 ? 
+                            ` (${repairPercentage}%)` : 
+                            ' (0%)'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {dataset.lastModified 
+                          ? format(dataset.lastModified, 'MMM d, yyyy') 
+                          : 'Unknown'}
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => onSelectDataset(dataset)}
+                        >
+                          View Data
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
+
 export default DatasetList;

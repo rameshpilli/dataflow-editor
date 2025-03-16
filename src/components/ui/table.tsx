@@ -40,7 +40,7 @@ const Table = React.forwardRef<
         striped ? "[&_tbody_tr:nth-child(odd)]:bg-gray-50 dark:[&_tbody_tr:nth-child(odd)]:bg-gray-900/40" : "",
         compact ? "[&_th]:py-2 [&_td]:py-2" : "",
         borderless ? "border-none [&_tr]:border-none [&_th]:border-none [&_td]:border-none" : "[&_th]:border-b [&_td]:border-b [&_tr:last-child_td]:border-b-0",
-        hoverable ? "[&_tbody_tr]:hover:bg-gray-50/80 dark:[&_tbody_tr]:hover:bg-gray-800/40" : "",
+        hoverable ? "[&_tbody_tr]:hover:bg-blue-50/50 dark:[&_tbody_tr]:hover:bg-blue-900/20" : "",
         className
       )}
       style={{ 
@@ -107,7 +107,7 @@ const TableRow = React.forwardRef<
     ref={ref}
     className={cn(
       "border-b transition-colors data-[state=selected]:bg-muted",
-      isHighlighted ? "bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-400 dark:border-l-amber-500" : "",
+      isHighlighted ? "bg-blue-50 dark:bg-blue-900/20" : "",
       isAlternate ? "bg-gray-50 dark:bg-gray-800/20" : "",
       isSelected ? "bg-blue-100 dark:bg-blue-800/30 outline outline-2 outline-blue-200 dark:outline-blue-700/50" : "",
       className
