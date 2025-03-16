@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { Database, FileType, ZoomIn, ZoomOut } from 'lucide-react';
+import { Database, FileType, ZoomIn, ZoomOut, Wrench, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import ZoomControls from './ZoomControls';
 
@@ -69,6 +69,7 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                   <TableHead>Path</TableHead>
                   <TableHead>Columns</TableHead>
                   <TableHead>Rows</TableHead>
+                  <TableHead>Repaired</TableHead>
                   <TableHead>Last Modified</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -87,6 +88,15 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                     <TableCell className="font-mono text-xs">{dataset.path}</TableCell>
                     <TableCell>{dataset.columns.length}</TableCell>
                     <TableCell>{dataset.rowCount?.toLocaleString() || 'Unknown'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <ShieldCheck className={`h-4 w-4 mr-1.5 ${dataset.repairedCount === dataset.rowCount ? 'text-green-500' : 'text-amber-500'}`} />
+                        {dataset.repairedCount?.toLocaleString() || '0'} 
+                        {dataset.rowCount ? 
+                          ` (${Math.round((dataset.repairedCount || 0) / dataset.rowCount * 100)}%)` : 
+                          ''}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {dataset.lastModified 
                         ? format(dataset.lastModified, 'MMM d, yyyy') 
