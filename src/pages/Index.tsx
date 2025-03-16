@@ -4,7 +4,6 @@ import Header from '@/components/Header';
 import ADLSManager from '@/components/adls/ADLSManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Badge } from '@/components/ui/badge';
 
 const APP_VERSION = "v1.2.3";
 
@@ -22,14 +21,6 @@ const Index = () => {
       </div>
       
       <Header />
-      
-      {user && (
-        <div className="flex justify-end px-6 -mt-2 mb-2">
-          <Badge variant="outline" className="text-xs bg-blue-50/50 dark:bg-blue-900/10 border-blue-200/50 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 font-mono">
-            {APP_VERSION}
-          </Badge>
-        </div>
-      )}
       
       <main className="flex-1 p-4 md:p-6 animate-fade-in max-w-full overflow-hidden relative z-10">
         <div className="max-w-7xl mx-auto w-full">
