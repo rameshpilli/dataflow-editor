@@ -28,7 +28,7 @@ const Table = React.forwardRef<
   ...props 
 }, ref) => (
   <div className={cn(
-    "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200 dark:border-gray-700",
+    "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200 dark:border-gray-700 transition-shadow duration-200 hover:shadow-md",
     fullWidth ? "max-w-none" : "",
   )}>
     <table
@@ -47,6 +47,8 @@ const Table = React.forwardRef<
         fontSize: `${zoomLevel / 100}rem`,
         tableLayout: columnResizing ? "fixed" : "auto"
       }}
+      role="grid"
+      aria-label="Data table"
       {...props}
     />
   </div>
@@ -62,7 +64,8 @@ const TableHeader = React.forwardRef<
     className={cn(
       "[&_tr]:border-b sticky top-0 bg-gray-200/95 dark:bg-gray-800/95 z-10 backdrop-blur-sm shadow-md", 
       className
-    )} 
+    )}
+    role="rowgroup"
     {...props} 
   />
 ))
@@ -75,6 +78,7 @@ const TableBody = React.forwardRef<
   <tbody
     ref={ref}
     className={cn("[&_tr:last-child]:border-0", className)}
+    role="rowgroup"
     {...props}
   />
 ))
@@ -90,6 +94,7 @@ const TableFooter = React.forwardRef<
       "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0 sticky bottom-0 bg-white dark:bg-gray-900 z-10 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]",
       className
     )}
+    role="rowgroup"
     {...props}
   />
 ))
@@ -112,6 +117,7 @@ const TableRow = React.forwardRef<
       isSelected ? "bg-blue-100 dark:bg-blue-800/40 outline outline-2 outline-blue-300 dark:outline-blue-700/50" : "",
       className
     )}
+    role="row"
     {...props}
   />
 ))
@@ -131,6 +137,7 @@ const TableHead = React.forwardRef<
       "whitespace-nowrap bg-gray-200/95 dark:bg-gray-700/95 border-r last:border-r-0 backdrop-blur-sm", 
       "group hover:bg-gray-300/95 dark:hover:bg-gray-600/95",
       "first:rounded-tl-sm last:rounded-tr-sm",
+      "table-header-cell",
       className
     )}
     style={{
@@ -140,6 +147,7 @@ const TableHead = React.forwardRef<
       textOverflow: "ellipsis",
       overflow: "hidden"
     }}
+    role="columnheader"
     {...props}
   />
 ))
@@ -170,6 +178,7 @@ const TableCell = React.forwardRef<
       textOverflow: "ellipsis",
       overflow: "hidden"
     }}
+    role="gridcell"
     {...props}
   />
 ))

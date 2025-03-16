@@ -7,7 +7,7 @@ import DataEditor from '@/components/adls/DataEditor';
 import { Dataset, ADLSCredentials } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { LogOut, Search } from 'lucide-react';
+import { LogOut, Search, DatabaseIcon, CloudOff, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 
@@ -154,7 +154,7 @@ const ADLSManager: React.FC = () => {
   }, [selectedDataset, changes]);
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl water-blue-bg rounded-xl shadow-lg">
+    <div className="container mx-auto py-8 px-4 max-w-7xl water-blue-bg rounded-xl shadow-lg animate-fade-in">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-gray-100">Data Editor</h1>
         <p className="text-gray-600 dark:text-gray-300">
@@ -163,8 +163,11 @@ const ADLSManager: React.FC = () => {
       </div>
       
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6 shadow-sm">
-          <p className="text-red-600">Error: {error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6 shadow-sm animate-scale-in">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
+            <p className="text-red-600">Error: {error}</p>
+          </div>
         </div>
       )}
       
@@ -176,25 +179,35 @@ const ADLSManager: React.FC = () => {
       )}
       
       {connection && !selectedDataset && (
-        <div className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
+        <div className="space-y-6 bg-white dark:bg-gray-800/90 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-scale-in">
           <div className="flex justify-between items-center">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg px-4 py-3 shadow-sm border border-blue-100 dark:border-blue-800/50">
-              <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                Connected to: {connection.name}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {connection.credentials.useManagedIdentity 
-                  ? 'Using Azure Managed Identity' 
-                  : connection.credentials.connectionString 
-                    ? 'Using Connection String' 
-                    : 'Using Account Key'}
-              </p>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg px-4 py-3 shadow-sm border border-blue-100 dark:border-blue-800/50 transition-all duration-200 hover:shadow-md">
+              <div className="flex items-center">
+                <DatabaseIcon className="h-5 w-5 mr-3 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">
+                    Connected to: {connection.name}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {connection.credentials.useManagedIdentity 
+                      ? 'Using Azure Managed Identity' 
+                      : connection.credentials.connectionString 
+                        ? 'Using Connection String' 
+                        : 'Using Account Key'}
+                  </p>
+                </div>
+              </div>
             </div>
             
             <div className="flex items-center gap-2">
               <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors btn-feedback"
+                    aria-label="Disconnect from ADLS"
+                  >
                     <LogOut className="mr-2 h-4 w-4 text-red-500" />
                     Disconnect
                   </Button>
@@ -210,7 +223,11 @@ const ADLSManager: React.FC = () => {
                     <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
                       Cancel
                     </Button>
-                    <Button variant="destructive" onClick={handleDisconnect}>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleDisconnect}
+                      className="btn-feedback"
+                    >
                       Disconnect
                     </Button>
                   </DialogFooter>
@@ -222,20 +239,27 @@ const ADLSManager: React.FC = () => {
           <div className="relative">
             <div className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-lg mb-4">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="dataset-search"
-                  placeholder="Search datasets... (Press '/' to focus)"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)} 
-                  className="pl-10 border-gray-200 bg-white dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-500"
-                />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 transition-transform duration-200 group-focus-within:text-blue-500" />
+                <div className="group">
+                  <Input
+                    id="dataset-search"
+                    placeholder="Search datasets... (Press '/' to focus)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                    className="pl-10 border-gray-200 bg-white dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                    aria-label="Search datasets"
+                  />
+                  <div className="absolute right-3 top-3 text-xs text-gray-400 pointer-events-none transition-opacity duration-200 opacity-80 group-focus-within:opacity-100">
+                    Press '/' to focus
+                  </div>
+                </div>
                 {searchQuery && (
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="absolute right-2 top-2 h-6 w-6 p-0" 
+                    className="absolute right-2 top-2 h-6 w-6 p-0 opacity-70 hover:opacity-100 transition-opacity" 
                     onClick={() => setSearchQuery('')}
+                    aria-label="Clear search"
                   >
                     <span className="sr-only">Clear</span>
                     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-3 w-3">
@@ -247,11 +271,37 @@ const ADLSManager: React.FC = () => {
             </div>
           </div>
           
-          <DatasetList 
-            datasets={filteredDatasets}
-            onSelectDataset={handleSelectDataset}
-            isLoading={isLoading}
-          />
+          {filteredDatasets.length > 0 ? (
+            <DatasetList 
+              datasets={filteredDatasets}
+              onSelectDataset={handleSelectDataset}
+              isLoading={isLoading}
+            />
+          ) : (
+            <div className="empty-state animate-fade-in" role="status">
+              {searchQuery ? (
+                <>
+                  <Search className="h-10 w-10 mb-2 text-gray-400 animate-bounce-subtle" />
+                  <h3 className="text-lg font-medium mb-1">No datasets found</h3>
+                  <p className="text-sm">No datasets match your search criteria "{searchQuery}"</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    Clear search
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <CloudOff className="h-10 w-10 mb-2 text-gray-400 animate-bounce-subtle" />
+                  <h3 className="text-lg font-medium mb-1">No datasets available</h3>
+                  <p className="text-sm">Connect to a data source with datasets to get started</p>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
       
@@ -274,9 +324,9 @@ const ADLSManager: React.FC = () => {
       )}
       
       {connection && selectedDataset && !dataPreview && (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-pulse-subtle">
           <div className="animate-pulse flex flex-col items-center justify-center">
-            <div className="h-8 w-8 bg-blue-200 dark:bg-blue-800 rounded-full mb-4"></div>
+            <div className="h-10 w-10 bg-blue-200 dark:bg-blue-800 rounded-full mb-4"></div>
             <h3 className="text-lg font-medium">Loading dataset...</h3>
             <p className="text-gray-500 mt-2">Please wait while we fetch the data</p>
             <div className="mt-4 h-2 w-40 bg-blue-200 dark:bg-blue-800 rounded"></div>
