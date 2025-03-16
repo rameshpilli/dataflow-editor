@@ -3,12 +3,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface User {
-  email: string;
+  username: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -28,11 +28,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Login function
-  const login = async (email: string, password: string) => {
-    // In a real app, this would validate credentials against an API
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  const login = async (username: string, password: string) => {
+    // For testing purposes, we're not validating against an API
+    // In a real app, this would call an authentication API
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    const userData = { email };
+    const userData = { username };
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
   };

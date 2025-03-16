@@ -7,38 +7,39 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { ChevronRight, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
-  const [email, setEmail] = React.useState('');
+  const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate authentication - in a real app, this would call an auth API
     try {
-      // For demo purposes, accept any credentials
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Store auth state
-      localStorage.setItem('user', JSON.stringify({ email }));
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome to ADLS Manager",
-      });
-      
-      // Redirect to main app
-      navigate('/');
+      // Simple hardcoded authentication for testing
+      if (username === 'user' && password === 'password') {
+        await login(username, password);
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome to ADLS Manager",
+        });
+        
+        navigate('/');
+      } else {
+        throw new Error('Invalid credentials');
+      }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: "Please check your credentials",
+        description: "Please use username: user and password: password",
       });
     } finally {
       setIsLoading(false);
@@ -54,30 +55,25 @@ const Login = () => {
           </div>
           <CardTitle className="text-2xl font-bold tracking-tight">ADLS Manager</CardTitle>
           <CardDescription>
-            Enter your credentials to access your account
+            Internal application - Use the test credentials to login
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input 
-                id="email" 
-                type="email" 
-                placeholder="email@example.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username" 
+                type="text" 
+                placeholder="username" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 className="bg-white/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Button variant="link" size="sm" className="text-xs text-blue-600 p-0 h-auto">
-                  Forgot password?
-                </Button>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
@@ -86,10 +82,11 @@ const Login = () => {
                 required
                 className="bg-white/50 backdrop-blur-sm"
               />
+              <p className="text-xs text-gray-500 italic mt-1">For testing: username is "user" and password is "password"</p>
             </div>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
+        <CardFooter>
           <Button 
             className="w-full group" 
             type="submit" 
@@ -99,12 +96,6 @@ const Login = () => {
             {isLoading ? 'Logging in...' : 'Sign In'}
             <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
-          <div className="text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <Button variant="link" className="p-0 text-blue-600" onClick={() => navigate('/register')}>
-              Sign up
-            </Button>
-          </div>
         </CardFooter>
       </Card>
     </div>
