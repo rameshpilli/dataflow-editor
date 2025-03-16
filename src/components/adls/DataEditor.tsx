@@ -850,7 +850,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
         </CardHeader>
         <CardContent className={isFullscreen ? "h-[calc(100vh-180px)]" : ""}>
           <div 
-            className="border rounded-md"
+            className="border rounded-md overflow-hidden"
             ref={tableContainerRef}
           >
             <ScrollArea 
@@ -863,7 +863,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                 columnResizing={true}
                 className="w-full"
               >
-                <TableHeader className="sticky top-0 z-20 bg-white dark:bg-gray-800">
+                <TableHeader>
                   <TableRow>
                     <TableHead 
                       className="sticky left-0 z-30 bg-white dark:bg-gray-800"
@@ -901,7 +901,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                             onResize={(width) => handleResizeColumn(column.name, width)}
                           >
                             <TableHead 
-                              className={`cursor-pointer select-none whitespace-nowrap
+                              className={`cursor-pointer select-none
                                 ${frozenColumns.includes(column.name) 
                                   ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
                               `}
@@ -914,8 +914,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
                               width={columnWidths[column.name] || 150}
                             >
                               <div className="flex flex-row items-center gap-1">
-                                <span className="truncate font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
-                                <span className="text-xs text-gray-500 whitespace-nowrap">
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{column.name}</span>
+                                <span className="text-xs text-gray-500">
                                   ({column.type}{column.nullable ? ', nullable' : ''})
                                 </span>
                                 {sortColumn === column.name && (

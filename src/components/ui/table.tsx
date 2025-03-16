@@ -18,7 +18,7 @@ const Table = React.forwardRef<
     <div style={{ 
       width: zoomLevel > 100 ? `${zoomLevel}%` : '100%',
       overflowX: "auto",
-      overflowY: "visible"
+      overflowY: "auto"
     }}>
       <table
         ref={ref}
@@ -29,6 +29,7 @@ const Table = React.forwardRef<
         )}
         style={{ 
           fontSize: `${zoomLevel / 100}rem`,
+          tableLayout: columnResizing ? "fixed" : "auto"
         }}
         {...props}
       />
@@ -101,16 +102,17 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "overflow-hidden text-ellipsis whitespace-nowrap", // Ensure headers don't wrap
       className
     )}
     style={{
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
       maxWidth: width ? `${width}px` : undefined,
-      writingMode: "horizontal-tb", // Ensure horizontal text orientation
-      textOrientation: "mixed", // Keep text readable
-      whiteSpace: "nowrap" // Prevent wrapping
+      transform: "none",
+      direction: "ltr",
+      unicodeBidi: "normal",
+      textOrientation: "mixed",
+      writingMode: "horizontal-tb"
     }}
     {...props}
   />
@@ -129,7 +131,6 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       "p-4 align-middle [&:has([role=checkbox])]:pr-0",
-      "overflow-hidden text-ellipsis whitespace-nowrap", // Prevent text wrapping in cells
       isEditing ? "bg-blue-50 dark:bg-blue-900" : "",
       className
     )}
@@ -137,6 +138,8 @@ const TableCell = React.forwardRef<
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
       maxWidth: width ? `${width}px` : undefined,
+      textOverflow: "ellipsis",
+      overflow: "hidden"
     }}
     {...props}
   />
