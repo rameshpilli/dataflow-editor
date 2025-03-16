@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -14,21 +15,22 @@ const Table = React.forwardRef<
     "relative w-full overflow-auto", 
     fullWidth ? "max-w-none" : "",
   )}>
-    <table
-      ref={ref}
-      className={cn(
-        "w-full caption-bottom text-sm",
-        columnResizing ? "table-fixed" : "",
-        className
-      )}
-      style={{ 
-        fontSize: `${zoomLevel / 100}rem`,
-        transform: `scale(${zoomLevel / 100})`,
-        transformOrigin: "top left",
-        width: zoomLevel > 100 ? `${100 * 100 / zoomLevel}%` : '100%'
-      }}
-      {...props}
-    />
+    <div style={{ 
+      width: zoomLevel > 100 ? `${zoomLevel}%` : '100%',
+    }}>
+      <table
+        ref={ref}
+        className={cn(
+          "w-full caption-bottom text-sm",
+          columnResizing ? "table-fixed" : "",
+          className
+        )}
+        style={{ 
+          fontSize: `${zoomLevel / 100}rem`,
+        }}
+        {...props}
+      />
+    </div>
   </div>
 ))
 Table.displayName = "Table"
@@ -37,7 +39,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  <thead ref={ref} className={cn("[&_tr]:border-b sticky top-0 bg-white dark:bg-gray-900 z-10", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -60,7 +62,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0 sticky bottom-0 bg-white dark:bg-gray-900 z-10",
       className
     )}
     {...props}
@@ -78,7 +80,7 @@ const TableRow = React.forwardRef<
     ref={ref}
     className={cn(
       "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      isHighlighted ? "bg-green-50 dark:bg-green-950 animate-pulse" : "",
+      isHighlighted ? "bg-green-100 dark:bg-green-900" : "",
       className
     )}
     {...props}
@@ -97,16 +99,13 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "overflow-hidden text-ellipsis whitespace-nowrap", // Ensure headers don't wrap but remain horizontal
+      "overflow-hidden text-ellipsis whitespace-nowrap", // Ensure headers don't wrap
       className
     )}
     style={{
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
       maxWidth: width ? `${width}px` : undefined,
-      whiteSpace: "nowrap", // Ensure text stays on a single line (horizontal)
-      textOrientation: "mixed", // Ensure text stays horizontal
-      writingMode: "horizontal-tb" // Explicitly set horizontal text direction
     }}
     {...props}
   />
@@ -118,13 +117,15 @@ const TableCell = React.forwardRef<
   React.TdHTMLAttributes<HTMLTableCellElement> & {
     minWidth?: number;
     width?: number;
+    isEditing?: boolean;
   }
->(({ className, minWidth, width, ...props }, ref) => (
+>(({ className, minWidth, width, isEditing, ...props }, ref) => (
   <td
     ref={ref}
     className={cn(
       "p-4 align-middle [&:has([role=checkbox])]:pr-0",
       "overflow-hidden text-ellipsis whitespace-nowrap", // Prevent text wrapping in cells
+      isEditing ? "bg-blue-50 dark:bg-blue-900" : "",
       className
     )}
     style={{
