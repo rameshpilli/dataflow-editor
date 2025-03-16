@@ -111,9 +111,6 @@ const TableHead = React.forwardRef<
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
       maxWidth: width ? `${width}px` : undefined,
-      // Explicitly enforce horizontal text orientation
-      writingMode: "horizontal-tb",
-      textOrientation: "mixed",
       textOverflow: "ellipsis",
       overflow: "hidden"
     }}
