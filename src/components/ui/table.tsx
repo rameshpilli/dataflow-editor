@@ -102,6 +102,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+      "whitespace-nowrap", // Prevent text wrapping in headers
       className
     )}
     style={{
@@ -112,7 +113,9 @@ const TableHead = React.forwardRef<
       direction: "ltr",
       unicodeBidi: "normal",
       textOrientation: "mixed",
-      writingMode: "horizontal-tb"
+      writingMode: "horizontal-tb",
+      textOverflow: "ellipsis",
+      overflow: "hidden"
     }}
     {...props}
   />
@@ -131,6 +134,7 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       "p-4 align-middle [&:has([role=checkbox])]:pr-0",
+      "whitespace-nowrap", // Prevent text wrapping in cells
       isEditing ? "bg-blue-50 dark:bg-blue-900" : "",
       className
     )}
