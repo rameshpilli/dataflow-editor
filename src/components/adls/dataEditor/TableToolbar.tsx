@@ -13,7 +13,7 @@ import {
   Maximize2
 } from 'lucide-react';
 import { useDataEditor } from '../DataEditorContext';
-import { Toggle } from '@/components/ui/toggle';
+import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TableToolbarProps {
@@ -70,15 +70,14 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
       </div>
       
       <div className="flex items-center space-x-2">
-        <Toggle
-          pressed={editMode}
-          onPressedChange={setEditMode}
-          aria-label="Toggle edit mode"
-          className="h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-50"
-        >
-          <SlidersHorizontal className="h-4 w-4 mr-2" />
-          Edit Mode
-        </Toggle>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Edit Mode</span>
+          <Switch
+            checked={editMode}
+            onCheckedChange={setEditMode}
+            aria-label="Toggle edit mode"
+          />
+        </div>
         
         <TooltipProvider>
           <Tooltip>
