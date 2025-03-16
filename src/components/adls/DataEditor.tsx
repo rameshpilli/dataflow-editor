@@ -635,24 +635,28 @@ const DataEditor: React.FC<DataEditorProps> = ({
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading data...</CardTitle>
-        </CardHeader>
-      </Card>
+      <div className="water-blue-bg min-h-screen p-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Loading data...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
     );
   }
 
   if (!dataPreview) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No data available</CardTitle>
-          <CardDescription>
-            Failed to load data preview for this dataset
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="water-blue-bg min-h-screen p-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>No data available</CardTitle>
+            <CardDescription>
+              Failed to load data preview for this dataset
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     );
   }
 
@@ -663,7 +667,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const selectedRowsData = rowsToDisplay.filter(row => selectedRows.has(row.__id));
 
   return (
-    <div className="space-y-4" ref={editorContainerRef}>
+    <div className="water-blue-bg min-h-screen p-4" ref={editorContainerRef}>
       <Card className={isFullscreen ? "rounded-none border-0" : ""}>
         <CardHeader className={`flex flex-row items-center justify-between space-y-0 pb-2 ${isFullscreen ? 'sticky top-0 z-50 bg-background' : ''}`}>
           <div>

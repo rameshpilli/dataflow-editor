@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -49,6 +50,10 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Water-blue gradient background colors */
+    --water-blue-light: 210 100% 97%;
+    --water-blue-medium: 200 100% 95%;
   }
 
   .dark {
@@ -87,6 +92,10 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Water-blue gradient colors for dark mode */
+    --water-blue-light: 210 70% 15%;
+    --water-blue-medium: 200 70% 20%;
   }
 }
 
@@ -98,4 +107,9 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Water-blue gradient background */
+.water-blue-bg {
+  background: linear-gradient(135deg, hsl(var(--water-blue-light)) 0%, hsl(var(--water-blue-medium)) 100%);
 }
