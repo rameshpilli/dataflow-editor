@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Expand } from 'lucide-react';
+import { ZoomIn, ZoomOut, Expand, Pencil } from 'lucide-react';
 import { 
   Select, 
   SelectContent, 
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Toggle } from '@/components/ui/toggle';
 
 interface ZoomControlsProps {
   zoomLevel: number;
@@ -20,6 +21,8 @@ interface ZoomControlsProps {
   onToggleFullscreen?: () => void;
   isFullscreen?: boolean;
   disableFocus?: boolean;
+  editMode?: boolean;
+  onToggleEditMode?: () => void;
 }
 
 const ZoomControls: React.FC<ZoomControlsProps> = ({ 
@@ -29,7 +32,9 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
   onFocusSelection,
   onToggleFullscreen,
   isFullscreen = false,
-  disableFocus = false
+  disableFocus = false,
+  editMode = false,
+  onToggleEditMode
 }) => {
   const handleZoomIn = () => {
     const newZoom = Math.min(zoomLevel + 25, 200);
@@ -99,6 +104,22 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
           </TooltipTrigger>
           <TooltipContent>Zoom In</TooltipContent>
         </Tooltip>
+        
+        {onToggleEditMode && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Toggle 
+                pressed={editMode} 
+                onPressedChange={onToggleEditMode}
+                aria-label="Toggle edit mode"
+                className="h-8 w-8 p-0"
+              >
+                <Pencil className="h-4 w-4" />
+              </Toggle>
+            </TooltipTrigger>
+            <TooltipContent>{editMode ? 'Disable Edit Mode' : 'Enable Edit Mode'}</TooltipContent>
+          </Tooltip>
+        )}
         
         {onToggleFullscreen && (
           <Tooltip>
