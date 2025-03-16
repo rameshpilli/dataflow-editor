@@ -28,7 +28,7 @@ const Table = React.forwardRef<
   ...props 
 }, ref) => (
   <div className={cn(
-    "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200/80 dark:border-gray-700/80 transition-shadow duration-200 hover:shadow-md",
+    "relative w-full overflow-auto rounded-md shadow-sm border border-gray-200/80 dark:border-gray-700/80 transition-all duration-300 ease-in-out hover:shadow-md",
     fullWidth ? "max-w-none" : "",
   )}>
     <table
@@ -62,7 +62,7 @@ const TableHeader = React.forwardRef<
   <thead 
     ref={ref} 
     className={cn(
-      "[&_tr]:border-b sticky top-0 bg-gradient-to-r from-gray-100/95 to-gray-200/95 dark:from-gray-800/95 dark:to-gray-700/95 z-10 backdrop-blur-sm shadow-md", 
+      "[&_tr]:border-b sticky top-0 bg-gradient-to-r from-gray-100/95 to-gray-200/95 dark:from-gray-800/95 dark:to-gray-700/95 z-10 backdrop-blur-sm shadow-md transition-all duration-300", 
       className
     )}
     role="rowgroup"
@@ -77,7 +77,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
+    className={cn("[&_tr:last-child]:border-0 transition-all duration-300", className)}
     role="rowgroup"
     {...props}
   />
@@ -91,7 +91,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0 sticky bottom-0 bg-white dark:bg-gray-900 z-10 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]",
+      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0 sticky bottom-0 bg-white dark:bg-gray-900 z-10 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 shadow-[0_-1px_3px_rgba(0,0,0,0.1)] transition-all duration-300",
       className
     )}
     role="rowgroup"

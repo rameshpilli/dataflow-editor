@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { cn } from '@/lib/utils';
 
 interface ZoomControlsProps {
   zoomLevel?: number;
@@ -31,7 +32,7 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
   onToggleEditMode
 }) => {
   return (
-    <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-md border shadow-sm">
+    <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-md border shadow-sm transition-all duration-300 ease-in-out">
       <TooltipProvider>
         {onToggleEditMode && (
           <Tooltip>
@@ -95,10 +96,13 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
                 variant="ghost" 
                 size="icon" 
                 onClick={onToggleFullscreen}
-                className="h-8 w-8"
+                className={cn(
+                  "h-8 w-8 transition-all duration-300",
+                  isFullscreen && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                )}
               >
                 {isFullscreen ? 
-                  <Minimize2 className="h-4 w-4" /> : 
+                  <Minimize2 className="h-4 w-4 animate-scale-in" /> : 
                   <Maximize2 className="h-4 w-4" />
                 }
               </Button>
