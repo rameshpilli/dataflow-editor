@@ -9,8 +9,9 @@ const Table = React.forwardRef<
     fullWidth?: boolean;
     zoomLevel?: number;
     columnResizing?: boolean;
+    alternateRowColors?: boolean;
   }
->(({ className, fullWidth = false, zoomLevel = 100, columnResizing = false, ...props }, ref) => (
+>(({ className, fullWidth = false, zoomLevel = 100, columnResizing = false, alternateRowColors = false, ...props }, ref) => (
   <div className={cn(
     "relative w-full overflow-auto", 
     fullWidth ? "max-w-none" : "",
@@ -20,6 +21,7 @@ const Table = React.forwardRef<
       className={cn(
         "w-full caption-bottom text-sm",
         columnResizing ? "table-fixed" : "",
+        alternateRowColors ? "even:[&_tr:nth-child(even)]:bg-gray-50 dark:even:[&_tr:nth-child(even)]:bg-gray-800/30" : "",
         className
       )}
       style={{ 
@@ -74,14 +76,16 @@ TableFooter.displayName = "TableFooter"
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement> & { 
-    isHighlighted?: boolean 
+    isHighlighted?: boolean;
+    isAlternate?: boolean;
   }
->(({ className, isHighlighted, ...props }, ref) => (
+>(({ className, isHighlighted, isAlternate, ...props }, ref) => (
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "border-b transition-colors",
       isHighlighted ? "bg-green-100 dark:bg-green-900" : "",
+      isAlternate ? "bg-blue-50 dark:bg-blue-950/20" : "",
       className
     )}
     {...props}
@@ -100,7 +104,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap", // Prevent text wrapping in headers
+      "whitespace-nowrap bg-gray-100 dark:bg-gray-800", // Add light gray background to headers
       className
     )}
     style={{
@@ -130,8 +134,8 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       "p-4 align-middle [&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap", // Prevent text wrapping in cells
-      isEditing ? "bg-blue-50 dark:bg-blue-900" : "",
+      "whitespace-nowrap border-r last:border-r-0", // Add right borders between cells
+      isEditing ? "bg-blue-600 dark:bg-blue-700 text-white" : "",
       className
     )}
     style={{

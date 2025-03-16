@@ -620,7 +620,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
     
     return `
       ${editMode ? 'cursor-pointer' : ''} 
-      ${isEditing ? 'bg-amber-50 dark:bg-amber-950 p-0' : ''}
+      ${isEditing ? 'bg-blue-600 dark:bg-blue-700 text-white' : ''}
       ${isModified && !isRecentlySaved ? 'bg-yellow-50 dark:bg-yellow-950' : ''}
       ${isRecentlySaved ? 'bg-green-50 dark:bg-green-950 transition-colors duration-500' : ''}
       ${isSelected ? 'bg-blue-50 dark:bg-blue-950' : ''}
@@ -631,15 +631,20 @@ const DataEditor: React.FC<DataEditorProps> = ({
     `;
   };
 
-  const getRowClasses = (rowId: string) => {
+  const getRowClasses = (rowId: string, index: number) => {
     const isSelected = selectedRows.has(rowId);
     const isModified = modifiedRows.has(rowId);
     const isRecentlySaved = lastSavedRows.has(rowId);
+    const isAlternate = index % 2 === 1;
     
-    let baseClass = "hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors";
+    let baseClass = "hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors";
+    
+    if (isAlternate) {
+      baseClass += " bg-blue-50/30 dark:bg-blue-950/20";
+    }
     
     if (isSelected) {
-      baseClass += " bg-blue-50 dark:bg-blue-950";
+      baseClass += " bg-blue-100 dark:bg-blue-900/40";
     }
     
     if (isModified && !isRecentlySaved) {
@@ -907,12 +912,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
                   zoomLevel={zoomLevel} 
                   fullWidth={fullWidthTable}
                   columnResizing={true}
+                  alternateRowColors={true}
                   className="w-full"
                 >
                   <TableHeader>
                     <TableRow>
                       <TableHead 
-                        className="sticky left-0 z-30 bg-white dark:bg-gray-800"
+                        className="sticky left-0 z-30 bg-gray-100 dark:bg-gray-800"
                         minWidth={40}
                         width={40}
                       >
@@ -934,7 +940,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                             key={`menu-${column.name}`}
                             className={`cursor-pointer select-none
                               ${frozenColumns.includes(column.name) 
-                                ? 'sticky z-20 bg-white dark:bg-gray-800' : ''}
+                                ? 'sticky z-20 bg-gray-100 dark:bg-gray-800' : ''}
                             `}
                             style={{
                               left: frozenColumns.includes(column.name) 
@@ -977,8 +983,13 @@ const DataEditor: React.FC<DataEditorProps> = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rowsToDisplay.map((row) => (
-                      <TableRow key={row.__id} id={`row-${row.__id}`} className={getRowClasses(row.__id)}>
+                    {rowsToDisplay.map((row, rowIndex) => (
+                      <TableRow 
+                        key={row.__id} 
+                        id={`row-${row.__id}`} 
+                        className={getRowClasses(row.__id, rowIndex)}
+                        isAlternate={rowIndex % 2 === 1}
+                      >
                         <TableCell className="sticky left-0 z-10 bg-white dark:bg-gray-800 p-2">
                           <Checkbox 
                             checked={selectedRows.has(row.__id)}
@@ -989,23 +1000,27 @@ const DataEditor: React.FC<DataEditorProps> = ({
                         </TableCell>
                         {dataPreview.columns
                           .filter(column => visibleColumns.includes(column.name))
-                          .map((column) => (
-                            <TableCell 
-                              key={`${row.__id}-${column.name}`} 
-                              className={getCellClasses(row.__id, column.name)}
-                              onClick={() => {
-                                if (editMode && !frozenColumns.includes(column.name)) {
-                                  startEdit(row.__id, column.name, row[column.name]);
-                                }
-                              }}
-                            >
-                              {editCell?.rowId === row.__id && editCell?.columnName === column.name ? (
-                                renderCellEditor(row.__id, column.name, row[column.name], column.type)
-                              ) : (
-                                renderCellValue(row[column.name], column.type)
-                              )}
-                            </TableCell>
-                          ))}
+                          .map((column) => {
+                            const isEditingCell = editCell?.rowId === row.__id && editCell?.columnName === column.name;
+                            return (
+                              <TableCell 
+                                key={`${row.__id}-${column.name}`}
+                                className={getCellClasses(row.__id, column.name)}
+                                isEditing={isEditingCell}
+                                onClick={() => {
+                                  if (editMode && !frozenColumns.includes(column.name)) {
+                                    startEdit(row.__id, column.name, row[column.name]);
+                                  }
+                                }}
+                              >
+                                {isEditingCell ? (
+                                  renderCellEditor(row.__id, column.name, row[column.name], column.type)
+                                ) : (
+                                  renderCellValue(row[column.name], column.type)
+                                )}
+                              </TableCell>
+                            );
+                          })}
                       </TableRow>
                     ))}
                   </TableBody>
