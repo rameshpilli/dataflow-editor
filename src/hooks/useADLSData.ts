@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { adlsService } from '@/services/adlsService';
 import { 
@@ -10,7 +11,8 @@ import {
   DataChange,
   TempStorage,
   Comment,
-  ValidationResult
+  ValidationResult,
+  DatasetColumn
 } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 import { validateData } from '@/utils/schemaValidation';
