@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -367,39 +366,39 @@ const DataEditor: React.FC<DataEditorProps> = ({
                     />
                   </TableHead>
                   {dataset.columns.filter(col => visibleColumns.includes(col.name)).map(column => (
-                    <ResizableColumn 
-                      key={column.name} 
+                    <TableHead 
+                      key={column.name}
                       width={columnWidths[column.name] || 150}
-                      onResize={(width) => handleColumnResize(column.name, width)}
-                      minWidth={100}
                     >
-                      <TableHead>
-                        <div className="flex items-center">
-                          <button onClick={() => handleSort(column.name)} className="flex items-center">
-                            {column.name}
-                            {getSortIndicator(column.name)}
-                          </button>
-                          <ColumnMenu 
-                            column={column} 
-                            onSort={handleColumnMenuSort}
-                            onEditAll={() => handleOpenBulkEditDialog(column.name)}
-                            onEditSelected={() => handleOpenBulkEditDialog(column.name)}
-                            onSetNull={() => {/* Implementation */}}
-                            onSetNullSelected={() => {/* Implementation */}}
-                            onHide={() => toggleColumnVisibility(column.name, false)}
-                            hasSelectedRows={selectedRows.size > 0}
-                          >
-                            <Button variant="ghost" size="sm" className="p-0 h-6 w-6">
-                              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3.5 5.5C3.5 5.22386 3.72386 5 4 5H11C11.2761 5 11.5 5.22386 11.5 5.5C11.5 5.77614 11.2761 6 11 6H4C3.72386 6 3.5 5.77614 3.5 5.5Z" fill="currentColor" />
-                                <path d="M3.5 7.5C3.5 7.22386 3.72386 7 4 7H11C11.2761 7 11.5 7.22386 11.5 7.5C11.5 7.77614 11.2761 8 11 8H4C3.72386 8 3.5 7.77614 3.5 7.5Z" fill="currentColor" />
-                                <path d="M3.5 9.5C3.5 9.22386 3.72386 9 4 9H11C11.2761 9 11.5 9.22386 11.5 9.5C11.5 9.77614 11.2761 10 11 10H4C3.72386 10 3.5 9.77614 3.5 9.5Z" fill="currentColor" />
-                              </svg>
-                            </Button>
-                          </ColumnMenu>
-                        </div>
-                      </TableHead>
-                    </ResizableColumn>
+                      <div className="flex items-center">
+                        <button 
+                          onClick={() => handleSort(column.name)} 
+                          className="flex items-center whitespace-nowrap"
+                          style={{ width: '100%' }}
+                        >
+                          {column.name}
+                          {getSortIndicator(column.name)}
+                        </button>
+                        <ColumnMenu 
+                          column={column} 
+                          onSort={handleColumnMenuSort}
+                          onEditAll={() => handleOpenBulkEditDialog(column.name)}
+                          onEditSelected={selectedRows.size > 0 ? () => handleOpenBulkEditDialog(column.name) : undefined}
+                          onSetNull={() => {/* Implementation */}}
+                          onSetNullSelected={selectedRows.size > 0 ? () => {/* Implementation */} : undefined}
+                          onHide={() => toggleColumnVisibility(column.name, false)}
+                          hasSelectedRows={selectedRows.size > 0}
+                        >
+                          <Button variant="ghost" size="sm" className="p-0 h-6 w-6">
+                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M3.5 5.5C3.5 5.22386 3.72386 5 4 5H11C11.2761 5 11.5 5.22386 11.5 5.5C11.5 5.77614 11.2761 6 11 6H4C3.72386 6 3.5 5.77614 3.5 5.5Z" fill="currentColor" />
+                              <path d="M3.5 7.5C3.5 7.22386 3.72386 7 4 7H11C11.2761 7 11.5 7.22386 11.5 7.5C11.5 7.77614 11.2761 8 11 8H4C3.72386 8 3.5 7.77614 3.5 7.5Z" fill="currentColor" />
+                              <path d="M3.5 9.5C3.5 9.22386 3.72386 9 4 9H11C11.2761 9 11.5 9.22386 11.5 9.5C11.5 9.77614 11.2761 10 11 10H4C3.72386 10 3.5 9.77614 3.5 9.5Z" fill="currentColor" />
+                            </svg>
+                          </Button>
+                        </ColumnMenu>
+                      </div>
+                    </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -424,7 +423,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
                         <Input
                           type="text"
                           value={row[column.name] || ''}
-                          className="w-full h-8"
+                          className="w-full h-8 rounded-none border-0 shadow-none focus:ring-0 p-0"
                           onChange={(e) => onCellUpdate(row.__id, column.name, e.target.value)}
                         />
                       </TableCell>

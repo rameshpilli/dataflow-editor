@@ -46,15 +46,10 @@ const ResizableColumn: React.FC<ResizableColumnProps> = ({
     document.removeEventListener('mouseup', stopResizing);
   }, [handleMouseMove]);
 
+  // Instead of wrapping the children, extend them with the resizer
+  // This avoids invalid nesting in table structures
   return (
-    <div 
-      className={cn("relative", className)} 
-      style={{ 
-        width: `${width}px`, 
-        minWidth: `${minWidth}px`,
-        display: 'inline-block'  // Ensure this div is inline to work with table
-      }}
-    >
+    <>
       {children}
       <div 
         className={cn(
@@ -63,8 +58,16 @@ const ResizableColumn: React.FC<ResizableColumnProps> = ({
         )}
         onMouseDown={startResizing}
         onClick={(e) => e.stopPropagation()}
+        style={{
+          height: "100%",
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: "4px",
+          cursor: "col-resize"
+        }}
       />
-    </div>
+    </>
   );
 };
 
