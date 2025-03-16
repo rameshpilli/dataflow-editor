@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dataset, DatasetPreview, DataRow, FilterOptions, DataChange, DatasetColumn } from '@/types/adls';
 import { 
@@ -27,8 +28,6 @@ import {
   FileDown, 
   Check, 
   MoveHorizontal,
-  Monitor,
-  Maximize2,
   Expand
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -83,6 +82,8 @@ interface DataEditorProps {
   onGoBack: () => void;
 }
 
+const STORAGE_KEY_PREFIX = 'adls-editor-';
+
 const DataEditor: React.FC<DataEditorProps> = ({ 
   dataset, 
   dataPreview, 
@@ -96,17 +97,37 @@ const DataEditor: React.FC<DataEditorProps> = ({
   onLoadData,
   onGoBack
 }) => {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [sortColumn, setSortColumn] = useState<string | undefined>(undefined);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | undefined>(undefined);
-  const [columnWidths, setColumnWidths] = useState<{ [columnName: string]: number }>({});
-  const [zoomLevel, setZoomLevel] = useState(100);
+  // Read initial values from localStorage or use defaults
+  const getInitialState = <T,>(key: string, defaultValue: T): T => {
+    if (typeof window === 'undefined') return defaultValue;
+    
+    const storedValue = localStorage.getItem(`${STORAGE_KEY_PREFIX}${dataset.id}-${key}`);
+    return storedValue ? JSON.parse(storedValue) : defaultValue;
+  };
+
+  const [page, setPage] = useState(() => getInitialState('page', 1));
+  const [pageSize, setPageSize] = useState(() => getInitialState('pageSize', 10));
+  const [sortColumn, setSortColumn] = useState<string | undefined>(() => 
+    getInitialState('sortColumn', undefined)
+  );
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | undefined>(() => 
+    getInitialState('sortDirection', undefined)
+  );
+  const [columnWidths, setColumnWidths] = useState<{ [columnName: string]: number }>(() =>
+    getInitialState('columnWidths', {})
+  );
+  const [zoomLevel, setZoomLevel] = useState(() => getInitialState('zoomLevel', 100));
   const [showColumnManager, setShowColumnManager] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(dataset.columns.map(col => col.name));
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => 
+    getInitialState('visibleColumns', dataset.columns.map(col => col.name))
+  );
   const [isColumnResizing, setIsColumnResizing] = useState(false);
-  const [alternateRowColors, setAlternateRowColors] = useState(false);
-  const [filters, setFilters] = useState<FilterOptions[]>([]);
+  const [alternateRowColors, setAlternateRowColors] = useState(() => 
+    getInitialState('alternateRowColors', false)
+  );
+  const [filters, setFilters] = useState<FilterOptions[]>(() => 
+    getInitialState('filters', [])
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [filterColumn, setFilterColumn] = useState<string | null>(null);
   const [filterOperation, setFilterOperation] = useState<FilterOptions['operation']>('equals');
@@ -117,12 +138,44 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [bulkEditColumn, setBulkEditColumn] = useState<string | null>(null);
   const [bulkEditValue, setBulkEditValue] = useState<string>('');
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
-  const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
+  const [frozenColumns, setFrozenColumns] = useState<string[]>(() => 
+    getInitialState('frozenColumns', [])
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [editMode, setEditMode] = useState(true);
+  const [editMode, setEditMode] = useState(() => getInitialState('editMode', true));
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Persist state to localStorage whenever it changes
+  useEffect(() => {
+    if (dataset.id) {
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, JSON.stringify(page));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, JSON.stringify(pageSize));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, JSON.stringify(sortColumn));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, JSON.stringify(sortDirection));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, JSON.stringify(columnWidths));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, JSON.stringify(zoomLevel));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, JSON.stringify(visibleColumns));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-alternateRowColors`, JSON.stringify(alternateRowColors));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, JSON.stringify(filters));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, JSON.stringify(frozenColumns));
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, JSON.stringify(editMode));
+    }
+  }, [
+    dataset.id, 
+    page, 
+    pageSize, 
+    sortColumn, 
+    sortDirection, 
+    columnWidths, 
+    zoomLevel,
+    visibleColumns,
+    alternateRowColors,
+    filters,
+    frozenColumns,
+    editMode
+  ]);
 
   useEffect(() => {
     if (dataset.id) {

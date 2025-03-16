@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Toggle } from '@/components/ui/toggle';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface ZoomControlsProps {
   zoomLevel: number;
@@ -108,14 +109,14 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
         {onToggleEditMode && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Toggle 
-                pressed={editMode} 
-                onPressedChange={onToggleEditMode}
-                aria-label="Toggle edit mode"
-                className="h-8 w-8 p-0"
-              >
-                <Pencil className="h-4 w-4" />
-              </Toggle>
+              <div className="flex items-center space-x-2 px-2">
+                <Label htmlFor="edit-mode" className="text-sm cursor-pointer">Edit Mode</Label>
+                <Switch
+                  id="edit-mode"
+                  checked={editMode}
+                  onCheckedChange={onToggleEditMode}
+                />
+              </div>
             </TooltipTrigger>
             <TooltipContent>{editMode ? 'Disable Edit Mode' : 'Enable Edit Mode'}</TooltipContent>
           </Tooltip>
