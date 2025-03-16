@@ -68,7 +68,7 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                   <TableHead>Name</TableHead>
                   <TableHead>Path</TableHead>
                   <TableHead>Columns</TableHead>
-                  <TableHead>Rows</TableHead>
+                  <TableHead>Count</TableHead>
                   <TableHead>Repaired</TableHead>
                   <TableHead>Last Modified</TableHead>
                   <TableHead></TableHead>
@@ -79,9 +79,11 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                   // Calculate repair percentage safely
                   const totalRows = dataset.rowCount || 0;
                   const repairedRows = dataset.repairedCount || 0;
-                  const repairPercentage = totalRows > 0 
-                    ? Math.round((repairedRows / totalRows) * 100) 
-                    : 0;
+                  let repairPercentage = 0;
+                  
+                  if (totalRows > 0 && repairedRows > 0) {
+                    repairPercentage = Math.round((repairedRows / totalRows) * 100);
+                  }
                     
                   return (
                     <TableRow key={dataset.id}>
@@ -99,10 +101,10 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                       <TableCell>
                         <div className="flex items-center">
                           <ShieldCheck className={`h-4 w-4 mr-1.5 ${repairPercentage === 100 ? 'text-green-500' : 'text-amber-500'}`} />
-                          {repairedRows.toLocaleString() || '0'} 
+                          {repairedRows.toLocaleString()} 
                           {totalRows > 0 ? 
                             ` (${repairPercentage}%)` : 
-                            ''}
+                            ' (0%)'}
                         </div>
                       </TableCell>
                       <TableCell>
