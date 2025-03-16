@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dataset } from '@/types/adls';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Database, FileType, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
 import ZoomControls from './ZoomControls';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -17,8 +15,6 @@ interface DatasetListProps {
 }
 
 const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, isLoading }) => {
-  const [zoomLevel, setZoomLevel] = useState(100);
-
   if (isLoading) {
     return (
       <Card className="shadow-md border-opacity-40 overflow-hidden">
@@ -51,17 +47,11 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
             Select a dataset to view and edit its data
           </CardDescription>
         </div>
-        <ZoomControls
-          zoomLevel={zoomLevel}
-          onZoomChange={setZoomLevel}
-          onFitToScreen={() => setZoomLevel(100)}
-          onFocusSelection={() => {}}
-          disableFocus={true}
-        />
+        <ZoomControls />
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <Table zoomLevel={zoomLevel} fullWidth={true} hoverable={true} striped={true} compact={true}>
+          <Table fullWidth={true} hoverable={true} striped={true} compact={true}>
             <TableHeader>
               <TableRow>
                 <TableHead className="text-blue-700 dark:text-blue-300">Type</TableHead>
@@ -76,7 +66,6 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
             </TableHeader>
             <TableBody>
               {datasets.map((dataset) => {
-                // Calculate repair percentage safely
                 const totalRows = dataset.rowCount || 0;
                 const repairedRows = dataset.repairedCount || 0;
                 let repairPercentage = 0;
