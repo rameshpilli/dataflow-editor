@@ -32,7 +32,7 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
   onToggleEditMode
 }) => {
   return (
-    <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-md border shadow-sm transition-all duration-300 ease-in-out">
+    <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-md border shadow-sm transition-all duration-300 ease-in-out z-20">
       <TooltipProvider>
         {onToggleEditMode && (
           <Tooltip>

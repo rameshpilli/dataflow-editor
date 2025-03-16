@@ -266,6 +266,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
   const [columnFilters, setColumnFilters] = useState<{[key: string]: {value: string, active: boolean}}>({});
+  const [footerRef, setFooterRef] = useState<HTMLDivElement | null>(null);
+  const [dropdownRef, setDropdownRef] = useState<HTMLDivElement | null>(null);
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -402,6 +404,16 @@ const DataEditor: React.FC<DataEditorProps> = ({
           mainContentRef.current.style.display = 'flex';
           mainContentRef.current.style.flexDirection = 'column';
           mainContentRef.current.style.flexGrow = '1';
+        }
+        
+        if (footerRef.current) {
+          footerRef.current.style.display = 'flex';
+          footerRef.current.style.visibility = 'visible';
+        }
+        
+        if (dropdownRef.current) {
+          const closeEvent = new Event('close-dropdown');
+          dropdownRef.current.dispatchEvent(closeEvent);
         }
       }, 100);
       
@@ -831,6 +843,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
           "flex justify-between items-center transition-all duration-300",
           isFullscreen && "py-2"
         )}
+        ref={footerRef}
       >
         <div className="flex items-center space-x-2">
           <Button
@@ -864,15 +877,15 @@ const DataEditor: React.FC<DataEditorProps> = ({
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4" ref={dropdownRef}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
+              <Button variant="outline" size="sm" className="h-8" data-testid="page-size-button">
                 <ListFilter className="mr-2 h-4 w-4" />
                 {pageSize} per page
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className={cn("z-[100]", isFullscreen && "z-[9999]")}>
               <DropdownMenuLabel>Page Size</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handlePageSizeChange(10)} className={pageSize === 10 ? "bg-accent" : ""}>
@@ -1100,3 +1113,4 @@ const DataEditor: React.FC<DataEditorProps> = ({
 };
 
 export default DataEditor;
+
