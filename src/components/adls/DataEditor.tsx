@@ -270,6 +270,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (dataset.id) {
@@ -311,12 +312,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(err => {
-            console.error(`Error attempting to exit fullscreen: ${err.message}`);
-          });
-        }
+        handleToggleFullscreen();
       }
     };
 
@@ -395,9 +391,17 @@ const DataEditor: React.FC<DataEditorProps> = ({
       }
       
       setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        
         if (scrollAreaRef.current) {
           const event = new Event('resize');
           window.dispatchEvent(event);
+        }
+
+        if (!newState && mainContentRef.current) {
+          mainContentRef.current.style.display = 'flex';
+          mainContentRef.current.style.flexDirection = 'column';
+          mainContentRef.current.style.flexGrow = '1';
         }
       }, 100);
       
@@ -666,6 +670,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
           "overflow-hidden flex-grow pb-1 transition-all duration-300 ease-in-out",
           isFullscreen ? "h-[calc(100vh-130px)]" : "h-[calc(100vh-300px)]"
         )}
+        ref={mainContentRef}
       >
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2">
@@ -704,7 +709,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
         <ScrollArea 
           className={cn(
             "transition-all duration-300 ease-in-out",
-            isFullscreen ? "h-[calc(100vh-190px)]" : "h-[calc(100vh-340px)]"
+            isFullscreen ? "h-[calc(100vh-190px)]" : "h-[calc(100vh-350px)]"
           )}
           ref={scrollAreaRef}
         >
