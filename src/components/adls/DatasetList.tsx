@@ -52,19 +52,25 @@ const DatasetList: React.FC<DatasetListProps> = ({
 
   return (
     <Card className="shadow-lg border border-blue-100 dark:border-blue-900/40 overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-blue-900/40">
-        <div>
-          <CardTitle className="text-blue-700 dark:text-blue-300">Available Datasets</CardTitle>
-          <CardDescription>
-            Select a dataset to view and edit its data
-          </CardDescription>
-        </div>
-        <div className="flex items-center gap-5">
+      <CardHeader className="flex flex-col space-y-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-blue-900/40">
+        <div className="flex flex-row items-center justify-between w-full">
+          <div>
+            <CardTitle className="text-blue-700 dark:text-blue-300">Available Datasets</CardTitle>
+            <CardDescription>
+              Select a dataset to view and edit its data
+            </CardDescription>
+          </div>
+          
           {connectionInfo && (
-            <div className="mr-2">
+            <div>
               {connectionInfo}
             </div>
           )}
+        </div>
+        
+        <div className="flex items-center justify-between w-full">
+          <ZoomControls />
+          
           <div className="relative w-60">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -85,7 +91,6 @@ const DatasetList: React.FC<DatasetListProps> = ({
               </button>
             )}
           </div>
-          <ZoomControls />
         </div>
       </CardHeader>
       <CardContent className="p-0">
