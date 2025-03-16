@@ -4,8 +4,7 @@ import Header from '@/components/Header';
 import ADLSManager from '@/components/adls/ADLSManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-
-const APP_VERSION = "v1.2.3";
+import { APP_VERSION } from '@/constants/appInfo';
 
 const Index = () => {
   const { user } = useAuth();

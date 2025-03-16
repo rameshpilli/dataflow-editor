@@ -15,6 +15,7 @@ import {
 import { useDataEditor } from '../DataEditorContext';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from '@/hooks/use-toast';
 
 interface TableToolbarProps {
   showColumnManager: boolean;
@@ -42,41 +43,96 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
   } = useDataEditor();
 
   const handleSaveChanges = async () => {
-    await onSaveChanges();
+    try {
+      await onSaveChanges();
+      toast({
+        title: "Changes saved",
+        description: `Successfully saved ${changes.length} changes`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast({
+        title: "Error saving changes",
+        description: "Please try again or contact support",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    try {
+      onDiscardChanges();
+      toast({
+        title: "Changes discarded",
+        description: "All changes have been discarded",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error discarding changes:', error);
+      toast({
+        title: "Error discarding changes",
+        description: "Please try again or contact support",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="py-3 px-2 border-b flex flex-wrap items-center justify-between gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 z-10">
       <div className="flex items-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 hover:bg-slate-100 dark:hover:bg-slate-700"
-          onClick={() => setShowColumnManager(!showColumnManager)}
-        >
-          <Columns className="h-4 w-4 mr-2" />
-          Columns
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 hover:bg-slate-100 dark:hover:bg-slate-700"
+                onClick={() => setShowColumnManager(!showColumnManager)}
+                aria-label="Manage columns"
+              >
+                <Columns className="h-4 w-4 mr-2" />
+                Columns
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Manage visible columns</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 hover:bg-slate-100 dark:hover:bg-slate-700"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter className="h-4 w-4 mr-2" />
-          Filters
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 hover:bg-slate-100 dark:hover:bg-slate-700"
+                onClick={() => setShowFilters(!showFilters)}
+                aria-label="Manage filters"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Manage data filters</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       
       <div className="flex items-center space-x-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Edit Mode</span>
-          <Switch
-            checked={editMode}
-            onCheckedChange={setEditMode}
-            aria-label="Toggle edit mode"
-          />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Switch
+                  checked={editMode}
+                  onCheckedChange={setEditMode}
+                  aria-label="Toggle edit mode"
+                />
+              </TooltipTrigger>
+              <TooltipContent>{editMode ? "Disable edit mode" : "Enable edit mode"}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         
         <TooltipProvider>
@@ -88,11 +144,14 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
                 className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700"
                 disabled={changes.length === 0}
                 onClick={handleSaveChanges}
+                aria-label="Save changes"
               >
                 <Save className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Save Changes</TooltipContent>
+            <TooltipContent>
+              {changes.length === 0 ? "No changes to save" : `Save ${changes.length} changes`}
+            </TooltipContent>
           </Tooltip>
         </TooltipProvider>
         
@@ -104,12 +163,15 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
                 size="icon"
                 className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700"
                 disabled={changes.length === 0}
-                onClick={onDiscardChanges}
+                onClick={handleDiscardChanges}
+                aria-label="Discard changes"
               >
                 <Undo2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Discard Changes</TooltipContent>
+            <TooltipContent>
+              {changes.length === 0 ? "No changes to discard" : `Discard ${changes.length} changes`}
+            </TooltipContent>
           </Tooltip>
         </TooltipProvider>
         
@@ -122,11 +184,12 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
                   size="icon"
                   className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700"
                   onClick={onToggleFullscreen}
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 >
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Toggle Fullscreen</TooltipContent>
+              <TooltipContent>{isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         )}

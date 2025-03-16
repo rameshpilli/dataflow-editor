@@ -16,9 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-
-// Version constant
-const APP_VERSION = "v1.2.3";
+import { APP_VERSION, APP_NAME } from '@/constants/appInfo';
 
 const Header = () => {
   const { user, logout } = useAuth();
