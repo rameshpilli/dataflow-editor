@@ -19,7 +19,7 @@ const Table = React.forwardRef<
     <table
       ref={ref}
       className={cn(
-        "w-full caption-bottom text-sm",
+        "w-full caption-bottom text-sm border-collapse",
         columnResizing ? "table-fixed" : "",
         alternateRowColors ? "even:[&_tr:nth-child(even)]:bg-gray-50 dark:even:[&_tr:nth-child(even)]:bg-gray-800/30" : "",
         className
@@ -83,9 +83,9 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors",
-      isHighlighted ? "bg-green-100 dark:bg-green-900" : "",
-      isAlternate ? "bg-blue-50 dark:bg-blue-950/20" : "",
+      "border-b transition-colors hover:bg-gray-100/50 dark:hover:bg-gray-800/50",
+      isHighlighted ? "bg-blue-50 dark:bg-blue-900/20" : "",
+      isAlternate ? "bg-gray-50 dark:bg-gray-800/20" : "",
       className
     )}
     {...props}
@@ -103,8 +103,8 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      "whitespace-nowrap bg-gray-100 dark:bg-gray-800", // Add light gray background to headers
+      "h-10 px-2 text-left align-middle font-medium text-gray-500 dark:text-gray-400 [&:has([role=checkbox])]:pr-0",
+      "whitespace-nowrap bg-gray-100 dark:bg-gray-800 border-r last:border-r-0", // Light gray background with right borders
       className
     )}
     style={{
@@ -133,9 +133,9 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "p-4 align-middle [&:has([role=checkbox])]:pr-0",
+      "p-2 align-middle [&:has([role=checkbox])]:pr-0",
       "whitespace-nowrap border-r last:border-r-0", // Add right borders between cells
-      isEditing ? "bg-blue-600 dark:bg-blue-700 text-white" : "",
+      isEditing ? "bg-blue-700 dark:bg-blue-800 text-white" : "", // Darker blue for editing
       className
     )}
     style={{
