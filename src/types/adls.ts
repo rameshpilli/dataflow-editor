@@ -24,6 +24,16 @@ export interface DatasetColumn {
     count?: number;
     nullCount?: number;
   };
+  // Schema validation rules
+  validation?: {
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    minValue?: number;
+    maxValue?: number;
+    pattern?: string;
+    enum?: any[];
+  };
 }
 
 export interface Dataset {
@@ -35,6 +45,7 @@ export interface Dataset {
   rowCount?: number;
   repairedCount?: number;
   lastModified?: Date;
+  comments?: Comment[];
 }
 
 export interface DataRow {
@@ -71,4 +82,29 @@ export interface TempStorage {
   totalRowCount: number;
   repairedCount: number;
   lastSaved?: Date;
+}
+
+// New interfaces for comments feature
+export interface Comment {
+  id: string;
+  text: string;
+  createdAt: Date;
+  createdBy: string;
+  rowId?: string;
+  columnName?: string;
+  resolved: boolean;
+  resolvedAt?: Date;
+  resolvedBy?: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+}
+
+export interface ValidationError {
+  rowId: string;
+  columnName: string;
+  message: string;
+  severity: 'error' | 'warning';
 }

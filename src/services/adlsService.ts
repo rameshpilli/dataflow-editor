@@ -1,11 +1,11 @@
-
-import { ADLSConnection, ADLSCredentials, Dataset, DatasetPreview, DataRow, FilterOptions, TempStorage } from '@/types/adls';
+import { ADLSConnection, ADLSCredentials, Dataset, DatasetPreview, DataRow, FilterOptions, TempStorage, Comment, DatasetColumn } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 
 // This is a mock service - in a real app, this would connect to Azure SDK
 class ADLSService {
   private connections: ADLSConnection[] = [];
   private tempStorage: Map<string, TempStorage> = new Map(); // Store temporary data by dataset ID
+  private comments: Map<string, Comment[]> = new Map(); // Store comments by dataset ID
 
   // Connect to ADLS
   async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
@@ -148,7 +148,7 @@ class ADLSService {
       {
         id: 'dataset_4',
         name: 'Sample Long Path Data',
-        path: '/data/inventory/data/inventory/data/inventory/data/inventory/data/inventory',
+        path: '/data/inventory/data/inventory/data/inventory/data/inventory/data/inventory/data/inventory',
         format: 'delta' as const,
         columns: [
           { name: 'id', type: 'integer', nullable: false },
@@ -420,6 +420,103 @@ class ADLSService {
     
     this.connections[connectionIndex].isConnected = false;
     return true;
+  }
+
+  // Add a comment to a dataset
+  async addComment(datasetId: string, text: string, rowId?: string, columnName?: string): Promise<Comment> {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Create the comment object
+    const newComment: Comment = {
+      id: `comment_${Date.now()}`,
+      text,
+      createdAt: new Date(),
+      createdBy: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).username : 'Anonymous',
+      rowId,
+      columnName,
+      resolved: false
+    };
+    
+    // Get existing comments or create a new array
+    const existingComments = this.comments.get(datasetId) || [];
+    
+    // Add the new comment
+    this.comments.set(datasetId, [...existingComments, newComment]);
+    
+    return newComment;
+  }
+
+  // Get all comments for a dataset
+  async getComments(datasetId: string): Promise<Comment[]> {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Return the comments or an empty array if none exist
+    return this.comments.get(datasetId) || [];
+  }
+
+  // Resolve a comment
+  async resolveComment(datasetId: string, commentId: string): Promise<Comment> {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Get existing comments
+    const existingComments = this.comments.get(datasetId) || [];
+    
+    // Find the comment to resolve
+    const commentIndex = existingComments.findIndex(c => c.id === commentId);
+    
+    if (commentIndex === -1) {
+      throw new Error('Comment not found');
+    }
+    
+    // Update the comment
+    const updatedComment: Comment = {
+      ...existingComments[commentIndex],
+      resolved: true,
+      resolvedAt: new Date(),
+      resolvedBy: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).username : 'Anonymous'
+    };
+    
+    // Update the comments array
+    existingComments[commentIndex] = updatedComment;
+    this.comments.set(datasetId, existingComments);
+    
+    return updatedComment;
+  }
+
+  // Update a column's validation rules
+  async updateColumn(connectionId: string, datasetId: string, updatedColumn: DatasetColumn): Promise<Dataset> {
+    const connection = this.connections.find(c => c.id === connectionId);
+    if (!connection || !connection.isConnected) {
+      throw new Error('Not connected to ADLS');
+    }
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Get available datasets
+    const datasets = await this.listDatasets(connectionId);
+    
+    // Find the dataset to update
+    const datasetIndex = datasets.findIndex(d => d.id === datasetId);
+    
+    if (datasetIndex === -1) {
+      throw new Error('Dataset not found');
+    }
+    
+    // Find the column to update
+    const columnIndex = datasets[datasetIndex].columns.findIndex(c => c.name === updatedColumn.name);
+    
+    if (columnIndex === -1) {
+      throw new Error('Column not found');
+    }
+    
+    // Update the column
+    datasets[datasetIndex].columns[columnIndex] = updatedColumn;
+    
+    return datasets[datasetIndex];
   }
 }
 

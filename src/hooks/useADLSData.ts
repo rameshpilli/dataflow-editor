@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { adlsService } from '@/services/adlsService';
 import { 
@@ -9,9 +8,12 @@ import {
   DataRow, 
   FilterOptions,
   DataChange,
-  TempStorage
+  TempStorage,
+  Comment,
+  ValidationResult
 } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
+import { validateData } from '@/utils/schemaValidation';
 
 export function useADLSData() {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +27,8 @@ export function useADLSData() {
   const [isSaving, setIsSaving] = useState(false);
   const [tempStorage, setTempStorage] = useState<TempStorage | null>(null);
   const [canCommit, setCanCommit] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   // Connect to ADLS
   const connect = useCallback(async (credentials: ADLSCredentials, name: string) => {
@@ -117,6 +121,7 @@ export function useADLSData() {
       setModifiedRows(new Set());
       setTempStorage(null);
       setCanCommit(false);
+      setComments([]);
       return;
     }
     
@@ -164,6 +169,10 @@ export function useADLSData() {
         setChanges([]);
         setModifiedRows(new Set());
       }
+      
+      // Load comments for this dataset
+      const datasetComments = await adlsService.getComments(datasetId);
+      setComments(datasetComments);
       
       return preview;
     } catch (err) {
@@ -353,6 +362,180 @@ export function useADLSData() {
     });
   }, [connection, selectedDataset, dataPreview, loadDataset]);
 
+  // Add a comment
+  const addComment = useCallback(async (text: string, rowId?: string, columnName?: string) => {
+    if (!connection || !selectedDataset) {
+      return false;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const newComment = await adlsService.addComment(
+        selectedDataset.id,
+        text,
+        rowId,
+        columnName
+      );
+      
+      setComments(prev => [...prev, newComment]);
+      
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added successfully",
+      });
+      
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add comment';
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Failed to add comment",
+        description: errorMessage,
+      });
+      
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection, selectedDataset]);
+
+  // Resolve a comment
+  const resolveComment = useCallback(async (commentId: string) => {
+    if (!connection || !selectedDataset) {
+      return false;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const updatedComment = await adlsService.resolveComment(
+        selectedDataset.id,
+        commentId
+      );
+      
+      setComments(prev => 
+        prev.map(comment => 
+          comment.id === commentId ? updatedComment : comment
+        )
+      );
+      
+      toast({
+        title: "Comment resolved",
+        description: "The comment has been marked as resolved",
+      });
+      
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resolve comment';
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Failed to resolve comment",
+        description: errorMessage,
+      });
+      
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection, selectedDataset]);
+
+  // Validate dataset against schema rules
+  const validateDataset = useCallback(() => {
+    if (!dataPreview || !dataPreview.columns) {
+      toast({
+        variant: "destructive",
+        title: "Validation failed",
+        description: "No data available to validate",
+      });
+      return;
+    }
+    
+    // Validate data against schema rules
+    const result = validateData(dataPreview.rows, dataPreview.columns);
+    setValidationResult(result);
+    
+    if (result.isValid) {
+      toast({
+        title: "Validation successful",
+        description: "All data passed validation rules",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Validation failed",
+        description: `Found ${result.errors.length} validation issues`,
+      });
+    }
+    
+    return result;
+  }, [dataPreview]);
+
+  // Update column validation rules
+  const updateColumnValidation = useCallback(async (updatedColumn: DatasetColumn) => {
+    if (!connection || !selectedDataset) {
+      return false;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Update the column in the dataset
+      const updatedDataset = await adlsService.updateColumn(
+        connection.id,
+        selectedDataset.id,
+        updatedColumn
+      );
+      
+      // Update the local dataset
+      setSelectedDataset(updatedDataset);
+      
+      // Update the dataset in the datasets list
+      setDatasets(prev => 
+        prev.map(dataset => 
+          dataset.id === updatedDataset.id ? updatedDataset : dataset
+        )
+      );
+      
+      // Update the dataPreview columns
+      if (dataPreview) {
+        setDataPreview({
+          ...dataPreview,
+          columns: dataPreview.columns.map(column => 
+            column.name === updatedColumn.name ? updatedColumn : column
+          )
+        });
+      }
+      
+      toast({
+        title: "Column updated",
+        description: `Validation rules for ${updatedColumn.name} have been updated`,
+      });
+      
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update column';
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Failed to update column",
+        description: errorMessage,
+      });
+      
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection, selectedDataset, dataPreview]);
+
   return {
     isLoading,
     error,
@@ -365,12 +548,18 @@ export function useADLSData() {
     modifiedRows,
     tempStorage,
     canCommit,
+    comments,
+    validationResult,
     connect,
     disconnect,
     loadDataset,
     updateCell,
     saveChanges,
     commitChanges,
-    discardChanges
+    discardChanges,
+    addComment,
+    resolveComment,
+    validateDataset,
+    updateColumnValidation
   };
 }
