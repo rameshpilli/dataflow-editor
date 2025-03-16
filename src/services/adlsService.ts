@@ -40,12 +40,12 @@ class ADLSService {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Return mock datasets with repair count
-    const datasets = [
+    const datasets: Dataset[] = [
       {
         id: 'dataset_1',
         name: 'Customer Data',
         path: '/data/customers',
-        format: 'delta',
+        format: 'delta' as const,
         columns: [
           { name: 'id', type: 'integer', nullable: false, stats: { min: 1, max: 10000, count: 1000, nullCount: 0 } },
           { name: 'customer_number', type: 'string', nullable: false, stats: { count: 1000, nullCount: 0 } },
@@ -76,7 +76,7 @@ class ADLSService {
         id: 'dataset_2',
         name: 'Sales Transactions',
         path: '/data/sales',
-        format: 'parquet',
+        format: 'parquet' as const,
         columns: [
           { name: 'transaction_id', type: 'string', nullable: false },
           { name: 'customer_id', type: 'integer', nullable: false },
@@ -113,7 +113,7 @@ class ADLSService {
         id: 'dataset_3',
         name: 'Product Inventory',
         path: '/data/inventory',
-        format: 'delta',
+        format: 'delta' as const,
         columns: [
           { name: 'product_id', type: 'string', nullable: false },
           { name: 'sku', type: 'string', nullable: false },
@@ -370,7 +370,7 @@ class ADLSService {
     toast({
       title: "Changes committed successfully",
       description: `Updated ${storage.repairedCount} rows in ADLS delta table`,
-      variant: "success",
+      variant: "default",
     });
     
     // Clear temporary storage after successful commit
