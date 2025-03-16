@@ -17,6 +17,8 @@ const Table = React.forwardRef<
   )}>
     <div style={{ 
       width: zoomLevel > 100 ? `${zoomLevel}%` : '100%',
+      overflowX: "auto",
+      overflowY: "visible"
     }}>
       <table
         ref={ref}
@@ -106,6 +108,9 @@ const TableHead = React.forwardRef<
       minWidth: minWidth ? `${minWidth}px` : undefined,
       width: width ? `${width}px` : undefined,
       maxWidth: width ? `${width}px` : undefined,
+      writingMode: "horizontal-tb", // Ensure horizontal text orientation
+      textOrientation: "mixed", // Keep text readable
+      whiteSpace: "nowrap" // Prevent wrapping
     }}
     {...props}
   />
