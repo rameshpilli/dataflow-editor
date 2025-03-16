@@ -339,6 +339,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
     setPage(1);
+    
+    if (isFullscreen && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    
     toast({
       title: "Page size updated",
       description: `Showing ${newSize} items per page`,
@@ -843,7 +848,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
           </div>
         </ScrollArea>
       </CardContent>
-      <CardFooter className="pt-4 pb-6 flex-col gap-4" ref={footerRef}>
+      <CardFooter className={cn(
+        "pt-4 pb-6 flex-col gap-4", 
+        isFullscreen && "z-50 bg-white dark:bg-gray-900 border-t"
+      )} ref={footerRef}>
         <div className="flex justify-between items-center w-full">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500 dark:text-gray-400">Rows per page:</span>
@@ -854,7 +862,10 @@ const DataEditor: React.FC<DataEditorProps> = ({
               <SelectTrigger className="w-[80px] h-8">
                 <SelectValue placeholder={pageSize} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={cn(
+                "z-[9999]", 
+                isFullscreen && "absolute"
+              )}>
                 <SelectItem value="10">10</SelectItem>
                 <SelectItem value="25">25</SelectItem>
                 <SelectItem value="50">50</SelectItem>
@@ -979,4 +990,3 @@ const DataEditor: React.FC<DataEditorProps> = ({
 };
 
 export default DataEditor;
-
