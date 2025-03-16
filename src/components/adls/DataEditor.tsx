@@ -932,3 +932,36 @@ const DataEditor: React.FC<DataEditorProps> = ({
                               </TableHead>
                             </ResizableColumn>
                           </ColumnMenu>
+                        ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rowsToDisplay.map((row) => (
+                      <TableRow key={row.__id} className={getCellClasses(row.__id, '')}>
+                        <TableCell className="p-2">
+                          <Checkbox 
+                            checked={selectedRows.has(row.__id)}
+                            onCheckedChange={(checked) => {
+                              toggleRowSelection(row.__id);
+                            }}
+                          />
+                        </TableCell>
+                        {dataPreview.columns.map((column) => (
+                          <TableCell key={column.name} className={getCellClasses(row.__id, column.name)}>
+                            {renderCellValue(row[column.name], column.type)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </ScrollArea>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default DataEditor;
