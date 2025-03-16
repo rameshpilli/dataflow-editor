@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { Database, FileType, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import ZoomControls from './ZoomControls';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DatasetListProps {
   datasets: Dataset[];
@@ -95,8 +96,19 @@ const DatasetList: React.FC<DatasetListProps> = ({ datasets, onSelectDataset, is
                         )}
                       </TableCell>
                       <TableCell className="font-medium">{dataset.name}</TableCell>
-                      <TableCell className="font-mono text-xs break-all max-w-xs overflow-hidden text-ellipsis">
-                        {dataset.path}
+                      <TableCell>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="font-mono text-xs truncate max-w-xs cursor-help">
+                                {dataset.path}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="font-mono text-xs p-2 max-w-md break-all" side="bottom">
+                              {dataset.path}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell>{dataset.columns.length}</TableCell>
                       <TableCell>{dataset.rowCount?.toLocaleString() || 'Unknown'}</TableCell>
