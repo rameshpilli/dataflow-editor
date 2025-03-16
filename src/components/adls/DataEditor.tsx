@@ -168,6 +168,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [editMode, setEditMode] = useState(() => getInitialState('editMode', false));
   const [repairedCount, setRepairedCount] = useState(0);
+  const [showBackConfirmation, setShowBackConfirmation] = useState(false);
 
   const tableRef = useRef<HTMLTableElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -412,7 +413,29 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const handleCellClick = (rowId: string, columnName: string) => {
     setSelectedCellId(`${rowId}-${columnName}`);
   };
-  
+
+  const handleBackClick = () => {
+    if (changes.length > 0) {
+      setShowBackConfirmation(true);
+    } else {
+      onGoBack();
+    }
+  };
+
+  const handleConfirmDiscardAndGoBack = () => {
+    onDiscardChanges();
+    onGoBack();
+    setShowBackConfirmation(false);
+  };
+
+  const handleSaveAndGoBack = async () => {
+    const saveSuccessful = await onSaveChanges();
+    if (saveSuccessful) {
+      onGoBack();
+    }
+    setShowBackConfirmation(false);
+  };
+
   return (
     <Card className={cn("h-full flex flex-col", isFullscreen && "fixed inset-0 z-50")} ref={containerRef}>
       <CardHeader className="pb-2">
@@ -421,11 +444,11 @@ const DataEditor: React.FC<DataEditorProps> = ({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={onGoBack} 
+              onClick={handleBackClick} 
               className="mr-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-800/30 border-blue-200 dark:border-blue-800 transition-all duration-200 font-medium"
             >
               <ArrowLeftCircle className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-              Back to Datasets
+              Back
             </Button>
             <CardTitle>{dataset.name}</CardTitle>
           </div>
@@ -771,6 +794,42 @@ const DataEditor: React.FC<DataEditorProps> = ({
           handleCloseBulkEditDialog();
         }}
       />
+
+      <AlertDialog open={showBackConfirmation} onOpenChange={setShowBackConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Would you like to save or discard these changes before going back?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <div className="flex justify-between w-full">
+              <AlertDialogCancel onClick={() => setShowBackConfirmation(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleConfirmDiscardAndGoBack}
+                  className="border-red-200 hover:bg-red-50 hover:text-red-600"
+                >
+                  <Undo2 className="h-4 w-4 mr-2 text-red-500" />
+                  Discard
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={handleSaveAndGoBack}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </div>
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
