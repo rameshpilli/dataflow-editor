@@ -11,7 +11,9 @@ import {
   TempStorage,
   Comment,
   ValidationResult,
-  DatasetColumn
+  DatasetColumn,
+  Container,
+  Folder
 } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 import { validateData } from '@/utils/schemaValidation';
@@ -30,6 +32,10 @@ export function useADLSData() {
   const [canCommit, setCanCommit] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [containers, setContainers] = useState<Container[]>([]);
+  const [selectedContainer, setSelectedContainer] = useState<Container | null>(null);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
 
   // Connect to ADLS
   const connect = useCallback(async (credentials: ADLSCredentials, name: string) => {
@@ -39,6 +45,10 @@ export function useADLSData() {
     try {
       const newConnection = await adlsService.connect(credentials, name);
       setConnection(newConnection);
+      
+      // Fetch available containers based on filter
+      const availableContainers = await adlsService.listContainers(newConnection.id, credentials.containerFilter);
+      setContainers(availableContainers);
       
       // Fetch available datasets
       const availableDatasets = await adlsService.listDatasets(newConnection.id);
@@ -81,6 +91,10 @@ export function useADLSData() {
       setDataPreview(null);
       setChanges([]);
       setModifiedRows(new Set());
+      setContainers([]);
+      setSelectedContainer(null);
+      setFolders([]);
+      setSelectedFolder(null);
       
       toast({
         title: "Disconnected",
@@ -99,6 +113,109 @@ export function useADLSData() {
       setIsLoading(false);
     }
   }, [connection]);
+
+  // Select a container
+  const selectContainer = useCallback(async (containerId: string) => {
+    if (!connection) {
+      setError('Not connected to ADLS');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const container = containers.find(c => c.id === containerId);
+      if (!container) {
+        throw new Error('Container not found');
+      }
+      
+      setSelectedContainer(container);
+      setSelectedFolder(null);
+      
+      // Get folders in this container
+      const containerFolders = await adlsService.listFolders(connection.id, containerId);
+      setFolders(containerFolders);
+      
+      // Get datasets for this container
+      const containerDatasets = await adlsService.getDatasetsByContainer(connection.id, containerId);
+      setDatasets(containerDatasets);
+      
+      return container;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to select container';
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Failed to select container",
+        description: errorMessage,
+      });
+      
+      return undefined;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection, containers]);
+
+  // Select a folder
+  const selectFolder = useCallback(async (folderId: string) => {
+    if (!connection || !selectedContainer) {
+      setError('Not connected to ADLS or no container selected');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const folder = folders.find(f => f.id === folderId);
+      if (!folder) {
+        throw new Error('Folder not found');
+      }
+      
+      setSelectedFolder(folder);
+      
+      // Get datasets for this folder
+      const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
+      setDatasets(folderDatasets);
+      
+      return folder;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to select folder';
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Failed to select folder",
+        description: errorMessage,
+      });
+      
+      return undefined;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection, selectedContainer, folders]);
+
+  // Go back to container view
+  const backToContainers = useCallback(() => {
+    setSelectedContainer(null);
+    setSelectedFolder(null);
+    setFolders([]);
+    
+    if (connection) {
+      // Reload all datasets
+      adlsService.listDatasets(connection.id).then(setDatasets);
+    }
+  }, [connection]);
+
+  // Go back to folder view
+  const backToFolders = useCallback(() => {
+    if (selectedContainer) {
+      setSelectedFolder(null);
+      selectContainer(selectedContainer.id);
+    }
+  }, [selectedContainer, selectContainer]);
 
   // Load dataset preview
   const loadDataset = useCallback(async (
@@ -561,6 +678,14 @@ export function useADLSData() {
     canCommit,
     comments,
     validationResult,
+    containers,
+    selectedContainer,
+    folders,
+    selectedFolder,
+    selectContainer,
+    selectFolder,
+    backToContainers,
+    backToFolders,
     connect,
     disconnect,
     loadDataset,

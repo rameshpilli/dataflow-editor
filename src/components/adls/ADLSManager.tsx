@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
 import DatasetList from '@/components/adls/DatasetList';
 import DataEditor from '@/components/adls/DataEditor';
+import ContainerBrowser from '@/components/adls/ContainerBrowser';
 import { Dataset, ADLSCredentials } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -21,13 +23,21 @@ const ADLSManager: React.FC = () => {
     changes,
     modifiedRows,
     canCommit,
+    containers,
+    selectedContainer,
+    folders,
+    selectedFolder,
     connect,
     disconnect,
     loadDataset,
     updateCell,
     saveChanges,
     commitChanges,
-    discardChanges
+    discardChanges,
+    selectContainer,
+    selectFolder,
+    backToContainers,
+    backToFolders
   } = useADLSData();
   
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
@@ -170,69 +180,86 @@ const ADLSManager: React.FC = () => {
       )}
       
       {connection && !selectedDataset && (
-        <div className="space-y-6 bg-white dark:bg-gray-800/90 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-scale-in">
+        <div className="space-y-6 bg-white/95 dark:bg-gray-800/95 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-scale-in backdrop-blur-sm">
+          {/* Connection info */}
+          <div className="flex flex-col mb-6 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg p-4 border border-blue-100/50 dark:border-blue-900/30 shadow-sm">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  Connected to: {connection.name}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {connection.credentials.useManagedIdentity 
+                    ? 'Using Azure Managed Identity' 
+                    : connection.credentials.connectionString 
+                      ? 'Using Connection String' 
+                      : 'Using Account Key'}
+                </p>
+              </div>
+              
+              <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors btn-feedback"
+                    aria-label="Disconnect from ADLS"
+                  >
+                    <LogOut className="mr-2 h-4 w-4 text-red-500" />
+                    Disconnect
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Disconnect from ADLS</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to disconnect? Any unsaved changes will be lost.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleDisconnect}
+                      className="btn-feedback"
+                    >
+                      Disconnect
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+          
+          {/* Container and folder browser */}
+          <ContainerBrowser
+            containers={containers}
+            selectedContainer={selectedContainer}
+            folders={folders}
+            selectedFolder={selectedFolder}
+            isLoading={isLoading}
+            onSelectContainer={selectContainer}
+            onSelectFolder={selectFolder}
+            onBackToContainers={backToContainers}
+            onBackToFolders={backToFolders}
+          />
+          
+          {/* Datasets within the current context (all, container, or folder) */}
           {filteredDatasets.length > 0 ? (
-            <>
-              <DatasetList 
-                datasets={filteredDatasets}
-                onSelectDataset={handleSelectDataset}
-                isLoading={isLoading}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                connectionInfo={
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                      Connected to: {connection.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {connection.credentials.useManagedIdentity 
-                        ? 'Using Azure Managed Identity' 
-                        : connection.credentials.connectionString 
-                          ? 'Using Connection String' 
-                          : 'Using Account Key'}
-                    </p>
-                    <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors btn-feedback"
-                          aria-label="Disconnect from ADLS"
-                        >
-                          <LogOut className="mr-2 h-4 w-4 text-red-500" />
-                          Disconnect
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Disconnect from ADLS</DialogTitle>
-                          <DialogDescription>
-                            Are you sure you want to disconnect? Any unsaved changes will be lost.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
-                            Cancel
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            onClick={handleDisconnect}
-                            className="btn-feedback"
-                          >
-                            Disconnect
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                }
-              />
-            </>
+            <DatasetList 
+              datasets={filteredDatasets}
+              onSelectDataset={handleSelectDataset}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
           ) : (
-            <div className="empty-state animate-fade-in" role="status">
+            <div className="empty-state animate-fade-in bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-100 dark:border-gray-700 text-center shadow-sm" role="status">
               {searchQuery ? (
                 <>
-                  <CloudOff className="h-10 w-10 mb-2 text-gray-400 animate-bounce-subtle" />
+                  <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
                   <h3 className="text-lg font-medium mb-1">No datasets found</h3>
                   <p className="text-sm">No datasets match your search criteria "{searchQuery}"</p>
                   <Button 
@@ -246,9 +273,16 @@ const ADLSManager: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <CloudOff className="h-10 w-10 mb-2 text-gray-400 animate-bounce-subtle" />
+                  <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
                   <h3 className="text-lg font-medium mb-1">No datasets available</h3>
-                  <p className="text-sm">Connect to a data source with datasets to get started</p>
+                  <p className="text-sm">
+                    {selectedFolder 
+                      ? "No datasets found in this folder"
+                      : selectedContainer
+                        ? "No datasets found in this container"
+                        : "No datasets found. Try browsing through containers and folders"
+                    }
+                  </p>
                 </>
               )}
             </div>

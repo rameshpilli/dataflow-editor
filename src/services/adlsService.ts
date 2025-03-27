@@ -117,6 +117,197 @@ const mockDatasets: Dataset[] = [
   }
 ];
 
+// Mock containers based on common data lake zones
+const mockContainers: Container[] = [
+  {
+    id: 'ingress',
+    name: 'ingress',
+    type: 'ingress',
+    lastModified: new Date('2023-08-01'),
+    folderCount: 3,
+    blobCount: 15
+  },
+  {
+    id: 'bronze',
+    name: 'bronze',
+    type: 'bronze',
+    lastModified: new Date('2023-08-05'),
+    folderCount: 5,
+    blobCount: 28
+  },
+  {
+    id: 'silver',
+    name: 'silver',
+    type: 'silver',
+    lastModified: new Date('2023-08-10'),
+    folderCount: 8,
+    blobCount: 42
+  },
+  {
+    id: 'gold',
+    name: 'gold',
+    type: 'gold',
+    lastModified: new Date('2023-08-15'),
+    folderCount: 6,
+    blobCount: 35
+  },
+  {
+    id: 'analytics',
+    name: 'analytics',
+    type: 'other',
+    lastModified: new Date('2023-08-20'),
+    folderCount: 4,
+    blobCount: 22
+  }
+];
+
+// Mock folders for each container
+const mockFolders: { [containerId: string]: Folder[] } = {
+  'ingress': [
+    {
+      id: 'ingress-vendor-a',
+      name: 'vendor-a',
+      path: '/ingress/vendor-a',
+      containerId: 'ingress',
+      lastModified: new Date('2023-08-01'),
+      folderCount: 0,
+      blobCount: 5
+    },
+    {
+      id: 'ingress-vendor-b',
+      name: 'vendor-b',
+      path: '/ingress/vendor-b',
+      containerId: 'ingress',
+      lastModified: new Date('2023-08-02'),
+      folderCount: 0,
+      blobCount: 6
+    },
+    {
+      id: 'ingress-vendor-c',
+      name: 'vendor-c',
+      path: '/ingress/vendor-c',
+      containerId: 'ingress',
+      lastModified: new Date('2023-08-03'),
+      folderCount: 0,
+      blobCount: 4
+    }
+  ],
+  'bronze': [
+    {
+      id: 'bronze-vendor-a',
+      name: 'vendor-a',
+      path: '/bronze/vendor-a',
+      containerId: 'bronze',
+      lastModified: new Date('2023-08-05'),
+      folderCount: 2,
+      blobCount: 8
+    },
+    {
+      id: 'bronze-vendor-b',
+      name: 'vendor-b',
+      path: '/bronze/vendor-b',
+      containerId: 'bronze',
+      lastModified: new Date('2023-08-06'),
+      folderCount: 1,
+      blobCount: 10
+    },
+    {
+      id: 'bronze-vendor-c',
+      name: 'vendor-c',
+      path: '/bronze/vendor-c',
+      containerId: 'bronze',
+      lastModified: new Date('2023-08-07'),
+      folderCount: 1,
+      blobCount: 6
+    },
+    {
+      id: 'bronze-vendor-d',
+      name: 'vendor-d',
+      path: '/bronze/vendor-d',
+      containerId: 'bronze',
+      lastModified: new Date('2023-08-08'),
+      folderCount: 0,
+      blobCount: 4
+    }
+  ],
+  'silver': [
+    {
+      id: 'silver-vendor-a',
+      name: 'vendor-a',
+      path: '/silver/vendor-a',
+      containerId: 'silver',
+      lastModified: new Date('2023-08-10'),
+      folderCount: 3,
+      blobCount: 12
+    },
+    {
+      id: 'silver-vendor-b',
+      name: 'vendor-b',
+      path: '/silver/vendor-b',
+      containerId: 'silver',
+      lastModified: new Date('2023-08-11'),
+      folderCount: 2,
+      blobCount: 15
+    },
+    {
+      id: 'silver-finance',
+      name: 'finance',
+      path: '/silver/finance',
+      containerId: 'silver',
+      lastModified: new Date('2023-08-12'),
+      folderCount: 1,
+      blobCount: 8
+    },
+    {
+      id: 'silver-sales',
+      name: 'sales',
+      path: '/silver/sales',
+      containerId: 'silver',
+      lastModified: new Date('2023-08-13'),
+      folderCount: 1,
+      blobCount: 7
+    }
+  ],
+  'gold': [
+    {
+      id: 'gold-finance',
+      name: 'finance',
+      path: '/gold/finance',
+      containerId: 'gold',
+      lastModified: new Date('2023-08-15'),
+      folderCount: 2,
+      blobCount: 10
+    },
+    {
+      id: 'gold-sales',
+      name: 'sales',
+      path: '/gold/sales',
+      containerId: 'gold',
+      lastModified: new Date('2023-08-16'),
+      folderCount: 1,
+      blobCount: 8
+    },
+    {
+      id: 'gold-marketing',
+      name: 'marketing',
+      path: '/gold/marketing',
+      containerId: 'gold',
+      lastModified: new Date('2023-08-17'),
+      folderCount: 1,
+      blobCount: 9
+    },
+    {
+      id: 'gold-executive',
+      name: 'executive',
+      path: '/gold/executive',
+      containerId: 'gold',
+      lastModified: new Date('2023-08-18'),
+      folderCount: 0,
+      blobCount: 8
+    }
+  ]
+};
+
 // Generate mock data for a dataset
 const generateMockData = (dataset: Dataset, count: number): DataRow[] => {
   const rows: DataRow[] = [];
@@ -468,6 +659,71 @@ const updateColumn = async (connectionId: string, datasetId: string, column: Dat
   return mockDatasets[datasetIndex];
 };
 
+// New functions for container and folder browsing
+const listContainers = async (connectionId: string, filter?: string[]): Promise<Container[]> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  if (filter && filter.length > 0) {
+    return mockContainers.filter(container => 
+      filter.some(f => container.name.toLowerCase().includes(f.toLowerCase()))
+    );
+  }
+  
+  return [...mockContainers];
+};
+
+const listFolders = async (connectionId: string, containerId: string): Promise<Folder[]> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  return mockFolders[containerId] || [];
+};
+
+const listSubFolders = async (connectionId: string, folderId: string): Promise<Folder[]> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  // Mock implementation - in a real app, this would query subfolders of the given folder
+  return [];
+};
+
+const listBlobsInFolder = async (connectionId: string, folderId: string): Promise<Blob[]> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  // Mock implementation - in a real app, this would query blobs in the given folder
+  return [];
+};
+
+const getDatasetsByContainer = async (connectionId: string, containerId: string): Promise<Dataset[]> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Filter mock datasets based on container
+  return mockDatasets.filter((_, index) => {
+    // Just a simple mock filter for demonstration
+    if (containerId === 'ingress') return index % 3 === 0;
+    if (containerId === 'bronze') return index % 3 === 1;
+    if (containerId === 'silver') return index % 3 === 2;
+    if (containerId === 'gold') return index % 2 === 0;
+    return true;
+  });
+};
+
+const getDatasetsByFolder = async (connectionId: string, folderId: string): Promise<Dataset[]> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Extract container and folder name from folderId for mock filter
+  const parts = folderId.split('-');
+  const containerName = parts[0];
+  
+  // Filter mock datasets based on folder
+  return mockDatasets.filter((_, index) => {
+    // Just a simple mock filter for demonstration
+    if (containerName === 'ingress') return index % 5 === 0;
+    if (containerName === 'bronze') return index % 5 === 1;
+    if (containerName === 'silver') return index % 5 === 2;
+    if (containerName === 'gold') return index % 5 === 3;
+    return index % 5 === 4;
+  });
+};
+
 // Export all functions as a single object
 export const adlsService = {
   getConnections,
@@ -492,7 +748,13 @@ export const adlsService = {
   getComments,
   addComment,
   resolveComment,
-  updateColumn
+  updateColumn,
+  listContainers,
+  listFolders,
+  listSubFolders,
+  listBlobsInFolder,
+  getDatasetsByContainer,
+  getDatasetsByFolder
 };
 
 // Also export individual functions for direct import

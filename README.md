@@ -1,163 +1,142 @@
 
-# Welcome to your Lovable project
+# Azure Data Lake Storage Explorer
 
-## Version
-Current version: 1.2.3 (See version.txt for updates)
+A web-based tool for browsing and editing data in Azure Data Lake Storage (ADLS).
 
-## Project info
+## Features
 
-**URL**: https://lovable.dev/projects/8091c9f8-9c41-4ac3-b2fc-91397b8433b0
+- Connect to Azure Data Lake Storage using connection strings or account keys
+- Support for Azure Managed Identity authentication
+- Browse storage containers (ingress, bronze, silver, gold, etc.)
+- Navigate folders within containers
+- View and edit tabular datasets
+- Save changes to temporary storage
+- Commit changes back to ADLS
+- Modern, responsive UI with dark mode support
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/8091c9f8-9c41-4ac3-b2fc-91397b8433b0) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-## Setting up on a new machine
-
-To set up this project on a new machine (Windows or Mac), follow these steps:
+## Getting Started
 
 ### Prerequisites
 
-#### For Windows:
-1. **Install Node.js**: 
-   - Download the installer from [Node.js website](https://nodejs.org/) (v16 or higher recommended)
-   - Follow the installation wizard
-   - Verify installation by opening Command Prompt and typing:
-     ```
-     node --version
-     npm --version
-     ```
+- Node.js 16+ or Bun
+- npm, yarn, or bun
 
-2. **Install Git**:
-   - Download the installer from [Git website](https://git-scm.com/download/win)
-   - Follow the installation wizard with default options
-   - Verify installation by opening Command Prompt and typing:
-     ```
-     git --version
-     ```
+### Installation
 
-#### For Mac:
-1. **Install Node.js**:
-   - Using Homebrew (recommended):
-     ```
-     brew install node
-     ```
-   - Or download the installer from [Node.js website](https://nodejs.org/)
-   - Verify installation by opening Terminal and typing:
-     ```
-     node --version
-     npm --version
-     ```
+1. Clone the repository:
+```bash
+git clone https://your-repository-url/azure-datalake-explorer.git
+cd azure-datalake-explorer
+```
 
-2. **Install Git**:
-   - Using Homebrew:
-     ```
-     brew install git
-     ```
-   - Or download from [Git website](https://git-scm.com/download/mac)
-   - Verify installation by opening Terminal and typing:
-     ```
-     git --version
-     ```
+2. Install the dependencies:
+```bash
+# Using npm
+npm install
 
-### Setting up the project
+# Using yarn
+yarn install
 
-1. **Clone the repository**:
-   ```sh
-   git clone <YOUR_REPOSITORY_URL>
-   cd <PROJECT_DIRECTORY>
-   ```
+# Using bun
+bun install
+```
 
-2. **Install dependencies**:
-   ```sh
-   npm install
-   ```
+3. Start the development server:
+```bash
+# Using npm
+npm run dev
 
-3. **Start the development server**:
-   ```sh
-   npm run dev
-   ```
-   This will automatically:
-   - Start the application
-   - Open your default browser to http://localhost:8080 (if it doesn't open automatically, you can manually navigate to this URL)
-   - Enable hot-reloading, so any changes you make to the code will be immediately reflected in the browser
+# Using yarn
+yarn dev
 
-4. **For production build**:
-   ```sh
-   npm run build
-   ```
-   This creates optimized production files in the `dist` directory.
+# Using bun
+bun dev
+```
 
-5. **To preview the production build locally**:
-   ```sh
-   npm run preview
-   ```
+4. Open your browser and navigate to http://localhost:5173
 
-### Troubleshooting Common Issues
+## Building for Production
 
-- **Port already in use**: If port 8080 is already being used by another application, you can modify the port in `vite.config.ts` file
-- **Node version issues**: This project requires Node.js v16 or higher. Use `nvm` to manage multiple Node versions if needed
-- **Dependencies installation errors**: Try removing `node_modules` folder and `package-lock.json` file, then run `npm install` again
+To build the application for production:
 
-## Version Control
+```bash
+# Using npm
+npm run build
 
-This project uses Git for version control. To maintain a clear history:
+# Using yarn
+yarn build
 
-1. **Commit regularly with meaningful messages**:
-   ```sh
-   git add .
-   git commit -m "A clear description of changes"
-   ```
+# Using bun
+bun run build
+```
 
-2. **Push changes to update the Lovable project**:
-   ```sh
-   git push origin main
-   ```
+The built files will be available in the `dist` directory. You can serve these files using any static file server.
 
-3. **Check the version in version.txt to track major updates**
+For a simple way to preview the production build:
 
-## What technologies are used for this project?
+```bash
+# Using npm
+npm run preview
 
-This project is built with:
+# Using yarn
+yarn preview
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Using bun
+bun run preview
+```
 
-## How can I deploy this project?
+## Integrating with a Python Backend (Optional)
 
-Simply open [Lovable](https://lovable.dev/projects/8091c9f8-9c41-4ac3-b2fc-91397b8433b0) and click on Share -> Publish.
+If you want to integrate this frontend with a Python backend for real ADLS operations:
 
-## I want to use a custom domain - is that possible?
+1. Create a Python API service using Flask, FastAPI, or Django Rest Framework
+2. Implement the required endpoints to match the frontend's service calls
+3. Configure CORS to allow requests from the frontend
+4. Update the `adlsService.ts` file to point to your Python API endpoints
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Example FastAPI backend structure:
+
+```python
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from azure.storage.filedatalake import DataLakeServiceClient
+import os
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/api/connect")
+async def connect(credentials: dict):
+    # Implement connection to ADLS
+    pass
+
+@app.get("/api/containers")
+async def list_containers(connection_id: str, filter: str = None):
+    # Implement container listing
+    pass
+
+@app.get("/api/folders/{container_id}")
+async def list_folders(container_id: str, connection_id: str):
+    # Implement folder listing
+    pass
+
+@app.get("/api/datasets/{container_id}")
+async def get_datasets_by_container(container_id: str, connection_id: str):
+    # Implement dataset listing by container
+    pass
+
+# Add more endpoints as needed
+```
+
+Then update the frontend's service to call these endpoints.
+
+## License
+
+This project is licensed under the MIT License.

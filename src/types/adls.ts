@@ -1,16 +1,48 @@
 export interface ADLSCredentials {
+  useManagedIdentity?: boolean;
   connectionString?: string;
   accountName?: string;
   accountKey?: string;
-  useManagedIdentity?: boolean;
+  containerFilter?: string[];
 }
 
 export interface ADLSConnection {
   id: string;
   name: string;
   credentials: ADLSCredentials;
-  isConnected: boolean;
+  isConnected?: boolean;
   lastConnected?: Date;
+}
+
+export interface Container {
+  id: string;
+  name: string;
+  type: 'ingress' | 'bronze' | 'silver' | 'gold' | 'other';
+  lastModified?: Date;
+  folderCount?: number;
+  blobCount?: number;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  path: string;
+  containerId: string;
+  parentFolderId?: string;
+  lastModified?: Date;
+  folderCount?: number;
+  blobCount?: number;
+}
+
+export interface Blob {
+  id: string;
+  name: string;
+  path: string;
+  containerId: string;
+  folderId?: string;
+  size: number;
+  contentType: string;
+  lastModified: Date;
 }
 
 export interface DatasetColumn {
