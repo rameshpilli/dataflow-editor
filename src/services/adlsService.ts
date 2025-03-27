@@ -1,4 +1,5 @@
-import { ADLSConnection, Dataset, DatasetColumn, DatasetPreview, DataRow, FilterOptions, ValidationResult } from '@/types/adls';
+
+import { ADLSConnection, Dataset, DatasetColumn, DatasetPreview, DataRow, FilterOptions, ValidationResult, Container, Folder, Blob } from '@/types/adls';
 import { v4 as uuidv4 } from 'uuid';
 
 // Mock connections
