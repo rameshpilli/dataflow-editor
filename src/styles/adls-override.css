@@ -1,0 +1,16 @@
+
+.connection-form-button[data-type="adls"]::before {
+  content: "ADLS Storage";
+}
+
+.connection-form-button[data-type="adls"] > span {
+  display: none;
+}
+
+.connection-form-title[data-type="adls"]::before {
+  content: "Connect to ADLS Storage";
+}
+
+.connection-form-title[data-type="adls"] > span {
+  display: none;
+}
