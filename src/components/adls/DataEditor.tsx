@@ -54,6 +54,10 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
     onGoBack
   } = props;
 
+  console.log("DataEditor - Rendering with dataset:", dataset?.id);
+  console.log("DataEditor - Data preview available:", !!dataPreview);
+  console.log("DataEditor - Is loading:", isLoading);
+
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showBackConfirmation, setShowBackConfirmation] = useState(false);

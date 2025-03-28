@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -110,8 +109,21 @@ const ADLSManager: React.FC = () => {
   const handleSelectDataset = async (dataset: Dataset) => {
     console.log("ADLSManager - Selecting dataset:", dataset.id, dataset.name);
     try {
-      await loadDataset(dataset.id);
-      console.log("Dataset loaded successfully:", dataset.id);
+      if (!dataset.id) {
+        console.error("Dataset ID is missing", dataset);
+        toast({
+          variant: "destructive",
+          title: "Error loading dataset",
+          description: "Dataset ID is missing",
+        });
+        return;
+      }
+
+      setTimeout(async () => {
+        console.log("Loading dataset with ID:", dataset.id);
+        await loadDataset(dataset.id);
+        console.log("Dataset loaded successfully:", dataset.id);
+      }, 100);
     } catch (err) {
       console.error("Error loading dataset:", err);
       toast({
@@ -123,6 +135,7 @@ const ADLSManager: React.FC = () => {
   };
 
   const handleGoBackToDatasets = () => {
+    console.log("Going back to datasets list");
     loadDataset('');
   };
 
@@ -177,8 +190,8 @@ const ADLSManager: React.FC = () => {
       console.log("Selecting folder with ID:", folderId);
       await selectFolder(folderId);
       
-      // If there's only one dataset in the folder, automatically select it
       if (datasets.length === 1) {
+        console.log("Auto-selecting the only dataset in folder:", datasets[0].name);
         handleSelectDataset(datasets[0]);
       }
     } catch (err) {

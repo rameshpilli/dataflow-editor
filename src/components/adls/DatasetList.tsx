@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dataset } from '@/types/adls';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,8 +50,8 @@ const DatasetList: React.FC<DatasetListProps> = ({
   }
 
   const handleDatasetSelect = (dataset: Dataset) => {
-    console.log(`Selecting dataset: ${dataset.id} (${dataset.name})`);
-    // Call loadDataset directly with the dataset ID
+    console.log(`DatasetList - Selecting dataset: ${dataset.id} (${dataset.name})`);
+    console.log(`Dataset details: path=${dataset.path}, format=${dataset.format}`);
     onSelectDataset(dataset);
   };
 
@@ -126,7 +125,7 @@ const DatasetList: React.FC<DatasetListProps> = ({
                 }
                     
                 return (
-                  <TableRow key={dataset.id} className="transition-all duration-150">
+                  <TableRow key={dataset.id} className="transition-all duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer" onClick={() => handleDatasetSelect(dataset)}>
                     <TableCell>
                       {dataset.format === 'delta' ? (
                         <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-md inline-flex">
@@ -186,7 +185,10 @@ const DatasetList: React.FC<DatasetListProps> = ({
                         variant="outline" 
                         size="sm"
                         className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 dark:hover:from-blue-800/40 dark:hover:to-indigo-800/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm hover:shadow transition-all duration-200 group"
-                        onClick={() => handleDatasetSelect(dataset)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDatasetSelect(dataset);
+                        }}
                       >
                         View Data
                         <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />

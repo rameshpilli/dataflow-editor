@@ -42,7 +42,11 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
     onDiscardChanges
   } = useDataEditor();
 
+  console.log("TableToolbar - Edit mode:", editMode);
+  console.log("TableToolbar - Changes count:", changes.length);
+
   const handleSaveChanges = async () => {
+    console.log("Attempting to save changes");
     try {
       await onSaveChanges();
       toast({
@@ -61,6 +65,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
   };
 
   const handleDiscardChanges = () => {
+    console.log("Attempting to discard changes");
     try {
       onDiscardChanges();
       toast({
@@ -132,7 +137,10 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
                 <div className={`p-0.5 rounded-md transition-colors ${editMode ? 'bg-blue-100 dark:bg-blue-900/30' : ''}`}>
                   <Switch
                     checked={editMode}
-                    onCheckedChange={setEditMode}
+                    onCheckedChange={(checked) => {
+                      console.log("Toggling edit mode to:", checked);
+                      setEditMode(checked);
+                    }}
                     aria-label="Toggle edit mode"
                   />
                 </div>
