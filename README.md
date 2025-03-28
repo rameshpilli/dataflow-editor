@@ -1,142 +1,107 @@
 
-# Azure Data Lake Storage Explorer
+# ADLS Manager Web Application
 
-A web-based tool for browsing and editing data in Azure Data Lake Storage (ADLS).
+This project provides a web application for managing Azure Data Lake Storage (ADLS) data. It includes a React frontend and a Python backend.
 
 ## Features
 
-- Connect to Azure Data Lake Storage using connection strings or account keys
-- Support for Azure Managed Identity authentication
-- Browse storage containers (ingress, bronze, silver, gold, etc.)
-- Navigate folders within containers
-- View and edit tabular datasets
-- Save changes to temporary storage
-- Commit changes back to ADLS
-- Modern, responsive UI with dark mode support
+- Connect to ADLS accounts using connection string or managed identity
+- Browse containers (ingress, bronze, silver, gold)
+- Browse folders within containers 
+- View and edit datasets (delta tables and Parquet files)
+- Temporary storage for changes before committing
+- Data validation and repair workflow
 
-## Getting Started
+## Project Structure
 
-### Prerequisites
+- `/src` - React frontend
+- `/backend` - Python FastAPI backend
 
-- Node.js 16+ or Bun
-- npm, yarn, or bun
+## Prerequisites
 
-### Installation
+- Node.js 16+
+- Python 3.8+
+- Azure Storage Account with Data Lake Storage Gen2 enabled
 
-1. Clone the repository:
-```bash
-git clone https://your-repository-url/azure-datalake-explorer.git
-cd azure-datalake-explorer
+## Setup and Running
+
+### Backend Setup
+
+1. Navigate to the backend directory:
+```
+cd backend
 ```
 
-2. Install the dependencies:
-```bash
-# Using npm
+2. Create a Python virtual environment:
+```
+python -m venv venv
+```
+
+3. Activate the virtual environment:
+   - Windows: `venv\Scripts\activate`
+   - macOS/Linux: `source venv/bin/activate`
+
+4. Install dependencies:
+```
+pip install -r requirements.txt
+```
+
+5. Start the backend:
+```
+uvicorn main:app --reload
+```
+
+The backend API will be available at http://localhost:8000
+
+### Frontend Setup
+
+1. In the root directory, install dependencies:
+```
 npm install
-
-# Using yarn
-yarn install
-
-# Using bun
-bun install
 ```
 
-3. Start the development server:
-```bash
-# Using npm
+2. Start the development server:
+```
 npm run dev
-
-# Using yarn
-yarn dev
-
-# Using bun
-bun dev
 ```
 
-4. Open your browser and navigate to http://localhost:5173
+The frontend will be available at http://localhost:5173
 
-## Building for Production
+## Usage
 
-To build the application for production:
+1. Open the application in your browser
+2. Connect to your ADLS account using:
+   - Connection string
+   - Account name and key
+   - Managed identity (in Azure environments)
+3. Browse containers and folders
+4. Select a dataset to view and edit
+5. Make changes to data
+6. Save changes temporarily or commit them back to ADLS
 
-```bash
-# Using npm
-npm run build
+## Configuration
 
-# Using yarn
-yarn build
+By default, the frontend connects to the backend at `http://localhost:8000`. If you need to change this, update the `API_BASE_URL` in `src/services/adlsService.ts`.
 
-# Using bun
-bun run build
-```
+## Working with Python Backend
 
-The built files will be available in the `dist` directory. You can serve these files using any static file server.
+The Python backend provides a RESTful API for:
+- Connecting to Azure Data Lake Storage
+- Browsing containers and folders
+- Listing and loading datasets
+- Previewing data with pagination
+- Saving and committing changes
 
-For a simple way to preview the production build:
+The API documentation is available at http://localhost:8000/docs when the backend is running.
 
-```bash
-# Using npm
-npm run preview
+## Integration with Corporate Environments
 
-# Using yarn
-yarn preview
-
-# Using bun
-bun run preview
-```
-
-## Integrating with a Python Backend (Optional)
-
-If you want to integrate this frontend with a Python backend for real ADLS operations:
-
-1. Create a Python API service using Flask, FastAPI, or Django Rest Framework
-2. Implement the required endpoints to match the frontend's service calls
-3. Configure CORS to allow requests from the frontend
-4. Update the `adlsService.ts` file to point to your Python API endpoints
-
-Example FastAPI backend structure:
-
-```python
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from azure.storage.filedatalake import DataLakeServiceClient
-import os
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.post("/api/connect")
-async def connect(credentials: dict):
-    # Implement connection to ADLS
-    pass
-
-@app.get("/api/containers")
-async def list_containers(connection_id: str, filter: str = None):
-    # Implement container listing
-    pass
-
-@app.get("/api/folders/{container_id}")
-async def list_folders(container_id: str, connection_id: str):
-    # Implement folder listing
-    pass
-
-@app.get("/api/datasets/{container_id}")
-async def get_datasets_by_container(container_id: str, connection_id: str):
-    # Implement dataset listing by container
-    pass
-
-# Add more endpoints as needed
-```
-
-Then update the frontend's service to call these endpoints.
+This application can be integrated with corporate environments:
+- Configure Azure AD authentication
+- Use managed identity when deployed to Azure
+- Connect to VNet-enabled storage accounts
+- Implement custom authorization rules
 
 ## License
 
-This project is licensed under the MIT License.
+MIT
