@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Container, Folder, FolderTree, Dataset } from '@/types/adls';
 import { Button } from '@/components/ui/button';
@@ -42,12 +41,10 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   
-  // Filter containers by search term
   const filteredContainers = containers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Filter folders by search term
   const filteredFolders = folders.filter(f => 
     f.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -65,10 +62,19 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
   };
   
   const handleFolderSelect = (folderId: string) => {
-    // Log first for debugging
     console.log(`Selecting folder with ID: ${folderId}`);
     
-    // Call the parent component's onSelectFolder function
+    if (!folderId) {
+      console.error('Invalid folder ID provided');
+      return;
+    }
+    
+    const folderToSelect = folders.find(f => f.id === folderId);
+    if (!folderToSelect) {
+      console.error(`Folder with ID ${folderId} not found in current container`);
+      return;
+    }
+    
     onSelectFolder(folderId);
   };
   
@@ -76,20 +82,16 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
     console.log('Node clicked:', node);
     
     if (node.type === 'container') {
-      // Select container
       onSelectContainer(node.id);
     } else if (node.type === 'folder') {
-      // Check if the container is already selected
       const pathParts = node.path?.split('/') || [];
       const containerName = pathParts[0];
       const containerToSelect = containers.find(c => c.name === containerName);
       
       if (containerToSelect) {
         if (selectedContainer?.id !== containerToSelect.id) {
-          // If container not selected yet, select it first
           onSelectContainer(containerToSelect.id);
           
-          // Set a flag to select the folder after container is selected
           setTimeout(() => {
             const folderToSelect = folders.find(f => f.name === node.name);
             if (folderToSelect) {
@@ -97,9 +99,8 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
             } else {
               console.error(`Folder ${node.name} not found after selecting container`);
             }
-          }, 500);
+          }, 300);
         } else {
-          // Container already selected, just select the folder
           const folderToSelect = folders.find(f => f.name === node.name);
           if (folderToSelect) {
             handleFolderSelect(folderToSelect.id);
@@ -109,7 +110,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         }
       }
     } else if (node.type === 'dataset') {
-      // For dataset nodes, we need to select its parent folder
       const pathParts = node.path?.split('/') || [];
       if (pathParts.length >= 2) {
         const containerName = pathParts[0];
@@ -122,10 +122,8 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         
         if (containerToSelect) {
           if (selectedContainer?.id !== containerToSelect.id) {
-            // If container not selected yet, select it first
             onSelectContainer(containerToSelect.id);
             
-            // Set a flag to select the folder after container is selected
             setTimeout(() => {
               const folderToSelect = folders.find(f => f.name === folderName);
               if (folderToSelect) {
@@ -140,7 +138,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
               }
             }, 500);
           } else {
-            // Container already selected, just select the folder
             const folderToSelect = folders.find(f => f.name === folderName);
             if (folderToSelect) {
               handleFolderSelect(folderToSelect.id);
@@ -157,15 +154,11 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
       }
     }
     
-    // Always toggle the node expansion state in tree view
     toggleNode(node.id);
   };
   
-  // Recursive function to render the folder tree
   const renderFolderTree = (node: FolderTree, level = 0) => {
-    // Skip if the node name doesn't match the search term
     if (searchTerm && !node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-      // But check if any children match
       const hasMatchingChildren = node.children.some(child => 
         child.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -233,7 +226,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
     );
   };
   
-  // Show either the tree view or the list view based on the selected mode
   const renderContent = () => {
     if (viewMode === 'tree' && folderTree) {
       return (
@@ -242,11 +234,9 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         </ScrollArea>
       );
     } else {
-      // List view - show containers, then folders when a container is selected
       return (
         <>
           {!selectedContainer ? (
-            // Show containers
             <div className="space-y-2">
               <div className="flex justify-between items-center mb-2">
                 <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Containers</p>
@@ -254,7 +244,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
               <ScrollArea className="h-[300px] pr-3">
                 <div className="space-y-1">
                   {isLoading ? (
-                    // Show loading skeleton
                     Array(4).fill(0).map((_, i) => (
                       <div key={i} className="animate-pulse flex items-center p-2 rounded">
                         <div className="h-4 w-4 bg-blue-200 dark:bg-blue-800 rounded mr-2"></div>
@@ -297,7 +286,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
               </ScrollArea>
             </div>
           ) : (
-            // Show folders within the selected container
             <div className="space-y-2">
               <div className="flex items-center mb-2">
                 <Button 
@@ -323,7 +311,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
               <ScrollArea className="h-[250px] pr-3">
                 <div className="space-y-1">
                   {isLoading ? (
-                    // Show loading skeleton
                     Array(4).fill(0).map((_, i) => (
                       <div key={i} className="animate-pulse flex items-center p-2 rounded">
                         <div className="h-4 w-4 bg-amber-200 dark:bg-amber-800 rounded mr-2"></div>
@@ -342,7 +329,10 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
                                   ? 'bg-blue-100/80 dark:bg-blue-800/30 text-blue-700 dark:text-blue-300'
                                   : ''
                               }`}
-                              onClick={() => handleFolderSelect(folder.id)}
+                              onClick={() => {
+                                console.log(`List view: Folder clicked - ${folder.id} (${folder.name})`);
+                                handleFolderSelect(folder.id);
+                              }}
                             >
                               {selectedFolder?.id === folder.id ? (
                                 <FolderOpen className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" />
@@ -400,7 +390,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-medium text-blue-800 dark:text-blue-200">Data Browser</CardTitle>
           
-          {/* View mode switcher */}
           {folderTree && (
             <Tabs
               value={viewMode}
