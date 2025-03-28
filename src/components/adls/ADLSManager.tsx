@@ -7,7 +7,7 @@ import ContainerBrowser from '@/components/adls/ContainerBrowser';
 import { Dataset, ADLSCredentials } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { LogOut, DatabaseIcon, CloudOff, AlertCircle, AlertTriangle, UserPlus } from 'lucide-react';
+import { LogOut, CloudOff, AlertCircle, AlertTriangle, UserPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';

@@ -1,5 +1,5 @@
 
-/* Override for ConnectionForm to rename "Real ADLS" to "ADLS Storage" */
+/* Override for ConnectionForm to rename "Real ADLS" to "ADLS Storage" if needed */
 .connection-form-wrapper .real-adls-option::before {
   content: "ADLS Storage";
   display: inline-block;
