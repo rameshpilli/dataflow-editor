@@ -237,13 +237,8 @@ export function useADLSData() {
             console.log(`useADLSData: Folder ${folderLower.name} has dataset files, retrieving them...`);
             try {
               const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderLower.id);
-              console.log(`useADLSData: Retrieved ${folderDatasets.length} datasets for folder ${folderLower.name}`);
-              
-              if (folderDatasets.length > 0) {
-                console.log(`useADLSData: Dataset details:`, 
-                  folderDatasets.map(d => ({ id: d.id, name: d.name, path: d.path }))
-                );
-              }
+              console.log(`useADLSData: Retrieved ${folderDatasets.length} datasets for folder ${folderLower.name}`, 
+                folderDatasets.map(d => d.name));
               
               setDatasets(folderDatasets);
             } catch (datasetErr) {
@@ -272,6 +267,7 @@ export function useADLSData() {
       if (folder.hasDatasetFiles) {
         console.log(`useADLSData: Folder ${folder.name} has dataset files, retrieving them...`);
         try {
+          // Wait for the dataset retrieval to complete
           const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
           console.log(`useADLSData: Retrieved ${folderDatasets.length} datasets for folder ${folder.name}`);
           
@@ -281,6 +277,7 @@ export function useADLSData() {
             );
           }
           
+          // Set the datasets state with the retrieved data
           setDatasets(folderDatasets);
         } catch (datasetErr) {
           console.error(`useADLSData: Error fetching datasets for folder ${folder.name}:`, datasetErr);

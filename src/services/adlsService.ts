@@ -18,207 +18,223 @@ import { toast } from '@/hooks/use-toast';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+// Store references to the mock data structures
+const mockContainers: Container[] = [
+  { id: 'ingress-container', name: 'ingress', path: 'ingress', lastModified: new Date() },
+  { id: 'bronze-container', name: 'bronze', path: 'bronze', lastModified: new Date() },
+  { id: 'silver-container', name: 'silver', path: 'silver', lastModified: new Date() },
+  { id: 'gold-container', name: 'gold', path: 'gold', lastModified: new Date() }
+];
+
+const mockFolders: Record<string, Folder[]> = {
+  'ingress-container': [
+    { id: 'raw-folder', name: 'raw', path: 'ingress/raw', containerName: 'ingress', lastModified: new Date(), hasDatasetFiles: true }
+  ],
+  'bronze-container': [
+    { id: 'vendorA-folder', name: 'vendorA', path: 'bronze/vendorA', containerName: 'bronze', lastModified: new Date(), hasDatasetFiles: true },
+    { id: 'vendorB-folder', name: 'vendorB', path: 'bronze/vendorB', containerName: 'bronze', lastModified: new Date(), hasDatasetFiles: true }
+  ],
+  'silver-container': [
+    { id: 'processed-folder', name: 'processed', path: 'silver/processed', containerName: 'silver', lastModified: new Date(), hasDatasetFiles: true },
+    { id: 'validated-folder', name: 'validated', path: 'silver/validated', containerName: 'silver', lastModified: new Date() }
+  ],
+  'gold-container': [
+    { id: 'analytics-folder', name: 'analytics', path: 'gold/analytics', containerName: 'gold', lastModified: new Date(), hasDatasetFiles: true },
+    { id: 'reporting-folder', name: 'reporting', path: 'gold/reporting', containerName: 'gold', lastModified: new Date() }
+  ]
+};
+
+// Update dataset IDs to be more predictable and ensure we can find them
+const bronzeVendorADatasets: Dataset[] = [
+  {
+    id: 'sales-dataset',
+    name: 'Sales Data',
+    path: 'bronze/vendorA/sales',
+    format: 'delta',
+    columns: [
+      { name: 'date', dataType: 'date', nullable: false },
+      { name: 'product_id', dataType: 'string', nullable: false },
+      { name: 'amount', dataType: 'decimal', nullable: false }
+    ],
+    rowCount: 1000,
+    repairedCount: 950,
+    lastModified: new Date()
+  },
+  {
+    id: 'customers-dataset',
+    name: 'Customer Information',
+    path: 'bronze/vendorA/customers',
+    format: 'delta',
+    columns: [
+      { name: 'customer_id', dataType: 'string', nullable: false },
+      { name: 'name', dataType: 'string', nullable: false },
+      { name: 'email', dataType: 'string', nullable: true }
+    ],
+    rowCount: 500,
+    repairedCount: 500,
+    lastModified: new Date()
+  }
+];
+
+const bronzeVendorBDatasets: Dataset[] = [
+  {
+    id: 'inventory-dataset',
+    name: 'Inventory Data',
+    path: 'bronze/vendorB/inventory',
+    format: 'delta',
+    columns: [
+      { name: 'product_id', dataType: 'string', nullable: false },
+      { name: 'quantity', dataType: 'integer', nullable: false },
+      { name: 'warehouse', dataType: 'string', nullable: false }
+    ],
+    rowCount: 300,
+    repairedCount: 275,
+    lastModified: new Date()
+  }
+];
+
+const silverProcessedDatasets: Dataset[] = [
+  {
+    id: 'products-dataset',
+    name: 'Product Catalog',
+    path: 'silver/processed/products',
+    format: 'delta',
+    columns: [
+      { name: 'product_id', dataType: 'string', nullable: false },
+      { name: 'name', dataType: 'string', nullable: false },
+      { name: 'category', dataType: 'string', nullable: false },
+      { name: 'price', dataType: 'decimal', nullable: false }
+    ],
+    rowCount: 200,
+    repairedCount: 180,
+    lastModified: new Date()
+  }
+];
+
+const goldAnalyticsDatasets: Dataset[] = [
+  {
+    id: 'sales-summary-dataset',
+    name: 'Sales Summary',
+    path: 'gold/analytics/sales_summary',
+    format: 'delta',
+    columns: [
+      { name: 'date', dataType: 'date', nullable: false },
+      { name: 'total_sales', dataType: 'decimal', nullable: false },
+      { name: 'region', dataType: 'string', nullable: false }
+    ],
+    rowCount: 100,
+    repairedCount: 100,
+    lastModified: new Date()
+  },
+  {
+    id: 'monthly-metrics-dataset',
+    name: 'Monthly Metrics',
+    path: 'gold/analytics/monthly_metrics',
+    format: 'delta',
+    columns: [
+      { name: 'month', dataType: 'string', nullable: false },
+      { name: 'revenue', dataType: 'decimal', nullable: false },
+      { name: 'growth_rate', dataType: 'decimal', nullable: true },
+      { name: 'customer_count', dataType: 'integer', nullable: false }
+    ],
+    rowCount: 24,
+    repairedCount: 24,
+    lastModified: new Date()
+  },
+  {
+    id: 'regional-performance-dataset',
+    name: 'Regional Performance',
+    path: 'gold/analytics/regional_performance',
+    format: 'delta',
+    columns: [
+      { name: 'region', dataType: 'string', nullable: false },
+      { name: 'sales', dataType: 'decimal', nullable: false },
+      { name: 'target', dataType: 'decimal', nullable: false },
+      { name: 'achievement', dataType: 'decimal', nullable: false }
+    ],
+    rowCount: 50,
+    repairedCount: 48,
+    lastModified: new Date()
+  }
+];
+
+const goldReportingDatasets: Dataset[] = [
+  {
+    id: 'executive-summary-dataset',
+    name: 'Executive Summary',
+    path: 'gold/reporting/executive_summary',
+    format: 'delta',
+    columns: [
+      { name: 'quarter', dataType: 'string', nullable: false },
+      { name: 'department', dataType: 'string', nullable: false },
+      { name: 'budget', dataType: 'decimal', nullable: false },
+      { name: 'actual', dataType: 'decimal', nullable: false }
+    ],
+    rowCount: 16,
+    repairedCount: 16,
+    lastModified: new Date()
+  },
+  {
+    id: 'financial-report-dataset',
+    name: 'Financial Report',
+    path: 'gold/reporting/financial_report',
+    format: 'delta',
+    columns: [
+      { name: 'account', dataType: 'string', nullable: false },
+      { name: 'balance', dataType: 'decimal', nullable: false },
+      { name: 'period', dataType: 'string', nullable: false }
+    ],
+    rowCount: 120,
+    repairedCount: 120,
+    lastModified: new Date()
+  }
+];
+
+const ingressRawDatasets: Dataset[] = [
+  {
+    id: 'raw-data-dataset',
+    name: 'Raw Data',
+    path: 'ingress/raw/data',
+    format: 'csv',
+    columns: [
+      { name: 'timestamp', dataType: 'string', nullable: false },
+      { name: 'data', dataType: 'string', nullable: false }
+    ],
+    rowCount: 2000,
+    repairedCount: 0,
+    lastModified: new Date()
+  }
+];
+
+// Create a direct map between folder IDs and datasets
+const mockDatasetsByFolder: Record<string, Dataset[]> = {
+  'raw-folder': ingressRawDatasets,
+  'vendorA-folder': bronzeVendorADatasets,
+  'vendorB-folder': bronzeVendorBDatasets,
+  'processed-folder': silverProcessedDatasets,
+  'analytics-folder': goldAnalyticsDatasets,
+  'reporting-folder': goldReportingDatasets
+};
+
 const generateMockContainers = (containerFilter?: string[]): Container[] => {
-  const allContainers = [
-    { id: 'ingress-container', name: 'ingress', path: 'ingress', lastModified: new Date() },
-    { id: 'bronze-container', name: 'bronze', path: 'bronze', lastModified: new Date() },
-    { id: 'silver-container', name: 'silver', path: 'silver', lastModified: new Date() },
-    { id: 'gold-container', name: 'gold', path: 'gold', lastModified: new Date() }
-  ];
-  
   if (!containerFilter || containerFilter.length === 0) {
-    return allContainers;
+    return mockContainers;
   }
   
-  return allContainers.filter(c => 
+  return mockContainers.filter(c => 
     containerFilter.some(filter => c.name.toLowerCase().includes(filter.toLowerCase()))
   );
 };
 
 const generateMockFolders = (containerId: string): Folder[] => {
-  if (containerId.includes('bronze')) {
-    return [
-      { id: 'vendorA-folder', name: 'vendorA', path: 'bronze/vendorA', containerName: 'bronze', lastModified: new Date(), hasDatasetFiles: true },
-      { id: 'vendorB-folder', name: 'vendorB', path: 'bronze/vendorB', containerName: 'bronze', lastModified: new Date(), hasDatasetFiles: true }
-    ];
-  } else if (containerId.includes('silver')) {
-    return [
-      { id: 'processed-folder', name: 'processed', path: 'silver/processed', containerName: 'silver', lastModified: new Date(), hasDatasetFiles: true },
-      { id: 'validated-folder', name: 'validated', path: 'silver/validated', containerName: 'silver', lastModified: new Date() }
-    ];
-  } else if (containerId.includes('gold')) {
-    return [
-      { id: 'analytics-folder', name: 'analytics', path: 'gold/analytics', containerName: 'gold', lastModified: new Date(), hasDatasetFiles: true },
-      { id: 'reporting-folder', name: 'reporting', path: 'gold/reporting', containerName: 'gold', lastModified: new Date() }
-    ];
-  }
-  
-  return [
-    { id: 'raw-folder', name: 'raw', path: 'ingress/raw', containerName: 'ingress', lastModified: new Date(), hasDatasetFiles: true }
-  ];
+  return mockFolders[containerId] || [];
 };
 
 const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[] => {
-  const bronzeVendorADatasets = [
-    {
-      id: 'sales-dataset',
-      name: 'Sales Data',
-      path: 'bronze/vendorA/sales',
-      format: 'delta',
-      columns: [
-        { name: 'date', dataType: 'date', nullable: false },
-        { name: 'product_id', dataType: 'string', nullable: false },
-        { name: 'amount', dataType: 'decimal', nullable: false }
-      ],
-      rowCount: 1000,
-      repairedCount: 950,
-      lastModified: new Date()
-    },
-    {
-      id: 'customers-dataset',
-      name: 'Customer Information',
-      path: 'bronze/vendorA/customers',
-      format: 'delta',
-      columns: [
-        { name: 'customer_id', dataType: 'string', nullable: false },
-        { name: 'name', dataType: 'string', nullable: false },
-        { name: 'email', dataType: 'string', nullable: true }
-      ],
-      rowCount: 500,
-      repairedCount: 500,
-      lastModified: new Date()
-    }
-  ];
-  
-  const bronzeVendorBDatasets = [
-    {
-      id: 'inventory-dataset',
-      name: 'Inventory Data',
-      path: 'bronze/vendorB/inventory',
-      format: 'delta',
-      columns: [
-        { name: 'product_id', dataType: 'string', nullable: false },
-        { name: 'quantity', dataType: 'integer', nullable: false },
-        { name: 'warehouse', dataType: 'string', nullable: false }
-      ],
-      rowCount: 300,
-      repairedCount: 275,
-      lastModified: new Date()
-    }
-  ];
-  
-  const silverProcessedDatasets = [
-    {
-      id: 'products-dataset',
-      name: 'Product Catalog',
-      path: 'silver/processed/products',
-      format: 'delta',
-      columns: [
-        { name: 'product_id', dataType: 'string', nullable: false },
-        { name: 'name', dataType: 'string', nullable: false },
-        { name: 'category', dataType: 'string', nullable: false },
-        { name: 'price', dataType: 'decimal', nullable: false }
-      ],
-      rowCount: 200,
-      repairedCount: 180,
-      lastModified: new Date()
-    }
-  ];
-  
-  const goldAnalyticsDatasets = [
-    {
-      id: 'sales-summary-dataset',
-      name: 'Sales Summary',
-      path: 'gold/analytics/sales_summary',
-      format: 'delta',
-      columns: [
-        { name: 'date', dataType: 'date', nullable: false },
-        { name: 'total_sales', dataType: 'decimal', nullable: false },
-        { name: 'region', dataType: 'string', nullable: false }
-      ],
-      rowCount: 100,
-      repairedCount: 100,
-      lastModified: new Date()
-    },
-    {
-      id: 'monthly-metrics-dataset',
-      name: 'Monthly Metrics',
-      path: 'gold/analytics/monthly_metrics',
-      format: 'delta',
-      columns: [
-        { name: 'month', dataType: 'string', nullable: false },
-        { name: 'revenue', dataType: 'decimal', nullable: false },
-        { name: 'growth_rate', dataType: 'decimal', nullable: true },
-        { name: 'customer_count', dataType: 'integer', nullable: false }
-      ],
-      rowCount: 24,
-      repairedCount: 24,
-      lastModified: new Date()
-    },
-    {
-      id: 'regional-performance-dataset',
-      name: 'Regional Performance',
-      path: 'gold/analytics/regional_performance',
-      format: 'delta',
-      columns: [
-        { name: 'region', dataType: 'string', nullable: false },
-        { name: 'sales', dataType: 'decimal', nullable: false },
-        { name: 'target', dataType: 'decimal', nullable: false },
-        { name: 'achievement', dataType: 'decimal', nullable: false }
-      ],
-      rowCount: 50,
-      repairedCount: 48,
-      lastModified: new Date()
-    }
-  ];
-  
-  const goldReportingDatasets = [
-    {
-      id: 'executive-summary-dataset',
-      name: 'Executive Summary',
-      path: 'gold/reporting/executive_summary',
-      format: 'delta',
-      columns: [
-        { name: 'quarter', dataType: 'string', nullable: false },
-        { name: 'department', dataType: 'string', nullable: false },
-        { name: 'budget', dataType: 'decimal', nullable: false },
-        { name: 'actual', dataType: 'decimal', nullable: false }
-      ],
-      rowCount: 16,
-      repairedCount: 16,
-      lastModified: new Date()
-    },
-    {
-      id: 'financial-report-dataset',
-      name: 'Financial Report',
-      path: 'gold/reporting/financial_report',
-      format: 'delta',
-      columns: [
-        { name: 'account', dataType: 'string', nullable: false },
-        { name: 'balance', dataType: 'decimal', nullable: false },
-        { name: 'period', dataType: 'string', nullable: false }
-      ],
-      rowCount: 120,
-      repairedCount: 120,
-      lastModified: new Date()
-    }
-  ];
-  
-  const ingressRawDatasets = [
-    {
-      id: 'raw-data-dataset',
-      name: 'Raw Data',
-      path: 'ingress/raw/data',
-      format: 'csv',
-      columns: [
-        { name: 'timestamp', dataType: 'string', nullable: false },
-        { name: 'data', dataType: 'string', nullable: false }
-      ],
-      rowCount: 2000,
-      repairedCount: 0,
-      lastModified: new Date()
-    }
-  ];
+  if (folderId && mockDatasetsByFolder[folderId]) {
+    console.log(`Returning ${mockDatasetsByFolder[folderId].length} datasets for folder ${folderId}`);
+    return mockDatasetsByFolder[folderId];
+  }
 
   if (!containerId && !folderId) {
     return [
@@ -228,29 +244,6 @@ const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[
     ];
   }
 
-  if (containerId?.includes('bronze')) {
-    if (folderId?.includes('vendorA')) {
-      return bronzeVendorADatasets;
-    } else if (folderId?.includes('vendorB')) {
-      return bronzeVendorBDatasets;
-    }
-    return [...bronzeVendorADatasets, ...bronzeVendorBDatasets];
-  } else if (containerId?.includes('silver')) {
-    if (folderId?.includes('processed')) {
-      return silverProcessedDatasets;
-    }
-    return silverProcessedDatasets;
-  } else if (containerId?.includes('gold')) {
-    if (folderId?.includes('analytics')) {
-      return goldAnalyticsDatasets;
-    } else if (folderId?.includes('reporting')) {
-      return goldReportingDatasets;
-    }
-    return [...goldAnalyticsDatasets, ...goldReportingDatasets];
-  } else if (containerId?.includes('ingress')) {
-    return ingressRawDatasets;
-  }
-  
   return [];
 };
 
@@ -418,7 +411,7 @@ class ADLSService {
             children: []
           };
           
-          const datasets = generateMockDatasets(container.id, folder.id);
+          const datasets = mockDatasetsByFolder[folder.id] || [];
           for (const dataset of datasets) {
             folderNode.children.push({
               id: dataset.id,
@@ -593,8 +586,11 @@ class ADLSService {
     connectionId: string, 
     folderId: string
   ): Promise<Dataset[]> {
+    console.log(`Getting datasets for folder: ${folderId}`);
     if (this.useMockBackend) {
-      return generateMockDatasets(undefined, folderId);
+      const datasets = mockDatasetsByFolder[folderId] || [];
+      console.log(`Mock backend returning ${datasets.length} datasets for folder ${folderId}`);
+      return datasets;
     }
     
     try {

@@ -75,7 +75,8 @@ const ADLSManager: React.FC = () => {
         handleSelectDataset(datasets[0]);
       }, 100);
     } else if (datasets.length > 0) {
-      console.log(`Found ${datasets.length} datasets in the current folder`);
+      console.log(`Found ${datasets.length} datasets in the current folder:`, 
+        datasets.map(d => `${d.name} (${d.id})`));
     }
   }, [datasets, selectedDataset, datasetSelectionPending]);
 
@@ -250,6 +251,12 @@ const ADLSManager: React.FC = () => {
           console.log("ADLSManager: No datasets available in this folder");
           
           if (selectedFolder.hasDatasetFiles) {
+            setTimeout(async () => {
+              console.log("ADLSManager: Retrying dataset loading for folder:", selectedFolder.id);
+              const retryFolder = await selectFolder(selectedFolder.id);
+              console.log("ADLSManager: After retry - Available datasets:", datasets.length);
+            }, 500);
+            
             toast({
               title: "No datasets found",
               description: "This folder should contain datasets, but none were loaded. This might be a data loading issue.",
@@ -312,6 +319,7 @@ const ADLSManager: React.FC = () => {
   console.log("Rendering state - dataPreview:", dataPreview ? "yes" : "no");
   console.log("Rendering state - datasetSelectionPending:", datasetSelectionPending);
   console.log("Rendering state - loadingDatasetId:", loadingDatasetId);
+  console.log("Rendering state - datasets count:", datasets.length);
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl water-blue-bg rounded-xl shadow-lg animate-fade-in">
@@ -432,7 +440,7 @@ const ADLSManager: React.FC = () => {
                 <h3 className="text-lg font-medium">No datasets available</h3>
                 <p className="text-gray-500 mt-2">No datasets were found in this folder.</p>
                 {selectedFolder.hasDatasetFiles && (
-                  <div className="mt-4 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-300 text-sm">
+                  <div className="mt-4 px-4 py-2 bg-amber-50 dark:bg-amber-900 rounded-md border border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-300 text-sm">
                     This folder is marked as containing datasets, but none could be loaded. 
                     This might be a data loading issue.
                   </div>
