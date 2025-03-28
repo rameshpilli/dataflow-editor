@@ -28,7 +28,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ open, onClose }) => {
   } = useDataEditor();
 
   const [filterColumn, setFilterColumn] = useState<string | null>(null);
-  const [filterOperation, setFilterOperation] = useState<FilterOptions['operation']>('equals');
+  const [filterOperation, setFilterOperation] = useState<string>('equals');
   const [filterValue, setFilterValue] = useState<string>('');
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
 
@@ -37,7 +37,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ open, onClose }) => {
       setIsApplyingFilters(true);
       const newFilter: FilterOptions = {
         column: filterColumn,
-        operation: filterOperation,
+        operator: filterOperation, // Changed from operation to operator
         value: filterValue,
       };
       setFilters([newFilter]);
@@ -83,7 +83,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ open, onClose }) => {
             </Label>
             <Select 
               value={filterOperation} 
-              onValueChange={(value) => setFilterOperation(value as FilterOptions['operation'])}
+              onValueChange={(value) => setFilterOperation(value)}
               disabled={isApplyingFilters}
             >
               <SelectTrigger className="col-span-3" id="operation">

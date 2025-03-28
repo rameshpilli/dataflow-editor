@@ -1,3 +1,4 @@
+
 export interface ADLSConnection {
   id: string;
   name: string;
@@ -5,6 +6,7 @@ export interface ADLSConnection {
   status: 'connected' | 'disconnected';
   useManagedIdentity: boolean;
   containerFilter?: string[];
+  credentials: ADLSCredentials; // Added credentials property
 }
 
 export interface ADLSCredentials {
@@ -21,6 +23,9 @@ export interface Container {
   name: string;
   path: string;
   lastModified: Date;
+  type?: string; // Added type property
+  folderCount?: number; // Added folderCount property
+  blobCount?: number; // Added blobCount property
 }
 
 export interface Folder {
@@ -29,6 +34,8 @@ export interface Folder {
   path: string;
   containerName: string;
   lastModified: Date;
+  folderCount?: number; // Added folderCount property
+  blobCount?: number; // Added blobCount property
 }
 
 export interface Dataset {
@@ -46,7 +53,28 @@ export interface DatasetColumn {
   name: string;
   dataType: string;
   nullable: boolean;
+  type?: string; // Added type property
   validationRules?: ValidationRule[];
+  validation?: ColumnValidation; // Added validation property
+  stats?: ColumnStats; // Added stats property
+}
+
+export interface ColumnStats {
+  min?: any;
+  max?: any;
+  count?: number;
+  nullCount?: number;
+  distinctCount?: number;
+}
+
+export interface ColumnValidation {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  minValue?: number;
+  maxValue?: number;
+  pattern?: string;
+  enum?: string[];
 }
 
 export interface ValidationRule {
@@ -81,8 +109,9 @@ export interface DataChange {
 
 export interface FilterOptions {
   column: string;
-  operator: string;
+  operator: string; // This is the correct property name
   value: any;
+  operation?: string; // Added for backward compatibility
 }
 
 export interface Comment {
@@ -113,4 +142,5 @@ export interface ValidationError {
   rowId: string;
   columnName: string;
   message: string;
+  severity?: 'error' | 'warning'; // Added severity property
 }
