@@ -51,11 +51,9 @@ const ADLSManager: React.FC = () => {
   const [showErrorDialog, setShowErrorDialog] = useState(false);
 
   useEffect(() => {
-    // Load available authentication methods when the component mounts
     getAvailableAuthMethods()
       .catch(error => {
         console.log("Auth methods error:", error);
-        // Don't set using mock data here, wait for explicit user choice
       });
   }, [getAvailableAuthMethods]);
 
@@ -70,10 +68,8 @@ const ADLSManager: React.FC = () => {
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
-      // Clear any previous errors
       setConnectionError(null);
       
-      // If using mock data, set the flag
       if (credentials.useMockBackend) {
         setUsingMockData(true);
       } else {
@@ -96,15 +92,12 @@ const ADLSManager: React.FC = () => {
     } catch (err) {
       console.error("Connection error:", err);
       
-      // Display specific error message
       const errorMessage = err instanceof Error 
         ? err.message 
         : "Failed to connect to ADLS. Please check your credentials and try again.";
         
       setConnectionError(errorMessage);
       setShowErrorDialog(true);
-      
-      // Do not automatically fall back to mock data here, let the user choose
     }
   };
 
@@ -173,18 +166,14 @@ const ADLSManager: React.FC = () => {
     }
   };
 
-  // Filter datasets by search query
   const filteredDatasets = datasets.filter(dataset => 
     dataset.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Enhanced handling for dataset selection from folder
   const handleFolderSelection = async (folderId: string) => {
     try {
-      // First, select the folder to load its datasets
       await selectFolder(folderId);
       
-      // If there's only one dataset in the folder, automatically select it
       if (datasets.length === 1) {
         handleSelectDataset(datasets[0]);
       }
@@ -255,7 +244,6 @@ const ADLSManager: React.FC = () => {
       
       {connection && !selectedDataset && (
         <div className="space-y-6 bg-white/95 dark:bg-gray-800/95 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-scale-in backdrop-blur-sm">
-          {/* Connection info */}
           <div className="flex flex-col mb-6 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg p-4 border border-blue-100/50 dark:border-blue-900/30 shadow-sm">
             <div className="flex justify-between items-center">
               <div>
@@ -309,7 +297,6 @@ const ADLSManager: React.FC = () => {
             </div>
           </div>
           
-          {/* Container and folder browser */}
           <ContainerBrowser
             containers={containers}
             selectedContainer={selectedContainer}
@@ -323,9 +310,8 @@ const ADLSManager: React.FC = () => {
             folderTree={folderTree}
           />
           
-          {/* Only show datasets if a folder is selected */}
           {selectedFolder && (
-            filteredDatasets.length > 0 ? (
+            filteredDatasets.length > 0 && (
               <DatasetList 
                 datasets={filteredDatasets}
                 onSelectDataset={handleSelectDataset}
@@ -338,30 +324,6 @@ const ADLSManager: React.FC = () => {
                   </div>
                 }
               />
-            ) : (
-              <div className="empty-state animate-fade-in bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-100 dark:border-gray-700 text-center shadow-sm" role="status">
-                {searchQuery ? (
-                  <>
-                    <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
-                    <h3 className="text-lg font-medium mb-1">No datasets found</h3>
-                    <p className="text-sm">No datasets match your search criteria "{searchQuery}"</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-4"
-                      onClick={() => setSearchQuery('')}
-                    >
-                      Clear search
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
-                    <h3 className="text-lg font-medium mb-1">No datasets available</h3>
-                    <p className="text-sm">No datasets found in this folder</p>
-                  </>
-                )}
-              </div>
             )
           )}
         </div>
@@ -396,7 +358,6 @@ const ADLSManager: React.FC = () => {
         </div>
       )}
       
-      {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
           <DialogHeader>
