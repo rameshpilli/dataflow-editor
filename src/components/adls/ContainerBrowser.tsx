@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Container, Folder, FolderTree, Dataset } from '@/types/adls';
 import { Button } from '@/components/ui/button';
@@ -92,8 +93,10 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         if (selectedContainer?.id !== containerToSelect.id) {
           onSelectContainer(containerToSelect.id);
           
+          // Wait for container selection to complete
           setTimeout(() => {
-            const folderToSelect = folders.find(f => f.name === node.name);
+            // Find folder by name in the new container context
+            const folderToSelect = folders.find(f => f.path.includes(node.name));
             if (folderToSelect) {
               handleFolderSelect(folderToSelect.id);
             } else {
@@ -121,31 +124,43 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         const containerToSelect = containers.find(c => c.name === containerName);
         
         if (containerToSelect) {
+          // First select the container if needed
           if (selectedContainer?.id !== containerToSelect.id) {
             onSelectContainer(containerToSelect.id);
             
+            // Wait for container selection to complete then try to find folder
             setTimeout(() => {
-              const folderToSelect = folders.find(f => f.name === folderName);
+              // Find the folder by path that contains the folder name
+              const folderToSelect = folders.find(f => 
+                f.path.includes(folderName) || f.name === folderName
+              );
+              
               if (folderToSelect) {
                 handleFolderSelect(folderToSelect.id);
+                // No need to auto-select dataset, as it will be shown in DatasetList
               } else {
                 console.error(`Folder ${folderName} not found after selecting container`);
                 toast({
                   title: "Folder not found",
-                  description: `Could not find parent folder "${folderName}" for dataset`,
+                  description: `Could not find parent folder "${folderName}" for dataset. Try switching to List View and navigating manually.`,
                   variant: "destructive"
                 });
               }
             }, 500);
           } else {
-            const folderToSelect = folders.find(f => f.name === folderName);
+            // Container already selected, just select the folder
+            const folderToSelect = folders.find(f => 
+              f.path.includes(folderName) || f.name === folderName
+            );
+            
             if (folderToSelect) {
               handleFolderSelect(folderToSelect.id);
+              // No need to auto-select dataset, as it will be shown in DatasetList
             } else {
               console.error(`Folder ${folderName} not found in current container`);
               toast({
                 title: "Folder not found",
-                description: `Could not find parent folder "${folderName}" for dataset`,
+                description: `Could not find parent folder "${folderName}" for dataset. Try switching to List View and navigating manually.`,
                 variant: "destructive"
               });
             }

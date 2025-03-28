@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -174,11 +175,17 @@ const ADLSManager: React.FC = () => {
     try {
       await selectFolder(folderId);
       
+      // If there's only one dataset in the folder, automatically select it
       if (datasets.length === 1) {
         handleSelectDataset(datasets[0]);
       }
     } catch (err) {
       console.error("Error selecting folder:", err);
+      toast({
+        variant: "destructive",
+        title: "Error selecting folder",
+        description: err instanceof Error ? err.message : "Unknown error occurred",
+      });
     }
   };
 

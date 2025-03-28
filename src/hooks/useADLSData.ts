@@ -210,19 +210,38 @@ export function useADLSData() {
     setError(null);
     
     try {
+      console.log(`Looking for folder with ID: ${folderId} in ${folders.length} folders`);
+      
+      // Find the folder in the current list
       const folder = folders.find(f => f.id === folderId);
       if (!folder) {
-        throw new Error('Folder not found');
+        console.error(`Folder with ID ${folderId} not found in current container`);
+        throw new Error(`Folder with ID ${folderId} not found in current container`);
       }
       
       setSelectedFolder(folder);
+      console.log(`Selected folder: ${folder.name} (${folder.id})`);
       
       // Check if this folder contains dataset files
       if (folder.hasDatasetFiles) {
-        // Get datasets for this folder
-        const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
-        setDatasets(folderDatasets);
+        console.log(`Folder ${folder.name} has dataset files, retrieving them...`);
+        try {
+          // Get datasets for this folder
+          const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
+          console.log(`Retrieved ${folderDatasets.length} datasets for folder ${folder.name}`);
+          setDatasets(folderDatasets);
+        } catch (datasetErr) {
+          console.error(`Error fetching datasets for folder ${folder.name}:`, datasetErr);
+          toast({
+            variant: "destructive",
+            title: "Error loading datasets",
+            description: datasetErr instanceof Error ? datasetErr.message : "Failed to load datasets for this folder",
+          });
+          // Don't throw here - still want to mark the folder as selected
+          setDatasets([]);
+        }
       } else {
+        console.log(`Folder ${folder.name} doesn't contain dataset files, clearing datasets`);
         // Folder doesn't contain dataset files, clear datasets
         setDatasets([]);
       }
