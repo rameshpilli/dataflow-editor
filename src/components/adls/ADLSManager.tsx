@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -14,6 +13,8 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/hooks/useTheme';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const ADLSManager: React.FC = () => {
   const {
@@ -58,11 +59,10 @@ const ADLSManager: React.FC = () => {
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    // Load available authentication methods when the component mounts
     getAvailableAuthMethods()
       .catch(error => {
         console.log("Auth methods error:", error);
-        // Don't set using mock data here, wait for explicit user choice
+        setUsingMockData(false);
       });
   }, [getAvailableAuthMethods]);
 
@@ -77,10 +77,8 @@ const ADLSManager: React.FC = () => {
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
-      // Clear any previous errors
       setConnectionError(null);
       
-      // If using mock data, set the flag
       if (credentials.useMockBackend) {
         setUsingMockData(true);
       } else {
@@ -103,15 +101,12 @@ const ADLSManager: React.FC = () => {
     } catch (err) {
       console.error("Connection error:", err);
       
-      // Display specific error message
       const errorMessage = err instanceof Error 
         ? err.message 
         : "Failed to connect to ADLS. Please check your credentials and try again.";
         
       setConnectionError(errorMessage);
       setShowErrorDialog(true);
-      
-      // Do not automatically fall back to mock data here, let the user choose
     }
   };
 
@@ -184,18 +179,14 @@ const ADLSManager: React.FC = () => {
     }
   };
 
-  // Filter datasets by search query
   const filteredDatasets = datasets.filter(dataset => 
     dataset.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Enhanced handling for dataset selection from folder
   const handleFolderSelection = async (folderId: string) => {
     try {
-      // First, select the folder to load its datasets
       await selectFolder(folderId);
       
-      // If there's only one dataset in the folder, automatically select it
       if (datasets.length === 1) {
         handleSelectDataset(datasets[0]);
       }
@@ -204,7 +195,6 @@ const ADLSManager: React.FC = () => {
     }
   };
 
-  // Add a new user
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState('viewer');
@@ -233,7 +223,6 @@ const ADLSManager: React.FC = () => {
         description: `User ${newUsername} has been added successfully`,
       });
       
-      // Reset form
       setNewUsername('');
       setNewPassword('');
       setNewUserRole('viewer');
@@ -296,7 +285,6 @@ const ADLSManager: React.FC = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl water-blue-bg rounded-xl shadow-lg animate-fade-in">
-      {/* Theme toggle in header */}
       <div className="flex justify-end mb-4">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600 dark:text-gray-300">Dark Mode</span>
@@ -335,7 +323,6 @@ const ADLSManager: React.FC = () => {
       
       {connection && !selectedDataset && (
         <div className="space-y-6 bg-white/95 dark:bg-gray-800/95 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-scale-in backdrop-blur-sm">
-          {/* Connection info and user management */}
           <div className="flex flex-col mb-6 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg p-4 border border-blue-100/50 dark:border-blue-900/30 shadow-sm">
             <div className="flex justify-between items-center">
               <div>
@@ -403,7 +390,6 @@ const ADLSManager: React.FC = () => {
             </div>
           </div>
           
-          {/* Container and folder browser */}
           <ContainerBrowser
             containers={containers}
             selectedContainer={selectedContainer}
@@ -419,7 +405,6 @@ const ADLSManager: React.FC = () => {
             datasets={datasets}
           />
           
-          {/* Only show datasets if a folder is selected */}
           {selectedFolder && (
             filteredDatasets.length > 0 ? (
               <DatasetList 
@@ -492,7 +477,6 @@ const ADLSManager: React.FC = () => {
         </div>
       )}
       
-      {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
           <DialogHeader>
@@ -509,7 +493,6 @@ const ADLSManager: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* User Management Dialog */}
       <Dialog open={showUserManagementDialog} onOpenChange={setShowUserManagementDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -534,7 +517,7 @@ const ADLSManager: React.FC = () => {
                       size="sm"
                       className="text-red-500 hover:text-red-700"
                       onClick={() => handleRemoveUser(user.username)}
-                      disabled={user.username === 'user'} // Prevent removing default admin
+                      disabled={user.username === 'user'}
                     >
                       {user.username === 'user' ? 'Default' : 'Remove'}
                     </Button>
