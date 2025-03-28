@@ -1,19 +1,10 @@
 
-/* Override the label text in the ConnectionForm component */
-.connection-type-selector [data-value="adls"] .connection-type-label::after {
+/* Override for ConnectionForm to rename "Real ADLS" to "ADLS Storage" */
+.connection-form-wrapper .real-adls-option::before {
   content: "ADLS Storage";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: inherit;
+  display: inline-block;
 }
 
-.connection-type-selector [data-value="adls"] .connection-type-label {
-  color: transparent;
-  position: relative;
+.connection-form-wrapper .real-adls-option span {
+  display: none;
 }
