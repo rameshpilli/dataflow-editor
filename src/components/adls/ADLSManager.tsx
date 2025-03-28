@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -48,14 +47,15 @@ const ADLSManager: React.FC = () => {
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [usingMockData, setUsingMockData] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
 
   useEffect(() => {
     // Load available authentication methods when the component mounts
     getAvailableAuthMethods()
       .catch(error => {
-        if (error.message.includes('fetch') || error.message.includes('backend')) {
-          setUsingMockData(true);
-        }
+        console.log("Auth methods error:", error);
+        // Don't set using mock data here, wait for explicit user choice
       });
   }, [getAvailableAuthMethods]);
 
@@ -70,15 +70,19 @@ const ADLSManager: React.FC = () => {
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
-      // If backend is unavailable, force mock mode
-      if (usingMockData && !credentials.useMockBackend) {
-        credentials.useMockBackend = true;
+      // Clear any previous errors
+      setConnectionError(null);
+      
+      // If using mock data, set the flag
+      if (credentials.useMockBackend) {
+        setUsingMockData(true);
+      } else {
+        setUsingMockData(false);
       }
       
       await connect(credentials, name);
       
       if (credentials.useMockBackend) {
-        setUsingMockData(true);
         toast({
           title: "Connected to mock data",
           description: "Using mock data for demonstration purposes",
@@ -90,16 +94,17 @@ const ADLSManager: React.FC = () => {
         });
       }
     } catch (err) {
-      // Check if error is related to backend unavailability
-      if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('backend'))) {
-        setUsingMockData(true);
-        // Try again with mock mode
-        if (!credentials.useMockBackend) {
-          credentials.useMockBackend = true;
-          return handleConnect(credentials, name);
-        }
-      }
-      // Error is already handled in the useADLSData hook
+      console.error("Connection error:", err);
+      
+      // Display specific error message
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Failed to connect to ADLS. Please check your credentials and try again.";
+        
+      setConnectionError(errorMessage);
+      setShowErrorDialog(true);
+      
+      // Do not automatically fall back to mock data here, let the user choose
     }
   };
 
@@ -227,7 +232,7 @@ const ADLSManager: React.FC = () => {
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
           <AlertTitle className="text-amber-800 dark:text-amber-400">Using mock data</AlertTitle>
           <AlertDescription className="text-amber-700 dark:text-amber-300">
-            Backend connection unavailable. Using simulated data for demonstration purposes.
+            Using simulated data for demonstration purposes. No real ADLS connection is being used.
           </AlertDescription>
         </Alert>
       )}
@@ -390,6 +395,23 @@ const ADLSManager: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Error Dialog */}
+      <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Connection Error</DialogTitle>
+            <DialogDescription>
+              {connectionError || "An unknown error occurred while trying to connect to ADLS."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowErrorDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

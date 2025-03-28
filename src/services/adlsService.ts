@@ -219,21 +219,18 @@ class ADLSService {
       clearTimeout(timeoutId);
       this.backendAvailable = response.ok;
     } catch (error) {
-      console.log("Backend unavailable, using mock data");
+      console.log("Backend unavailable, but not automatically using mock data");
       this.backendAvailable = false;
-      this.useMockBackend = true;
+      // Don't automatically set useMockBackend to true
+      // Wait for explicit user choice instead
     }
   }
   
   // Connect to ADLS
   async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
-    // Force mock mode if backend is unavailable
-    if (!this.backendAvailable) {
-      this.useMockBackend = true;
-    }
-    
-    // If using mock backend, return a mock connection
-    if (this.useMockBackend || credentials.useMockBackend) {
+    // If explicitly using mock backend, return a mock connection
+    if (credentials.useMockBackend) {
+      console.log("Using mock backend as requested by user");
       const mockConnection: ADLSConnection = {
         id: uuidv4(),
         name,
@@ -245,11 +242,18 @@ class ADLSService {
       };
       
       this.activeConnection = mockConnection;
+      this.useMockBackend = true;
       return mockConnection;
     }
     
-    // Otherwise, use the real backend
+    // If backend is unavailable and not using mock mode, throw an error
+    if (!this.backendAvailable) {
+      throw new Error('Backend server is unavailable. Please check your connection or try using mock data.');
+    }
+    
+    // Attempt real connection to backend
     try {
+      console.log("Attempting real connection to ADLS");
       const response = await fetch(`${API_BASE_URL}/connect`, {
         method: 'POST',
         headers: {
@@ -268,18 +272,14 @@ class ADLSService {
       
       const connectionData = await response.json();
       this.activeConnection = connectionData;
+      this.useMockBackend = false;
       
       return connectionData;
     } catch (error) {
       console.error('ADLS connection error:', error);
       
-      // If backend connection fails, fallback to mock mode
-      if (!this.useMockBackend) {
-        console.log("Falling back to mock mode due to connection error");
-        this.useMockBackend = true;
-        return this.connect(credentials, name);
-      }
-      
+      // Don't automatically fall back to mock mode
+      // Instead, let the error propagate and let the user decide
       throw error;
     }
   }
@@ -776,22 +776,6 @@ class ADLSService {
       hasUserManagedIdentity: boolean
     }
   }> {
-    // If backend is known to be unavailable or mock mode is already active, return mock data
-    if (!this.backendAvailable || this.useMockBackend) {
-      return {
-        supportsManagedIdentity: true,
-        supportsConnectionString: true,
-        supportsAccountKey: true,
-        recommendedMethod: 'managedIdentity',
-        environmentInfo: {
-          isAzureEnvironment: true,
-          isDevEnvironment: false,
-          hasSystemManagedIdentity: true,
-          hasUserManagedIdentity: true
-        }
-      };
-    }
-    
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -811,14 +795,13 @@ class ADLSService {
     } catch (error) {
       console.error('Error getting authentication methods:', error);
       
-      // If this is the first backend error, mark backend as unavailable
+      // Mark backend as unavailable but don't auto-switch to mock mode
       if (this.backendAvailable) {
-        console.log("Backend unavailable, using mock data for future requests");
+        console.log("Backend unavailable for auth methods");
         this.backendAvailable = false;
-        this.useMockBackend = true;
       }
       
-      // Return mock data as fallback
+      // Return information about the environment
       return {
         supportsManagedIdentity: true,
         supportsConnectionString: true,
