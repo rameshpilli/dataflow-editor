@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Folder, FolderTree, Dataset } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,70 +76,88 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
     console.log('Node clicked:', node);
     
     if (node.type === 'container') {
+      // Select container
       onSelectContainer(node.id);
     } else if (node.type === 'folder') {
-      // Find the parent container first
-      const parentContainer = containers.find(c => c.name === node.path.split('/')[0]);
-      if (parentContainer) {
-        // Select the container first
-        onSelectContainer(parentContainer.id);
-        
-        // Then find and select the folder
-        setTimeout(() => {
-          const folder = folders.find(f => f.name === node.name);
-          if (folder) {
-            onSelectFolder(folder.id);
+      // Check if the container is already selected
+      const pathParts = node.path?.split('/') || [];
+      const containerName = pathParts[0];
+      const containerToSelect = containers.find(c => c.name === containerName);
+      
+      if (containerToSelect) {
+        if (selectedContainer?.id !== containerToSelect.id) {
+          // If container not selected yet, select it first
+          onSelectContainer(containerToSelect.id);
+          
+          // Set a flag to select the folder after container is selected
+          setTimeout(() => {
+            const folderToSelect = folders.find(f => f.name === node.name);
+            if (folderToSelect) {
+              handleFolderSelect(folderToSelect.id);
+            } else {
+              console.error(`Folder ${node.name} not found after selecting container`);
+            }
+          }, 500);
+        } else {
+          // Container already selected, just select the folder
+          const folderToSelect = folders.find(f => f.name === node.name);
+          if (folderToSelect) {
+            handleFolderSelect(folderToSelect.id);
           } else {
-            console.log('Folder not found after selecting container:', node.name);
-            toast({
-              title: "Folder not found",
-              description: `Could not find folder "${node.name}" in container`,
-              variant: "destructive"
-            });
+            console.error(`Folder ${node.name} not found in current container`);
           }
-        }, 1000); // Give time for folders to load after container selection
-      } else {
-        console.log('Parent container not found:', node.path.split('/')[0]);
+        }
       }
     } else if (node.type === 'dataset') {
-      // For dataset nodes, find the parent folder and select it
+      // For dataset nodes, we need to select its parent folder
       const pathParts = node.path?.split('/') || [];
       if (pathParts.length >= 2) {
-        const parentContainerName = pathParts[0];
-        const parentFolderName = pathParts[1];
+        const containerName = pathParts[0];
+        const folderName = pathParts[1];
         
-        console.log('Dataset click - container:', parentContainerName, 'folder:', parentFolderName);
+        console.log('Dataset selected:', node.name);
+        console.log('Container:', containerName, 'Folder:', folderName);
         
-        const parentContainer = containers.find(c => c.name === parentContainerName);
-        if (parentContainer) {
-          // Select the container first
-          onSelectContainer(parentContainer.id);
-          
-          // This will trigger loading folders for this container
-          // Then we need to find and select the parent folder
-          setTimeout(() => {
-            console.log('Looking for folder after timeout:', parentFolderName, 'in folders:', folders);
-            const folder = folders.find(f => f.name === parentFolderName);
-            if (folder) {
-              onSelectFolder(folder.id);
+        const containerToSelect = containers.find(c => c.name === containerName);
+        
+        if (containerToSelect) {
+          if (selectedContainer?.id !== containerToSelect.id) {
+            // If container not selected yet, select it first
+            onSelectContainer(containerToSelect.id);
+            
+            // Set a flag to select the folder after container is selected
+            setTimeout(() => {
+              const folderToSelect = folders.find(f => f.name === folderName);
+              if (folderToSelect) {
+                handleFolderSelect(folderToSelect.id);
+              } else {
+                console.error(`Folder ${folderName} not found after selecting container`);
+                toast({
+                  title: "Folder not found",
+                  description: `Could not find parent folder "${folderName}" for dataset`,
+                  variant: "destructive"
+                });
+              }
+            }, 500);
+          } else {
+            // Container already selected, just select the folder
+            const folderToSelect = folders.find(f => f.name === folderName);
+            if (folderToSelect) {
+              handleFolderSelect(folderToSelect.id);
             } else {
-              console.log('Parent folder not found for dataset:', parentFolderName);
+              console.error(`Folder ${folderName} not found in current container`);
               toast({
                 title: "Folder not found",
-                description: `Could not find parent folder "${parentFolderName}" for dataset`,
+                description: `Could not find parent folder "${folderName}" for dataset`,
                 variant: "destructive"
               });
             }
-          }, 1000); // Give time for folders to load after container selection
-        } else {
-          console.log('Parent container not found for dataset:', parentContainerName);
+          }
         }
-      } else {
-        console.log('Invalid dataset path:', node.path);
       }
     }
     
-    // Always toggle the node expansion state
+    // Always toggle the node expansion state in tree view
     toggleNode(node.id);
   };
   
@@ -324,10 +342,7 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
                                   ? 'bg-blue-100/80 dark:bg-blue-800/30 text-blue-700 dark:text-blue-300'
                                   : ''
                               }`}
-                              onClick={() => {
-                                console.log('Folder selected:', folder);
-                                handleFolderSelect(folder.id);
-                              }}
+                              onClick={() => handleFolderSelect(folder.id)}
                             >
                               {selectedFolder?.id === folder.id ? (
                                 <FolderOpen className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" />
