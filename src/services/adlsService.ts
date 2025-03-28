@@ -209,7 +209,8 @@ class ADLSService {
         createdAt: new Date(),
         status: 'connected',
         useManagedIdentity: credentials.useManagedIdentity,
-        containerFilter: credentials.containerFilter
+        containerFilter: credentials.containerFilter,
+        credentials: credentials
       };
       
       this.activeConnection = mockConnection;
