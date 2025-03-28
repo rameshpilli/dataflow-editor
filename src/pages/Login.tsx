@@ -5,21 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ChevronRight, Database, Lock, User, Sparkles } from 'lucide-react';
+import { ChevronRight, Database, Lock, User, Sparkles, Moon, Sun } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Toggle } from '@/components/ui/toggle';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<'local' | 'ldap'>('local'); // Add login method state
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     // Check for stored username in localStorage
@@ -35,39 +37,85 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Simple hardcoded authentication for testing
-      if (username === 'user' && password === 'password') {
-        await login(username, password);
-        
-        // Store username if remember me is checked
-        if (rememberMe) {
-          localStorage.setItem('rememberedUser', username);
+      if (loginMethod === 'local') {
+        // Simple hardcoded authentication for testing
+        if (username === 'user' && password === 'password') {
+          await login(username, password);
+          
+          // Store username if remember me is checked
+          if (rememberMe) {
+            localStorage.setItem('rememberedUser', username);
+          } else {
+            localStorage.removeItem('rememberedUser');
+          }
+          
+          toast({
+            title: "Login successful",
+            description: `Welcome ${username}`,
+          });
+          
+          navigate('/');
         } else {
-          localStorage.removeItem('rememberedUser');
+          throw new Error('Invalid credentials');
         }
-        
-        toast({
-          title: "Login successful",
-          description: `Welcome ${username}`,
-        });
-        
-        navigate('/');
       } else {
-        throw new Error('Invalid credentials');
+        // LDAP/AD authentication
+        // In a real implementation, this would call an API endpoint that verifies
+        // credentials against your corporate LDAP/AD server
+        await handleLDAPLogin(username, password);
       }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: "Please use username: user and password: password",
+        description: loginMethod === 'local' ? 
+          "Please use username: user and password: password" : 
+          "LDAP authentication failed. Please check your credentials or contact IT support."
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleLDAPLogin = async (username: string, password: string) => {
+    // This is a mockup of an LDAP authentication flow
+    // In a real implementation, this would be an API call to your backend
+    
+    // Simulate LDAP authentication - for demo, accept any username with password "ldap123"
+    if (password === "ldap123") {
+      await login(username, password, true); // true indicates LDAP auth
+      
+      toast({
+        title: "LDAP Login successful",
+        description: `Welcome ${username} (via LDAP)`,
+      });
+      
+      navigate('/');
+    } else {
+      throw new Error('LDAP authentication failed');
+    }
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 dark:from-slate-900 dark:via-indigo-950/40 dark:to-purple-950/60 p-4 transition-colors duration-500">
+      {/* Theme toggle button */}
+      <div className="absolute top-4 right-4">
+        <Toggle 
+          pressed={theme === 'dark'} 
+          onPressedChange={toggleTheme}
+          aria-label="Toggle theme"
+          className="p-2"
+        >
+          {theme === 'dark' ? 
+            <Moon className="h-5 w-5 text-blue-300" /> : 
+            <Sun className="h-5 w-5 text-amber-500" />}
+        </Toggle>
+      </div>
+      
       {/* Background patterns and decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 opacity-30 mix-blend-multiply dark:mix-blend-soft-light">
@@ -108,11 +156,33 @@ const Login = () => {
           <CardHeader className="space-y-1 pb-2">
             <CardTitle className="text-2xl font-bold tracking-tight text-blue-900 dark:text-blue-50 transition-colors duration-300">Sign In</CardTitle>
             <CardDescription className="transition-colors duration-300">
-              Use your internal credentials to access the platform
+              Use your credentials to access the platform
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {/* Auth method selector */}
+              <div className="flex space-x-2 mb-2">
+                <Button 
+                  type="button"
+                  variant={loginMethod === 'local' ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setLoginMethod('local')}
+                >
+                  Local Auth
+                </Button>
+                <Button 
+                  type="button"
+                  variant={loginMethod === 'ldap' ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setLoginMethod('ldap')}
+                >
+                  LDAP/AD
+                </Button>
+              </div>
+
               <div className="space-y-2 group">
                 <Label htmlFor="username" className="transition-colors duration-300 text-blue-900/80 dark:text-blue-100/80">Username</Label>
                 <div className="relative transition-all duration-200 group-focus-within:scale-[1.01]">
@@ -120,7 +190,7 @@ const Login = () => {
                   <Input 
                     id="username" 
                     type="text" 
-                    placeholder="Enter your username" 
+                    placeholder={loginMethod === 'ldap' ? "LDAP Username" : "Enter your username"} 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
@@ -137,28 +207,34 @@ const Login = () => {
                   <Input 
                     id="password" 
                     type="password" 
-                    placeholder="Enter your password"
+                    placeholder={loginMethod === 'ldap' ? "LDAP Password" : "Enter your password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="pl-10 bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm border-blue-100 dark:border-blue-900/50 transition-all duration-300 focus:ring-2 focus:ring-blue-500/30 dark:focus:ring-blue-400/30 hover:border-blue-200 dark:hover:border-blue-700"
                   />
                 </div>
-                <div className="flex items-center space-x-2 mt-3">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked === true)}
-                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 dark:data-[state=checked]:bg-blue-500 dark:data-[state=checked]:border-blue-500 transition-colors duration-200"
-                  />
-                  <label 
-                    htmlFor="remember" 
-                    className="text-sm text-blue-700 dark:text-blue-300 transition-colors duration-300 cursor-pointer select-none"
-                  >
-                    Remember username
-                  </label>
-                </div>
-                <p className="text-xs text-blue-500/70 dark:text-blue-400/70 italic mt-1 transition-colors duration-300">For testing: username is "user" and password is "password"</p>
+                {loginMethod === 'local' && (
+                  <div className="flex items-center space-x-2 mt-3">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 dark:data-[state=checked]:bg-blue-500 dark:data-[state=checked]:border-blue-500 transition-colors duration-200"
+                    />
+                    <label 
+                      htmlFor="remember" 
+                      className="text-sm text-blue-700 dark:text-blue-300 transition-colors duration-300 cursor-pointer select-none"
+                    >
+                      Remember username
+                    </label>
+                  </div>
+                )}
+                {loginMethod === 'local' ? (
+                  <p className="text-xs text-blue-500/70 dark:text-blue-400/70 italic mt-1 transition-colors duration-300">For testing: username is "user" and password is "password"</p>
+                ) : (
+                  <p className="text-xs text-blue-500/70 dark:text-blue-400/70 italic mt-1 transition-colors duration-300">For testing LDAP: use any username with password "ldap123"</p>
+                )}
               </div>
             </form>
           </CardContent>
