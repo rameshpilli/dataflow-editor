@@ -206,14 +206,28 @@ const ingressRawDatasets: Dataset[] = [
   }
 ];
 
-// Create a direct map between folder IDs and datasets
+// Create a direct map between folder IDs and datasets, including both folder IDs and folder names as lookup keys
 const mockDatasetsByFolder: Record<string, Dataset[]> = {
   'raw-folder': ingressRawDatasets,
+  'raw': ingressRawDatasets,
   'vendorA-folder': bronzeVendorADatasets,
+  'vendorA': bronzeVendorADatasets,
   'vendorB-folder': bronzeVendorBDatasets,
+  'vendorB': bronzeVendorBDatasets,
   'processed-folder': silverProcessedDatasets,
+  'processed': silverProcessedDatasets,
   'analytics-folder': goldAnalyticsDatasets,
-  'reporting-folder': goldReportingDatasets
+  'analytics': goldAnalyticsDatasets,
+  'reporting-folder': goldReportingDatasets,
+  'reporting': goldReportingDatasets
+};
+
+// Map container names to their datasets for easier lookup when navigating by name
+const mockDatasetsByContainer: Record<string, Dataset[]> = {
+  'ingress': ingressRawDatasets,
+  'bronze': [...bronzeVendorADatasets, ...bronzeVendorBDatasets],
+  'silver': silverProcessedDatasets,
+  'gold': [...goldAnalyticsDatasets, ...goldReportingDatasets]
 };
 
 const generateMockContainers = (containerFilter?: string[]): Container[] => {
@@ -231,9 +245,41 @@ const generateMockFolders = (containerId: string): Folder[] => {
 };
 
 const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[] => {
-  if (folderId && mockDatasetsByFolder[folderId]) {
-    console.log(`Returning ${mockDatasetsByFolder[folderId].length} datasets for folder ${folderId}`);
-    return mockDatasetsByFolder[folderId];
+  if (folderId) {
+    // First try exact match with folder ID
+    if (mockDatasetsByFolder[folderId]) {
+      console.log(`Returning ${mockDatasetsByFolder[folderId].length} datasets for folder ID ${folderId}`);
+      return mockDatasetsByFolder[folderId];
+    }
+    
+    // If no exact match, try to find by folder name
+    const folderName = folderId.replace('-folder', '');
+    if (mockDatasetsByFolder[folderName]) {
+      console.log(`Found datasets using folder name ${folderName}`);
+      return mockDatasetsByFolder[folderName];
+    }
+    
+    // For "analytics" folder in "gold" container
+    if (containerId === 'gold-container' && (folderId === 'analytics-folder' || folderId === 'analytics')) {
+      console.log('Returning gold analytics datasets');
+      return goldAnalyticsDatasets;
+    }
+    
+    // For "reporting" folder in "gold" container
+    if (containerId === 'gold-container' && (folderId === 'reporting-folder' || folderId === 'reporting')) {
+      console.log('Returning gold reporting datasets');
+      return goldReportingDatasets;
+    }
+
+    console.log(`No datasets found for folder ${folderId}`);
+    return [];
+  }
+
+  if (containerId) {
+    const containerName = containerId.replace('-container', '');
+    if (mockDatasetsByContainer[containerName]) {
+      return mockDatasetsByContainer[containerName];
+    }
   }
 
   if (!containerId && !folderId) {
@@ -588,12 +634,44 @@ class ADLSService {
   ): Promise<Dataset[]> {
     console.log(`Getting datasets for folder: ${folderId}`);
     if (this.useMockBackend) {
-      const datasets = mockDatasetsByFolder[folderId] || [];
-      console.log(`Mock backend returning ${datasets.length} datasets for folder ${folderId}`);
-      return datasets;
+      try {
+        // First, try the direct lookup by folder ID
+        let datasets = mockDatasetsByFolder[folderId] || [];
+        
+        if (datasets.length === 0) {
+          // Try using just the folder name without the "-folder" suffix
+          const folderName = folderId.replace('-folder', '');
+          datasets = mockDatasetsByFolder[folderName] || [];
+          
+          if (datasets.length === 0) {
+            // If still no datasets, look for case-insensitive matches
+            const folderIdLower = folderId.toLowerCase();
+            
+            // Try to find a partial match in folder IDs
+            const matchingFolderKey = Object.keys(mockDatasetsByFolder).find(key => 
+              key.toLowerCase().includes(folderIdLower) || 
+              folderIdLower.includes(key.toLowerCase())
+            );
+            
+            if (matchingFolderKey) {
+              console.log(`Found datasets using partial match to folder key: ${matchingFolderKey}`);
+              datasets = mockDatasetsByFolder[matchingFolderKey];
+            }
+          }
+        }
+        
+        console.log(`Mock backend returning ${datasets.length} datasets for folder ${folderId}`);
+        
+        // Return a deep copy to avoid mutation issues
+        return JSON.parse(JSON.stringify(datasets));
+      } catch (error) {
+        console.error('Error generating mock datasets:', error);
+        return [];
+      }
     }
     
     try {
+      // ... keep existing code for real API call
       const containerName = 'bronze';
       const folderPath = 'vendorA';
       
