@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Container, Folder, FolderTree } from '@/types/adls';
+import { Container, Folder, FolderTree, Dataset } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -97,6 +97,27 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
                 const folder = folders.find(f => f.name === node.name);
                 if (folder) {
                   onSelectFolder(folder.id);
+                }
+              }
+            } else if (node.type === 'dataset') {
+              // For dataset nodes, find the parent folder and select it
+              const pathParts = node.path?.split('/') || [];
+              if (pathParts.length >= 2) {
+                const parentContainerName = pathParts[0];
+                const parentFolderName = pathParts[1];
+                
+                const parentContainer = containers.find(c => c.name === parentContainerName);
+                if (parentContainer) {
+                  onSelectContainer(parentContainer.id);
+                  
+                  // This will trigger loading folders for this container
+                  // Then we need to find and select the parent folder
+                  setTimeout(() => {
+                    const folder = folders.find(f => f.name === parentFolderName);
+                    if (folder) {
+                      onSelectFolder(folder.id);
+                    }
+                  }, 300);
                 }
               }
             }
@@ -256,7 +277,9 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
                                   ? 'bg-blue-100/80 dark:bg-blue-800/30 text-blue-700 dark:text-blue-300'
                                   : ''
                               }`}
-                              onClick={() => onSelectFolder(folder.id)}
+                              onClick={() => {
+                                onSelectFolder(folder.id);
+                              }}
                             >
                               {selectedFolder?.id === folder.id ? (
                                 <FolderOpen className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" />

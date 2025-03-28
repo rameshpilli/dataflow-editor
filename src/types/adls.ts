@@ -1,3 +1,4 @@
+
 export interface ADLSConnection {
   id: string;
   name: string;
@@ -69,6 +70,12 @@ export interface Dataset {
   lastModified: Date;
   size?: number;
   partitionColumns?: string[];
+  displayName?: string;
+  description?: string;
+  owner?: string;
+  tags?: string[];
+  folderPath?: string;
+  containerName?: string;
 }
 
 export interface DatasetColumn {

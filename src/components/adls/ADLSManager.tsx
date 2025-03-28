@@ -138,9 +138,25 @@ const ADLSManager: React.FC = () => {
     }
   };
 
+  // Filter datasets by search query
   const filteredDatasets = datasets.filter(dataset => 
     dataset.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Enhanced handling for dataset selection from folder
+  const handleFolderSelection = async (folderId: string) => {
+    try {
+      // First, select the folder to load its datasets
+      await selectFolder(folderId);
+      
+      // If there's only one dataset in the folder, automatically select it
+      if (datasets.length === 1) {
+        handleSelectDataset(datasets[0]);
+      }
+    } catch (err) {
+      console.error("Error selecting folder:", err);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -256,7 +272,7 @@ const ADLSManager: React.FC = () => {
             selectedFolder={selectedFolder}
             isLoading={isLoading}
             onSelectContainer={selectContainer}
-            onSelectFolder={selectFolder}
+            onSelectFolder={handleFolderSelection}
             onBackToContainers={backToContainers}
             onBackToFolders={backToFolders}
             folderTree={folderTree}
@@ -339,4 +355,3 @@ const ADLSManager: React.FC = () => {
 };
 
 export default ADLSManager;
-
