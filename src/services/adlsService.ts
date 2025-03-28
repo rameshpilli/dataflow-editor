@@ -59,7 +59,7 @@ const generateMockFolders = (containerId: string): Folder[] => {
 };
 
 const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[] => {
-  const baseDatasets = [
+  const bronzeVendorADatasets = [
     {
       id: 'sales-dataset',
       name: 'Sales Data',
@@ -87,7 +87,27 @@ const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[
       rowCount: 500,
       repairedCount: 500,
       lastModified: new Date()
-    },
+    }
+  ];
+  
+  const bronzeVendorBDatasets = [
+    {
+      id: 'inventory-dataset',
+      name: 'Inventory Data',
+      path: 'bronze/vendorB/inventory',
+      format: 'delta',
+      columns: [
+        { name: 'product_id', dataType: 'string', nullable: false },
+        { name: 'quantity', dataType: 'integer', nullable: false },
+        { name: 'warehouse', dataType: 'string', nullable: false }
+      ],
+      rowCount: 300,
+      repairedCount: 275,
+      lastModified: new Date()
+    }
+  ];
+  
+  const silverProcessedDatasets = [
     {
       id: 'products-dataset',
       name: 'Product Catalog',
@@ -105,34 +125,8 @@ const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[
     }
   ];
   
-  if (!containerId && !folderId) {
-    return baseDatasets;
-  }
-  
-  if (containerId?.includes('bronze')) {
-    if (folderId?.includes('vendorA')) {
-      return baseDatasets.filter(d => d.path.includes('bronze/vendorA'));
-    } else if (folderId?.includes('vendorB')) {
-      return [{
-        id: 'inventory-dataset',
-        name: 'Inventory Data',
-        path: 'bronze/vendorB/inventory',
-        format: 'delta',
-        columns: [
-          { name: 'product_id', dataType: 'string', nullable: false },
-          { name: 'quantity', dataType: 'integer', nullable: false },
-          { name: 'warehouse', dataType: 'string', nullable: false }
-        ],
-        rowCount: 300,
-        repairedCount: 275,
-        lastModified: new Date()
-      }];
-    }
-    return baseDatasets.filter(d => d.path.includes('bronze'));
-  } else if (containerId?.includes('silver')) {
-    return baseDatasets.filter(d => d.path.includes('silver'));
-  } else if (containerId?.includes('gold')) {
-    return [{
+  const goldAnalyticsDatasets = [
+    {
       id: 'sales-summary-dataset',
       name: 'Sales Summary',
       path: 'gold/analytics/sales_summary',
@@ -145,9 +139,73 @@ const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[
       rowCount: 100,
       repairedCount: 100,
       lastModified: new Date()
-    }];
-  } else if (containerId?.includes('ingress')) {
-    return [{
+    },
+    {
+      id: 'monthly-metrics-dataset',
+      name: 'Monthly Metrics',
+      path: 'gold/analytics/monthly_metrics',
+      format: 'delta',
+      columns: [
+        { name: 'month', dataType: 'string', nullable: false },
+        { name: 'revenue', dataType: 'decimal', nullable: false },
+        { name: 'growth_rate', dataType: 'decimal', nullable: true },
+        { name: 'customer_count', dataType: 'integer', nullable: false }
+      ],
+      rowCount: 24,
+      repairedCount: 24,
+      lastModified: new Date()
+    },
+    {
+      id: 'regional-performance-dataset',
+      name: 'Regional Performance',
+      path: 'gold/analytics/regional_performance',
+      format: 'delta',
+      columns: [
+        { name: 'region', dataType: 'string', nullable: false },
+        { name: 'sales', dataType: 'decimal', nullable: false },
+        { name: 'target', dataType: 'decimal', nullable: false },
+        { name: 'achievement', dataType: 'decimal', nullable: false }
+      ],
+      rowCount: 50,
+      repairedCount: 48,
+      lastModified: new Date()
+    }
+  ];
+  
+  const goldReportingDatasets = [
+    {
+      id: 'executive-summary-dataset',
+      name: 'Executive Summary',
+      path: 'gold/reporting/executive_summary',
+      format: 'delta',
+      columns: [
+        { name: 'quarter', dataType: 'string', nullable: false },
+        { name: 'department', dataType: 'string', nullable: false },
+        { name: 'budget', dataType: 'decimal', nullable: false },
+        { name: 'actual', dataType: 'decimal', nullable: false }
+      ],
+      rowCount: 16,
+      repairedCount: 16,
+      lastModified: new Date()
+    },
+    {
+      id: 'financial-report-dataset',
+      name: 'Financial Report',
+      path: 'gold/reporting/financial_report',
+      format: 'delta',
+      columns: [
+        { name: 'account', dataType: 'string', nullable: false },
+        { name: 'balance', dataType: 'decimal', nullable: false },
+        { name: 'period', dataType: 'string', nullable: false }
+      ],
+      rowCount: 120,
+      repairedCount: 120,
+      lastModified: new Date()
+    }
+  ];
+  
+  const ingressRawDatasets = [
+    {
       id: 'raw-data-dataset',
       name: 'Raw Data',
       path: 'ingress/raw/data',
@@ -159,10 +217,41 @@ const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[
       rowCount: 2000,
       repairedCount: 0,
       lastModified: new Date()
-    }];
+    }
+  ];
+
+  if (!containerId && !folderId) {
+    return [
+      ...bronzeVendorADatasets,
+      ...silverProcessedDatasets,
+      ...goldAnalyticsDatasets.slice(0, 1)
+    ];
+  }
+
+  if (containerId?.includes('bronze')) {
+    if (folderId?.includes('vendorA')) {
+      return bronzeVendorADatasets;
+    } else if (folderId?.includes('vendorB')) {
+      return bronzeVendorBDatasets;
+    }
+    return [...bronzeVendorADatasets, ...bronzeVendorBDatasets];
+  } else if (containerId?.includes('silver')) {
+    if (folderId?.includes('processed')) {
+      return silverProcessedDatasets;
+    }
+    return silverProcessedDatasets;
+  } else if (containerId?.includes('gold')) {
+    if (folderId?.includes('analytics')) {
+      return goldAnalyticsDatasets;
+    } else if (folderId?.includes('reporting')) {
+      return goldReportingDatasets;
+    }
+    return [...goldAnalyticsDatasets, ...goldReportingDatasets];
+  } else if (containerId?.includes('ingress')) {
+    return ingressRawDatasets;
   }
   
-  return baseDatasets;
+  return [];
 };
 
 const generateMockDataPreview = (datasetId: string): DatasetPreview => {
