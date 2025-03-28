@@ -234,18 +234,40 @@ const ADLSManager: React.FC = () => {
 
   const handleFolderSelection = async (folderId: string) => {
     try {
-      console.log("Selecting folder with ID:", folderId);
+      console.log("ADLSManager: Selecting folder with ID:", folderId);
       const selectedFolder = await selectFolder(folderId);
       
       if (selectedFolder) {
-        console.log("Successfully selected folder:", selectedFolder.name);
-        console.log("Has dataset files:", selectedFolder.hasDatasetFiles ? "Yes" : "No");
+        console.log("ADLSManager: Successfully selected folder:", selectedFolder.name);
+        console.log("ADLSManager: Has dataset files:", selectedFolder.hasDatasetFiles ? "Yes" : "No");
+        console.log("ADLSManager: Available datasets:", datasets.length);
+        
+        if (datasets.length > 0) {
+          console.log("ADLSManager: Dataset list:", 
+            datasets.map(d => ({ id: d.id, name: d.name, path: d.path }))
+          );
+        } else {
+          console.log("ADLSManager: No datasets available in this folder");
+          
+          if (selectedFolder.hasDatasetFiles) {
+            toast({
+              title: "No datasets found",
+              description: "This folder should contain datasets, but none were loaded. This might be a data loading issue.",
+              variant: "warning"
+            });
+          }
+        }
       } else {
-        console.error("Failed to select folder or folder not found");
+        console.error("ADLSManager: Failed to select folder or folder not found");
+        toast({
+          title: "Folder selection failed",
+          description: "Could not select the requested folder. Please try another folder.",
+          variant: "destructive"
+        });
       }
       
     } catch (err) {
-      console.error("Error selecting folder:", err);
+      console.error("ADLSManager: Error selecting folder:", err);
       toast({
         variant: "destructive",
         title: "Error selecting folder",
@@ -387,7 +409,7 @@ const ADLSManager: React.FC = () => {
             folderTree={folderTree}
           />
           
-          {selectedFolder && filteredDatasets.length > 0 && (
+          {selectedFolder && datasets.length > 0 && (
             <DatasetList 
               datasets={filteredDatasets}
               onSelectDataset={handleSelectDataset}
@@ -401,6 +423,22 @@ const ADLSManager: React.FC = () => {
               }
               loadingDatasetId={loadingDatasetId}
             />
+          )}
+          
+          {selectedFolder && datasets.length === 0 && !isLoading && (
+            <div className="text-center py-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex flex-col items-center justify-center">
+                <AlertCircle className="h-8 w-8 text-amber-500 mb-3" />
+                <h3 className="text-lg font-medium">No datasets available</h3>
+                <p className="text-gray-500 mt-2">No datasets were found in this folder.</p>
+                {selectedFolder.hasDatasetFiles && (
+                  <div className="mt-4 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-300 text-sm">
+                    This folder is marked as containing datasets, but none could be loaded. 
+                    This might be a data loading issue.
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {datasetSelectionPending && !selectedDataset && (

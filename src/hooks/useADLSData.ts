@@ -158,24 +158,39 @@ export function useADLSData() {
     setError(null);
     
     try {
+      console.log(`useADLSData: Selecting container with ID: ${containerId}`);
+      
       const container = containers.find(c => c.id === containerId);
       if (!container) {
-        throw new Error('Container not found');
+        throw new Error(`Container with ID ${containerId} not found`);
       }
       
       setSelectedContainer(container);
       setSelectedFolder(null);
-      
-      const containerFolders = await adlsService.listFolders(connection.id, containerId);
-      setFolders(containerFolders);
-      
       setDatasets([]);
       setSelectedDataset(null);
+      
+      console.log(`useADLSData: Found container: ${container.name}`);
+      console.log(`useADLSData: Requesting folders for container: ${container.name}`);
+      
+      const containerFolders = await adlsService.listFolders(connection.id, containerId);
+      console.log(`useADLSData: Received ${containerFolders.length} folders`);
+      
+      if (containerFolders.length > 0) {
+        console.log(`useADLSData: First folder: ${containerFolders[0].name} (${containerFolders[0].id})`);
+        console.log(`useADLSData: Has dataset files:`, 
+          containerFolders.filter(f => f.hasDatasetFiles).map(f => f.name)
+        );
+      }
+      
+      setFolders(containerFolders);
       
       return container;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to select container';
       setError(errorMessage);
+      
+      console.error("useADLSData: Error selecting container:", err);
       
       toast({
         variant: "destructive",
@@ -199,27 +214,76 @@ export function useADLSData() {
     setError(null);
     
     try {
-      console.log(`Looking for folder with ID: ${folderId} in ${folders.length} folders`);
-      console.log(`Available folders:`, JSON.stringify(folders.map(f => ({ id: f.id, name: f.name, path: f.path }))));
+      console.log(`useADLSData: Selecting folder with ID: ${folderId}`);
+      console.log(`useADLSData: Current container: ${selectedContainer.name} (${selectedContainer.id})`);
+      console.log(`useADLSData: Available folders: ${folders.length}`);
+      
+      if (folders.length > 0) {
+        console.log(`useADLSData: Folder IDs:`, folders.map(f => ({ id: f.id, name: f.name })));
+      }
       
       const folder = folders.find(f => f.id === folderId);
       if (!folder) {
-        console.error(`Folder with ID ${folderId} not found in current container`);
-        throw new Error(`Folder with ID ${folderId} not found in current container`);
+        console.error(`useADLSData: Folder with ID ${folderId} not found in current container`);
+        
+        // Try case-insensitive search
+        const folderLower = folders.find(f => f.id.toLowerCase() === folderId.toLowerCase());
+        if (folderLower) {
+          console.log(`useADLSData: Found folder with case-insensitive match: ${folderLower.id}`);
+          setSelectedFolder(folderLower);
+          
+          // Continue with the found folder
+          if (folderLower.hasDatasetFiles) {
+            console.log(`useADLSData: Folder ${folderLower.name} has dataset files, retrieving them...`);
+            try {
+              const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderLower.id);
+              console.log(`useADLSData: Retrieved ${folderDatasets.length} datasets for folder ${folderLower.name}`);
+              
+              if (folderDatasets.length > 0) {
+                console.log(`useADLSData: Dataset details:`, 
+                  folderDatasets.map(d => ({ id: d.id, name: d.name, path: d.path }))
+                );
+              }
+              
+              setDatasets(folderDatasets);
+            } catch (datasetErr) {
+              console.error(`useADLSData: Error fetching datasets for folder ${folderLower.name}:`, datasetErr);
+              toast({
+                variant: "destructive",
+                title: "Error loading datasets",
+                description: datasetErr instanceof Error ? datasetErr.message : "Failed to load datasets for this folder",
+              });
+              setDatasets([]);
+            }
+          } else {
+            console.log(`useADLSData: Folder ${folderLower.name} doesn't contain dataset files, clearing datasets`);
+            setDatasets([]);
+          }
+          
+          return folderLower;
+        }
+        
+        throw new Error(`Folder with ID ${folderId} not found in container ${selectedContainer.name}`);
       }
       
       setSelectedFolder(folder);
-      console.log(`Selected folder: ${folder.name} (${folder.id})`);
+      console.log(`useADLSData: Selected folder: ${folder.name} (${folder.id})`);
       
       if (folder.hasDatasetFiles) {
-        console.log(`Folder ${folder.name} has dataset files, retrieving them...`);
+        console.log(`useADLSData: Folder ${folder.name} has dataset files, retrieving them...`);
         try {
           const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
-          console.log(`Retrieved ${folderDatasets.length} datasets for folder ${folder.name}`);
-          console.log(`Dataset details:`, JSON.stringify(folderDatasets.map(d => ({ id: d.id, name: d.name, path: d.path }))));
+          console.log(`useADLSData: Retrieved ${folderDatasets.length} datasets for folder ${folder.name}`);
+          
+          if (folderDatasets.length > 0) {
+            console.log(`useADLSData: Dataset details:`, 
+              folderDatasets.map(d => ({ id: d.id, name: d.name, path: d.path }))
+            );
+          }
+          
           setDatasets(folderDatasets);
         } catch (datasetErr) {
-          console.error(`Error fetching datasets for folder ${folder.name}:`, datasetErr);
+          console.error(`useADLSData: Error fetching datasets for folder ${folder.name}:`, datasetErr);
           toast({
             variant: "destructive",
             title: "Error loading datasets",
@@ -228,7 +292,7 @@ export function useADLSData() {
           setDatasets([]);
         }
       } else {
-        console.log(`Folder ${folder.name} doesn't contain dataset files, clearing datasets`);
+        console.log(`useADLSData: Folder ${folder.name} doesn't contain dataset files, clearing datasets`);
         setDatasets([]);
       }
       
@@ -236,6 +300,7 @@ export function useADLSData() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to select folder';
       setError(errorMessage);
+      console.error("useADLSData: Error selecting folder:", err);
       
       toast({
         variant: "destructive",
@@ -247,7 +312,7 @@ export function useADLSData() {
     } finally {
       setIsLoading(false);
     }
-  }, [connection, selectedContainer, folders, toast]);
+  }, [connection, selectedContainer, folders]);
 
   const checkFolderContainsDatasetFiles = useCallback(async (
     containerId: string,
