@@ -108,9 +108,10 @@ const ADLSManager: React.FC = () => {
   };
 
   const handleSelectDataset = async (dataset: Dataset) => {
-    console.log("Selecting dataset:", dataset.id);
+    console.log("ADLSManager - Selecting dataset:", dataset.id, dataset.name);
     try {
       await loadDataset(dataset.id);
+      console.log("Dataset loaded successfully:", dataset.id);
     } catch (err) {
       console.error("Error loading dataset:", err);
       toast({
@@ -173,6 +174,7 @@ const ADLSManager: React.FC = () => {
 
   const handleFolderSelection = async (folderId: string) => {
     try {
+      console.log("Selecting folder with ID:", folderId);
       await selectFolder(folderId);
       
       // If there's only one dataset in the folder, automatically select it
@@ -317,21 +319,19 @@ const ADLSManager: React.FC = () => {
             folderTree={folderTree}
           />
           
-          {selectedFolder && (
-            filteredDatasets.length > 0 && (
-              <DatasetList 
-                datasets={filteredDatasets}
-                onSelectDataset={handleSelectDataset}
-                isLoading={isLoading}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                connectionInfo={
-                  <div className="text-xs text-blue-600/70 dark:text-blue-400/70 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-100 dark:border-blue-800/50">
-                    {`Path: ${selectedContainer?.name}/${selectedFolder.name}`}
-                  </div>
-                }
-              />
-            )
+          {selectedFolder && filteredDatasets.length > 0 && (
+            <DatasetList 
+              datasets={filteredDatasets}
+              onSelectDataset={handleSelectDataset}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              connectionInfo={
+                <div className="text-xs text-blue-600/70 dark:text-blue-400/70 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-100 dark:border-blue-800/50">
+                  {`Path: ${selectedContainer?.name}/${selectedFolder.name}`}
+                </div>
+              }
+            />
           )}
         </div>
       )}

@@ -52,6 +52,7 @@ const DatasetList: React.FC<DatasetListProps> = ({
 
   const handleDatasetSelect = (dataset: Dataset) => {
     console.log(`Selecting dataset: ${dataset.id} (${dataset.name})`);
+    // Call loadDataset directly with the dataset ID
     onSelectDataset(dataset);
   };
 
