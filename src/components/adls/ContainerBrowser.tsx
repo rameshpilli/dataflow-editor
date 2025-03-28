@@ -65,9 +65,11 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
   };
   
   const handleFolderSelect = (folderId: string) => {
+    // Log first for debugging
+    console.log(`Selecting folder with ID: ${folderId}`);
+    
+    // Call the parent component's onSelectFolder function
     onSelectFolder(folderId);
-    // Log for debugging
-    console.log(`Selected folder with ID: ${folderId}`);
   };
   
   const handleNodeClick = (node: any) => {
