@@ -80,10 +80,7 @@ const DataTable: React.FC<DataTableProps> = ({ setBulkEditColumn, setIsBulkEditD
   return (
     <div className="relative">
       <Table 
-        fullWidth
-        zoomLevel={zoomLevel}
-        columnResizing={isColumnResizing}
-        alternateRowColors={false}
+        className="w-full"
         ref={tableRef}
       >
         <TableHeader>
@@ -97,14 +94,12 @@ const DataTable: React.FC<DataTableProps> = ({ setBulkEditColumn, setIsBulkEditD
             {dataset.columns.filter(col => visibleColumns.includes(col.name)).map((column, index) => (
               <TableHead 
                 key={column.name}
-                width={columnWidths[column.name] || 150}
+                style={{width: columnWidths[column.name] || 150}}
                 className={cn(
                   frozenColumns.includes(column.name) && "sticky left-10 z-20",
                   index === 0 && !frozenColumns.includes(column.name) && "pl-4",
                   sortColumn === column.name ? "bg-blue-50 dark:bg-blue-900/30" : ""
                 )}
-                isSorted={sortColumn === column.name}
-                sortDirection={sortColumn === column.name ? sortDirection : undefined}
               >
                 <div className="flex items-center justify-between w-full">
                   <button 
@@ -147,7 +142,7 @@ const DataTable: React.FC<DataTableProps> = ({ setBulkEditColumn, setIsBulkEditD
         </TableHeader>
         <TableBody>
           {dataPreview?.rows.map(row => (
-            <TableRow key={row.__id} isHighlighted={isRowModified(row.__id)} data-row-id={row.__id}>
+            <TableRow key={row.__id} className={isRowModified(row.__id) ? "bg-amber-50/50 dark:bg-amber-900/10" : ""} data-row-id={row.__id}>
               <TableCell className="w-10 sticky left-0 z-10 bg-inherit">
                 <div className="flex items-center">
                   <Checkbox
@@ -165,7 +160,7 @@ const DataTable: React.FC<DataTableProps> = ({ setBulkEditColumn, setIsBulkEditD
                   className={cn(
                     frozenColumns.includes(column.name) && "sticky left-10 z-10",
                     "transition-colors",
-                    column.type === 'number' ? "text-right font-mono tabular-nums" : "",
+                    column.dataType === 'number' ? "text-right font-mono tabular-nums" : "",
                     selectedCellId === `${row.__id}-${column.name}` && "bg-blue-100 dark:bg-blue-900/40",
                   )}
                   onClick={() => handleCellClick(row.__id, column.name)}
