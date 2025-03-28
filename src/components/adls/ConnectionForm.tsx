@@ -23,6 +23,7 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, isLoading })
   const [accountKey, setAccountKey] = useState('mykey==');
   const [authMethod, setAuthMethod] = useState<'connection-string' | 'account-key'>('connection-string');
   const [containerFilter, setContainerFilter] = useState('ingress,bronze,silver,gold');
+  const [useMockBackend, setUseMockBackend] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +33,8 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, isLoading })
       connectionString: authMethod === 'connection-string' ? connectionString : undefined,
       accountName: authMethod === 'account-key' ? accountName : undefined,
       accountKey: authMethod === 'account-key' ? accountKey : undefined,
-      containerFilter: containerFilter.split(',').map(c => c.trim()).filter(Boolean)
+      containerFilter: containerFilter.split(',').map(c => c.trim()).filter(Boolean),
+      useMockBackend
     };
     
     await onConnect(credentials, connectionName);
@@ -107,6 +109,21 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, isLoading })
               onChange={e => setContainerFilter(e.target.value)}
               className="bg-white/90 dark:bg-slate-900/80 border-blue-200 dark:border-blue-900/50 focus:ring-2 focus:ring-blue-500/30 dark:focus:ring-blue-400/30 shadow-sm"
             />
+          </div>
+
+          <div className="flex items-center space-x-2 p-3 rounded-lg bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200/50 dark:border-blue-900/30 shadow-sm">
+            <Switch
+              id="use-mock-backend"
+              checked={useMockBackend}
+              onCheckedChange={setUseMockBackend}
+              className="data-[state=checked]:bg-blue-600"
+            />
+            <div className="flex items-center space-x-2">
+              <ServerCog className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Label htmlFor="use-mock-backend" className="cursor-pointer text-blue-800 dark:text-blue-200">
+                Use Mock Backend (for testing)
+              </Label>
+            </div>
           </div>
           
           <div className="flex items-center space-x-2 p-3 rounded-lg bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200/50 dark:border-blue-900/30 shadow-sm">

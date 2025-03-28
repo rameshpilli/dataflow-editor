@@ -1,4 +1,3 @@
-
 import { 
   ADLSConnection, 
   ADLSCredentials, 
@@ -18,12 +17,206 @@ import { v4 as uuidv4 } from 'uuid';
 // Base API URL for the Python backend
 const API_BASE_URL = 'http://localhost:8000';
 
+// Mock data generators
+const generateMockContainers = (containerFilter?: string[]): Container[] => {
+  const allContainers = [
+    { id: 'ingress-container', name: 'ingress', path: 'ingress', lastModified: new Date() },
+    { id: 'bronze-container', name: 'bronze', path: 'bronze', lastModified: new Date() },
+    { id: 'silver-container', name: 'silver', path: 'silver', lastModified: new Date() },
+    { id: 'gold-container', name: 'gold', path: 'gold', lastModified: new Date() }
+  ];
+  
+  if (!containerFilter || containerFilter.length === 0) {
+    return allContainers;
+  }
+  
+  return allContainers.filter(c => 
+    containerFilter.some(filter => c.name.toLowerCase().includes(filter.toLowerCase()))
+  );
+};
+
+const generateMockFolders = (containerId: string): Folder[] => {
+  if (containerId.includes('bronze')) {
+    return [
+      { id: 'vendorA-folder', name: 'vendorA', path: 'bronze/vendorA', containerName: 'bronze', lastModified: new Date() },
+      { id: 'vendorB-folder', name: 'vendorB', path: 'bronze/vendorB', containerName: 'bronze', lastModified: new Date() }
+    ];
+  } else if (containerId.includes('silver')) {
+    return [
+      { id: 'processed-folder', name: 'processed', path: 'silver/processed', containerName: 'silver', lastModified: new Date() },
+      { id: 'validated-folder', name: 'validated', path: 'silver/validated', containerName: 'silver', lastModified: new Date() }
+    ];
+  } else if (containerId.includes('gold')) {
+    return [
+      { id: 'analytics-folder', name: 'analytics', path: 'gold/analytics', containerName: 'gold', lastModified: new Date() },
+      { id: 'reporting-folder', name: 'reporting', path: 'gold/reporting', containerName: 'gold', lastModified: new Date() }
+    ];
+  }
+  
+  return [
+    { id: 'raw-folder', name: 'raw', path: 'ingress/raw', containerName: 'ingress', lastModified: new Date() }
+  ];
+};
+
+const generateMockDatasets = (containerId?: string, folderId?: string): Dataset[] => {
+  const baseDatasets = [
+    {
+      id: 'sales-dataset',
+      name: 'Sales Data',
+      path: 'bronze/vendorA/sales',
+      format: 'delta',
+      columns: [
+        { name: 'date', dataType: 'date', nullable: false },
+        { name: 'product_id', dataType: 'string', nullable: false },
+        { name: 'amount', dataType: 'decimal', nullable: false }
+      ],
+      rowCount: 1000,
+      repairedCount: 950,
+      lastModified: new Date()
+    },
+    {
+      id: 'customers-dataset',
+      name: 'Customer Information',
+      path: 'bronze/vendorA/customers',
+      format: 'delta',
+      columns: [
+        { name: 'customer_id', dataType: 'string', nullable: false },
+        { name: 'name', dataType: 'string', nullable: false },
+        { name: 'email', dataType: 'string', nullable: true }
+      ],
+      rowCount: 500,
+      repairedCount: 500,
+      lastModified: new Date()
+    },
+    {
+      id: 'products-dataset',
+      name: 'Product Catalog',
+      path: 'silver/processed/products',
+      format: 'delta',
+      columns: [
+        { name: 'product_id', dataType: 'string', nullable: false },
+        { name: 'name', dataType: 'string', nullable: false },
+        { name: 'category', dataType: 'string', nullable: false },
+        { name: 'price', dataType: 'decimal', nullable: false }
+      ],
+      rowCount: 200,
+      repairedCount: 180,
+      lastModified: new Date()
+    }
+  ];
+  
+  if (!containerId && !folderId) {
+    return baseDatasets;
+  }
+  
+  if (containerId?.includes('bronze')) {
+    if (folderId?.includes('vendorA')) {
+      return baseDatasets.filter(d => d.path.includes('bronze/vendorA'));
+    } else if (folderId?.includes('vendorB')) {
+      return [{
+        id: 'inventory-dataset',
+        name: 'Inventory Data',
+        path: 'bronze/vendorB/inventory',
+        format: 'delta',
+        columns: [
+          { name: 'product_id', dataType: 'string', nullable: false },
+          { name: 'quantity', dataType: 'integer', nullable: false },
+          { name: 'warehouse', dataType: 'string', nullable: false }
+        ],
+        rowCount: 300,
+        repairedCount: 275,
+        lastModified: new Date()
+      }];
+    }
+    return baseDatasets.filter(d => d.path.includes('bronze'));
+  } else if (containerId?.includes('silver')) {
+    return baseDatasets.filter(d => d.path.includes('silver'));
+  } else if (containerId?.includes('gold')) {
+    return [{
+      id: 'sales-summary-dataset',
+      name: 'Sales Summary',
+      path: 'gold/analytics/sales_summary',
+      format: 'delta',
+      columns: [
+        { name: 'date', dataType: 'date', nullable: false },
+        { name: 'total_sales', dataType: 'decimal', nullable: false },
+        { name: 'region', dataType: 'string', nullable: false }
+      ],
+      rowCount: 100,
+      repairedCount: 100,
+      lastModified: new Date()
+    }];
+  } else if (containerId?.includes('ingress')) {
+    return [{
+      id: 'raw-data-dataset',
+      name: 'Raw Data',
+      path: 'ingress/raw/data',
+      format: 'csv',
+      columns: [
+        { name: 'timestamp', dataType: 'string', nullable: false },
+        { name: 'data', dataType: 'string', nullable: false }
+      ],
+      rowCount: 2000,
+      repairedCount: 0,
+      lastModified: new Date()
+    }];
+  }
+  
+  return baseDatasets;
+};
+
+const generateMockDataPreview = (datasetId: string): DatasetPreview => {
+  const columns = [
+    { name: 'id', dataType: 'string', nullable: false },
+    { name: 'name', dataType: 'string', nullable: false },
+    { name: 'value', dataType: 'decimal', nullable: true },
+    { name: 'date', dataType: 'date', nullable: false }
+  ];
+  
+  const rows = Array(20).fill(0).map((_, i) => ({
+    __id: `row-${i}`,
+    id: `ID_${i}`,
+    name: `Item ${i}`,
+    value: Math.round(Math.random() * 1000) / 100,
+    date: new Date(Date.now() - Math.floor(Math.random() * 90 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
+  }));
+  
+  return {
+    datasetId,
+    columns,
+    rows,
+    totalRows: 100,
+    page: 1,
+    pageSize: 20,
+    totalPages: 5
+  };
+};
+
 class ADLSService {
   private activeConnection: ADLSConnection | null = null;
   private tempStorage: Map<string, TempStorage> = new Map();
+  private useMockBackend: boolean = false;
   
   // Connect to ADLS
   async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
+    this.useMockBackend = credentials.useMockBackend || false;
+    
+    // If using mock backend, return a mock connection
+    if (this.useMockBackend) {
+      const mockConnection: ADLSConnection = {
+        id: uuidv4(),
+        name,
+        createdAt: new Date(),
+        status: 'connected',
+        useManagedIdentity: credentials.useManagedIdentity,
+        containerFilter: credentials.containerFilter
+      };
+      
+      this.activeConnection = mockConnection;
+      return mockConnection;
+    }
+    
+    // Otherwise, use the real backend
     try {
       const response = await fetch(`${API_BASE_URL}/connect`, {
         method: 'POST',
@@ -53,6 +246,11 @@ class ADLSService {
   
   // Disconnect from ADLS
   async disconnect(connectionId: string): Promise<boolean> {
+    if (this.useMockBackend) {
+      this.activeConnection = null;
+      return true;
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/disconnect/${connectionId}`, {
         method: 'POST',
@@ -73,6 +271,10 @@ class ADLSService {
   
   // List containers
   async listContainers(connectionId: string, containerFilter?: string[]): Promise<Container[]> {
+    if (this.useMockBackend) {
+      return generateMockContainers(containerFilter);
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/containers/${connectionId}`);
       
@@ -91,6 +293,10 @@ class ADLSService {
   
   // List folders in a container
   async listFolders(connectionId: string, containerId: string): Promise<Folder[]> {
+    if (this.useMockBackend) {
+      return generateMockFolders(containerId);
+    }
+    
     try {
       // In a real implementation, we would get the container name from a previous API call
       // For this mock, we'll use a query parameter
@@ -117,6 +323,10 @@ class ADLSService {
   
   // List datasets
   async listDatasets(connectionId: string): Promise<Dataset[]> {
+    if (this.useMockBackend) {
+      return generateMockDatasets();
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/datasets/${connectionId}`);
       
@@ -138,6 +348,10 @@ class ADLSService {
     connectionId: string, 
     containerId: string
   ): Promise<Dataset[]> {
+    if (this.useMockBackend) {
+      return generateMockDatasets(containerId);
+    }
+    
     try {
       // In a real implementation, we would get the container name from a previous API call
       // For this mock, we'll use a query parameter
@@ -167,6 +381,10 @@ class ADLSService {
     connectionId: string, 
     folderId: string
   ): Promise<Dataset[]> {
+    if (this.useMockBackend) {
+      return generateMockDatasets(undefined, folderId);
+    }
+    
     try {
       // In a real implementation, we would get these values from previous API calls
       // For this mock, we'll use query parameters
@@ -200,6 +418,10 @@ class ADLSService {
     sortDirection?: 'asc' | 'desc',
     filters?: FilterOptions[]
   ): Promise<DatasetPreview> {
+    if (this.useMockBackend) {
+      return generateMockDataPreview(datasetId);
+    }
+    
     try {
       // Build query parameters
       let queryParams = `page=${page}&page_size=${pageSize}&path=${datasetId}`;
