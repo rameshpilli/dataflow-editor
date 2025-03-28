@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Dataset, DatasetPreview, FilterOptions, DataChange } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
@@ -131,7 +130,7 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
   dataPreview,
   isLoading,
   isSaving,
-  changes,
+  changes: initialChanges,
   modifiedRows,
   canCommit,
   onCellUpdate,
@@ -143,6 +142,21 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
 }) => {
   console.log("DataEditorProvider - Initializing with dataset:", dataset?.id);
   console.log("DataEditorProvider - Has dataPreview:", !!dataPreview);
+
+  // We're tracking changes by row+column rather than individual keystrokes
+  const [changes, setChanges] = useState<DataChange[]>(() => {
+    // Group the initial changes by row and column
+    const groupedChanges = new Map<string, DataChange>();
+    
+    initialChanges.forEach(change => {
+      const key = `${change.rowId}-${change.columnName}`;
+      // Only keep the most recent change for each row/column combo
+      groupedChanges.set(key, change);
+    });
+    
+    // Convert the map back to an array
+    return Array.from(groupedChanges.values());
+  });
 
   const [page, setPage] = useState(() => {
     const savedPage = safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, 1);
@@ -197,6 +211,41 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: {value: string, active: boolean}}>({});
   const [repairedCount, setRepairedCount] = useState(0);
+
+  // Override the onCellUpdate function to manage changes more effectively
+  const handleCellUpdate = (rowId: string, columnName: string, newValue: any) => {
+    // Create a unique key for this row/column combination
+    const changeKey = `${rowId}-${columnName}`;
+    
+    // Call the original onCellUpdate function
+    onCellUpdate(rowId, columnName, newValue);
+    
+    // Update our local changes state
+    setChanges(prevChanges => {
+      // Filter out any previous changes to this same cell
+      const filteredChanges = prevChanges.filter(change => 
+        !(change.rowId === rowId && change.columnName === columnName)
+      );
+      
+      // Find if there's an existing change for this row/column
+      const existingChange = prevChanges.find(change => 
+        change.rowId === rowId && change.columnName === columnName
+      );
+      
+      // If we have an existing change, use its original oldValue
+      const oldValue = existingChange ? existingChange.oldValue : 
+                      (dataPreview?.rows.find(r => r.__id === rowId)?.[columnName]);
+      
+      // Add the new change
+      return [...filteredChanges, {
+        rowId,
+        columnName,
+        oldValue,
+        newValue,
+        timestamp: new Date()
+      }];
+    });
+  };
 
   // Log important state changes
   useEffect(() => {
@@ -375,6 +424,17 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
     return dataPreview.totalRows ? Math.ceil(dataPreview.totalRows / dataPreview.pageSize) : 0;
   };
 
+  // Custom save changes wrapper
+  const handleSaveChanges = async () => {
+    console.log(`Saving ${changes.length} changes`);
+    const result = await onSaveChanges();
+    if (result) {
+      // Clear our changes list after saving
+      setChanges([]);
+    }
+    return result;
+  };
+
   const value = {
     dataset,
     dataPreview,
@@ -415,8 +475,8 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
     setColumnFilters,
     repairedCount,
     getTotalPages,
-    onCellUpdate,
-    onSaveChanges,
+    onCellUpdate: handleCellUpdate,
+    onSaveChanges: handleSaveChanges,
     onCommitChanges,
     onDiscardChanges,
     onLoadData,

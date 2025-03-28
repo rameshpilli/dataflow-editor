@@ -40,12 +40,14 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
     editMode, 
     setEditMode, 
     changes,
+    modifiedRows,
     onSaveChanges,
     onDiscardChanges
   } = useDataEditor();
 
   console.log("TableToolbar - Edit mode:", editMode);
   console.log("TableToolbar - Changes count:", changes.length);
+  console.log("TableToolbar - Modified rows count:", modifiedRows.size);
 
   const handleSaveChanges = async () => {
     console.log("Attempting to save changes");
@@ -53,7 +55,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
       await onSaveChanges();
       toast({
         title: "Changes saved",
-        description: `Successfully saved ${changes.length} changes`,
+        description: `Successfully saved changes to ${modifiedRows.size} rows`,
         variant: "default",
       });
     } catch (error) {
@@ -99,7 +101,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
       if (changes.length > 0) {
         toast({
           title: "Edit mode disabled",
-          description: `You have ${changes.length} unsaved changes`,
+          description: `You have unsaved changes to ${modifiedRows.size} rows`,
           variant: "default",
         });
       } else {
@@ -179,7 +181,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
           <Badge variant="outline" className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 flex items-center px-2.5">
             <AlertTriangle className="h-3.5 w-3.5 mr-1 text-amber-500" />
             <span className="text-xs">
-              {changes.length} unsaved {changes.length === 1 ? 'change' : 'changes'}
+              {modifiedRows.size} {modifiedRows.size === 1 ? 'row' : 'rows'} with unsaved changes
             </span>
           </Badge>
         )}
@@ -199,7 +201,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {changes.length === 0 ? "No changes to save" : `Save ${changes.length} changes`}
+              {changes.length === 0 ? "No changes to save" : `Save changes to ${modifiedRows.size} rows`}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -219,7 +221,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {changes.length === 0 ? "No changes to discard" : `Discard ${changes.length} changes`}
+              {changes.length === 0 ? "No changes to discard" : `Discard changes to ${modifiedRows.size} rows`}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
