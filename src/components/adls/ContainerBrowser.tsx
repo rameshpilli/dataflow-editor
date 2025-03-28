@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Container, Folder, FolderTree, Dataset } from '@/types/adls';
 import { Button } from '@/components/ui/button';
@@ -97,6 +96,53 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
     onSelectFolder(folderId);
   };
   
+  const normalizeForComparison = (str: string): string => {
+    return str.toLowerCase().trim();
+  };
+
+  const findFolderInCurrentContainer = (folderName: string): Folder | undefined => {
+    console.log(`Looking for folder "${folderName}" in ${folders.length} folders`);
+    
+    let folder = folders.find(f => f.name === folderName);
+    
+    if (!folder) {
+      const normalizedName = normalizeForComparison(folderName);
+      folder = folders.find(f => normalizeForComparison(f.name) === normalizedName);
+    }
+    
+    if (!folder) {
+      console.log(`Trying mock folder ID patterns for "${folderName}"...`);
+      
+      const possibleIds = [
+        `${folderName.toLowerCase()}-folder`,
+        `${folderName}-folder`,
+        folderName.toLowerCase(),
+        folderName
+      ];
+      
+      for (const id of possibleIds) {
+        const foundFolder = folders.find(f => f.id === id);
+        if (foundFolder) {
+          console.log(`Found folder by ID: ${id}`);
+          return foundFolder;
+        }
+      }
+      
+      folder = folders.find(f => 
+        f.path.toLowerCase().includes(`/${folderName.toLowerCase()}`) || 
+        f.path.toLowerCase().endsWith(`/${folderName.toLowerCase()}`)
+      );
+    }
+    
+    if (folder) {
+      console.log(`Found matching folder: ${folder.name} (${folder.id})`);
+    } else {
+      console.error(`No matching folder found for "${folderName}"`);
+    }
+    
+    return folder;
+  };
+  
   const handleNodeClick = (node: any) => {
     console.log('Node clicked:', node);
     
@@ -105,67 +151,39 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
     } else if (node.type === 'folder') {
       const pathParts = node.path?.split('/') || [];
       const containerName = pathParts[0];
-      const containerToSelect = containers.find(c => c.name === containerName);
+      const containerToSelect = containers.find(c => normalizeForComparison(c.name) === normalizeForComparison(containerName));
       
       if (containerToSelect) {
         if (selectedContainer?.id !== containerToSelect.id) {
+          console.log(`Selecting container first: ${containerToSelect.name}`);
           onSelectContainer(containerToSelect.id);
           
-          // Wait for container selection to complete
           setTimeout(() => {
-            // Find folder by name or path in the new container context
-            const folderToSelect = folders.find(f => 
-              f.name === node.name || 
-              f.path === node.path ||
-              f.path.includes(`/${node.name}`) ||
-              node.path.includes(f.name)
-            );
+            const folderName = node.name;
+            const folderToSelect = findFolderInCurrentContainer(folderName);
             
             if (folderToSelect) {
               handleFolderSelect(folderToSelect.id);
             } else {
-              console.warn(`Folder ${node.name} not found after selecting container ${containerName}. Adding folder IDs to mock data might be needed.`);
-              // If in mock data mode, try to find a folder with a similar ID based on the node name
-              const mockFolderId = `${node.name.toLowerCase()}-folder`;
-              console.log(`Trying mock folder ID: ${mockFolderId}`);
-              const mockFolder = folders.find(f => f.id === mockFolderId);
-              if (mockFolder) {
-                handleFolderSelect(mockFolder.id);
-              } else {
-                toast({
-                  title: "Folder not found",
-                  description: `Could not find folder "${node.name}". Try switching to List View and navigating manually.`,
-                  variant: "destructive"
-                });
-              }
+              toast({
+                title: "Folder not found",
+                description: `Could not find folder "${folderName}". Try switching to List View and navigating manually.`,
+                variant: "destructive"
+              });
             }
           }, 500);
         } else {
-          // Container already selected, just select the folder by path or name
-          const folderToSelect = folders.find(f => 
-            f.name === node.name || 
-            f.path === node.path ||
-            f.path.includes(`/${node.name}`) ||
-            node.path.includes(f.name)
-          );
+          const folderName = node.name;
+          const folderToSelect = findFolderInCurrentContainer(folderName);
           
           if (folderToSelect) {
             handleFolderSelect(folderToSelect.id);
           } else {
-            console.warn(`Folder ${node.name} not found in current container. Trying alternative matching.`);
-            // For mock data - try finding by ID pattern
-            const mockFolderId = `${node.name.toLowerCase()}-folder`;
-            console.log(`Trying mock folder ID: ${mockFolderId}`);
-            const mockFolder = folders.find(f => f.id === mockFolderId);
-            if (mockFolder) {
-              handleFolderSelect(mockFolder.id);
-            } else {
-              toast({
-                title: "Folder not found",
-                description: `Could not find folder "${node.name}". Try switching to List View and navigating manually.`,
-                variant: "destructive"
-              });
-            }
+            toast({
+              title: "Folder not found",
+              description: `Could not find folder "${folderName}". Try switching to List View and navigating manually.`,
+              variant: "destructive"
+            });
           }
         }
       }
@@ -178,64 +196,17 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         console.log('Dataset selected:', node.name);
         console.log('Container:', containerName, 'Folder:', folderName);
         
-        const containerToSelect = containers.find(c => c.name === containerName);
+        const containerToSelect = containers.find(c => normalizeForComparison(c.name) === normalizeForComparison(containerName));
         
         if (containerToSelect) {
-          // First select the container if needed
           if (selectedContainer?.id !== containerToSelect.id) {
             onSelectContainer(containerToSelect.id);
             
-            // Wait for container selection to complete then try to find folder
             setTimeout(() => {
-              // Find the folder by path or name
-              const folderToSelect = folders.find(f => 
-                f.name === folderName || 
-                f.path.includes(`/${folderName}`) || 
-                f.path.endsWith(folderName)
-              );
+              const folderToSelect = findFolderInCurrentContainer(folderName);
               
               if (folderToSelect) {
                 handleFolderSelect(folderToSelect.id);
-                // Dataset selection will be handled by the parent component
-              } else {
-                console.warn(`Folder ${folderName} not found after selecting container. Trying mock folder ID.`);
-                // For mock data - try to find by ID pattern
-                const mockFolderId = `${folderName.toLowerCase()}-folder`;
-                console.log(`Trying mock folder ID: ${mockFolderId}`);
-                const mockFolder = folders.find(f => f.id === mockFolderId);
-                
-                if (mockFolder) {
-                  handleFolderSelect(mockFolder.id);
-                  // Dataset selection will be handled by the parent component
-                } else {
-                  toast({
-                    title: "Folder not found",
-                    description: `Could not find parent folder "${folderName}" for dataset. Try switching to List View and navigating manually.`,
-                    variant: "destructive"
-                  });
-                }
-              }
-            }, 500);
-          } else {
-            // Container already selected, just select the folder
-            const folderToSelect = folders.find(f => 
-              f.name === folderName || 
-              f.path.includes(`/${folderName}`) || 
-              f.path.endsWith(folderName)
-            );
-            
-            if (folderToSelect) {
-              handleFolderSelect(folderToSelect.id);
-              // Dataset selection will be handled by the parent component
-            } else {
-              console.warn(`Folder ${folderName} not found in current container. Trying mock folder ID.`);
-              // For mock data - try to find by ID pattern
-              const mockFolderId = `${folderName.toLowerCase()}-folder`;
-              console.log(`Trying mock folder ID: ${mockFolderId}`);
-              const mockFolder = folders.find(f => f.id === mockFolderId);
-              
-              if (mockFolder) {
-                handleFolderSelect(mockFolder.id);
                 // Dataset selection will be handled by the parent component
               } else {
                 toast({
@@ -244,6 +215,19 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
                   variant: "destructive"
                 });
               }
+            }, 500);
+          } else {
+            const folderToSelect = findFolderInCurrentContainer(folderName);
+            
+            if (folderToSelect) {
+              handleFolderSelect(folderToSelect.id);
+              // Dataset selection will be handled by the parent component
+            } else {
+              toast({
+                title: "Folder not found",
+                description: `Could not find parent folder "${folderName}" for dataset. Try switching to List View and navigating manually.`,
+                variant: "destructive"
+              });
             }
           }
         }

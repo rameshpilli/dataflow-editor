@@ -16,10 +16,8 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/hooks/use-toast';
 
-// Base API URL for the Python backend
 const API_BASE_URL = 'http://localhost:8000';
 
-// Mock data generators
 const generateMockContainers = (containerFilter?: string[]): Container[] => {
   const allContainers = [
     { id: 'ingress-container', name: 'ingress', path: 'ingress', lastModified: new Date() },
@@ -40,23 +38,23 @@ const generateMockContainers = (containerFilter?: string[]): Container[] => {
 const generateMockFolders = (containerId: string): Folder[] => {
   if (containerId.includes('bronze')) {
     return [
-      { id: 'vendorA-folder', name: 'vendorA', path: 'bronze/vendorA', containerName: 'bronze', lastModified: new Date() },
-      { id: 'vendorB-folder', name: 'vendorB', path: 'bronze/vendorB', containerName: 'bronze', lastModified: new Date() }
+      { id: 'vendorA-folder', name: 'vendorA', path: 'bronze/vendorA', containerName: 'bronze', lastModified: new Date(), hasDatasetFiles: true },
+      { id: 'vendorB-folder', name: 'vendorB', path: 'bronze/vendorB', containerName: 'bronze', lastModified: new Date(), hasDatasetFiles: true }
     ];
   } else if (containerId.includes('silver')) {
     return [
-      { id: 'processed-folder', name: 'processed', path: 'silver/processed', containerName: 'silver', lastModified: new Date() },
+      { id: 'processed-folder', name: 'processed', path: 'silver/processed', containerName: 'silver', lastModified: new Date(), hasDatasetFiles: true },
       { id: 'validated-folder', name: 'validated', path: 'silver/validated', containerName: 'silver', lastModified: new Date() }
     ];
   } else if (containerId.includes('gold')) {
     return [
-      { id: 'analytics-folder', name: 'analytics', path: 'gold/analytics', containerName: 'gold', lastModified: new Date() },
+      { id: 'analytics-folder', name: 'analytics', path: 'gold/analytics', containerName: 'gold', lastModified: new Date(), hasDatasetFiles: true },
       { id: 'reporting-folder', name: 'reporting', path: 'gold/reporting', containerName: 'gold', lastModified: new Date() }
     ];
   }
   
   return [
-    { id: 'raw-folder', name: 'raw', path: 'ingress/raw', containerName: 'ingress', lastModified: new Date() }
+    { id: 'raw-folder', name: 'raw', path: 'ingress/raw', containerName: 'ingress', lastModified: new Date(), hasDatasetFiles: true }
   ];
 };
 
@@ -202,11 +200,9 @@ class ADLSService {
   private backendAvailable: boolean = true;
   
   constructor() {
-    // Check if backend is available on startup
     this.checkBackendAvailability();
   }
   
-  // Check if the backend is available
   private async checkBackendAvailability(): Promise<void> {
     try {
       const controller = new AbortController();
@@ -221,14 +217,10 @@ class ADLSService {
     } catch (error) {
       console.log("Backend unavailable, but not automatically using mock data");
       this.backendAvailable = false;
-      // Don't automatically set useMockBackend to true
-      // Wait for explicit user choice instead
     }
   }
   
-  // Connect to ADLS
   async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
-    // If explicitly using mock backend, return a mock connection
     if (credentials.useMockBackend) {
       console.log("Using mock backend as requested by user");
       const mockConnection: ADLSConnection = {
@@ -246,12 +238,10 @@ class ADLSService {
       return mockConnection;
     }
     
-    // If backend is unavailable and not using mock mode, throw an error
     if (!this.backendAvailable) {
       throw new Error('Backend server is unavailable. Please check your connection or try using mock data.');
     }
     
-    // Attempt real connection to backend
     try {
       console.log("Attempting real connection to ADLS");
       const response = await fetch(`${API_BASE_URL}/connect`, {
@@ -277,14 +267,10 @@ class ADLSService {
       return connectionData;
     } catch (error) {
       console.error('ADLS connection error:', error);
-      
-      // Don't automatically fall back to mock mode
-      // Instead, let the error propagate and let the user decide
       throw error;
     }
   }
   
-  // Disconnect from ADLS
   async disconnect(connectionId: string): Promise<boolean> {
     if (this.useMockBackend) {
       this.activeConnection = null;
@@ -309,9 +295,7 @@ class ADLSService {
     }
   }
   
-  // Get folder tree structure
   async getFolderTree(connectionId: string): Promise<FolderTree> {
-    // Check if we have a cached tree
     if (this.folderTreeCache.has(connectionId)) {
       return this.folderTreeCache.get(connectionId)!;
     }
@@ -325,7 +309,6 @@ class ADLSService {
         children: []
       };
       
-      // Build tree from containers
       for (const container of containers) {
         const containerNode: FolderTree = {
           id: container.id,
@@ -337,7 +320,6 @@ class ADLSService {
         
         const folders = generateMockFolders(container.id);
         
-        // Add folders to container
         for (const folder of folders) {
           const folderNode: FolderTree = {
             id: folder.id,
@@ -347,7 +329,6 @@ class ADLSService {
             children: []
           };
           
-          // Add datasets to folder
           const datasets = generateMockDatasets(container.id, folder.id);
           for (const dataset of datasets) {
             folderNode.children.push({
@@ -366,7 +347,6 @@ class ADLSService {
         tree.children.push(containerNode);
       }
       
-      // Cache the tree
       this.folderTreeCache.set(connectionId, tree);
       
       return tree;
@@ -382,7 +362,6 @@ class ADLSService {
       
       const treeData = await response.json();
       
-      // Cache the tree
       this.folderTreeCache.set(connectionId, treeData);
       
       return treeData;
@@ -392,7 +371,6 @@ class ADLSService {
     }
   }
   
-  // List containers
   async listContainers(connectionId: string, containerFilter?: string[]): Promise<Container[]> {
     if (this.useMockBackend) {
       return generateMockContainers(containerFilter);
@@ -414,15 +392,12 @@ class ADLSService {
     }
   }
   
-  // List folders in a container
   async listFolders(connectionId: string, containerId: string): Promise<Folder[]> {
     if (this.useMockBackend) {
       return generateMockFolders(containerId);
     }
     
     try {
-      // In a real implementation, we would get the container name from a previous API call
-      // For this mock, we'll use a query parameter
       const containerName = containerId.includes('bronze') ? 'bronze' : 
                            containerId.includes('silver') ? 'silver' : 
                            containerId.includes('gold') ? 'gold' : 'ingress';
@@ -444,14 +419,12 @@ class ADLSService {
     }
   }
   
-  // Check if a folder contains dataset files (delta or parquet)
   async checkFolderContainsDatasetFiles(
     connectionId: string,
     containerName: string,
     folderPath: string
   ): Promise<{hasDatasetFiles: boolean, formats: string[]}> {
     if (this.useMockBackend) {
-      // For mock implementation, we'll assume some folders have dataset files and others don't
       if (folderPath.includes('vendorA') || folderPath.includes('vendorB')) {
         return { hasDatasetFiles: true, formats: ['delta', 'parquet'] };
       }
@@ -476,7 +449,6 @@ class ADLSService {
     }
   }
   
-  // List datasets
   async listDatasets(connectionId: string): Promise<Dataset[]> {
     if (this.useMockBackend) {
       return generateMockDatasets();
@@ -498,7 +470,6 @@ class ADLSService {
     }
   }
   
-  // Get datasets by container
   async getDatasetsByContainer(
     connectionId: string, 
     containerId: string
@@ -508,8 +479,6 @@ class ADLSService {
     }
     
     try {
-      // In a real implementation, we would get the container name from a previous API call
-      // For this mock, we'll use a query parameter
       const containerName = containerId.includes('bronze') ? 'bronze' : 
                            containerId.includes('silver') ? 'silver' : 
                            containerId.includes('gold') ? 'gold' : 'ingress';
@@ -531,7 +500,6 @@ class ADLSService {
     }
   }
   
-  // Get datasets by folder
   async getDatasetsByFolder(
     connectionId: string, 
     folderId: string
@@ -541,8 +509,6 @@ class ADLSService {
     }
     
     try {
-      // In a real implementation, we would get these values from previous API calls
-      // For this mock, we'll use query parameters
       const containerName = 'bronze';
       const folderPath = 'vendorA';
       
@@ -563,7 +529,6 @@ class ADLSService {
     }
   }
   
-  // Get dataset preview with pagination and filtering
   async getDatasetPreview(
     connectionId: string,
     datasetId: string,
@@ -578,7 +543,6 @@ class ADLSService {
     }
     
     try {
-      // Build query parameters
       let queryParams = `page=${page}&page_size=${pageSize}&path=${datasetId}`;
       
       if (sortColumn && sortDirection) {
@@ -606,7 +570,6 @@ class ADLSService {
     }
   }
   
-  // Save changes to temporary storage
   async saveChangesToTemp(
     connectionId: string,
     datasetId: string,
@@ -629,11 +592,10 @@ class ADLSService {
         throw new Error(errorData.detail || 'Failed to save changes');
       }
       
-      // Update local temp storage representation
       const tempStorage: TempStorage = {
         datasetId,
         modifiedRows: new Map(modifiedRows.map(row => [row.__id, row])),
-        totalRowCount: 100, // Mock value
+        totalRowCount: 100,
         repairedCount: modifiedRows.length
       };
       
@@ -646,7 +608,6 @@ class ADLSService {
     }
   }
   
-  // Commit changes to ADLS
   async commitChangesToADLS(
     connectionId: string,
     datasetId: string
@@ -664,7 +625,6 @@ class ADLSService {
         throw new Error(errorData.detail || 'Failed to commit changes');
       }
       
-      // Clear local temp storage
       this.tempStorage.delete(datasetId);
       
       return true;
@@ -674,14 +634,11 @@ class ADLSService {
     }
   }
   
-  // Get temporary storage info
   getTempStorage(datasetId: string): TempStorage | undefined {
     return this.tempStorage.get(datasetId);
   }
   
-  // Get comments for a dataset
   async getComments(datasetId: string): Promise<Comment[]> {
-    // Mock implementation - in a real app, this would call the backend
     return [
       {
         id: uuidv4(),
@@ -704,14 +661,12 @@ class ADLSService {
     ];
   }
   
-  // Add a comment
   async addComment(
     datasetId: string,
     text: string,
     rowId?: string,
     columnName?: string
   ): Promise<Comment> {
-    // Mock implementation - in a real app, this would call the backend
     const newComment: Comment = {
       id: uuidv4(),
       text,
@@ -725,12 +680,10 @@ class ADLSService {
     return newComment;
   }
   
-  // Resolve a comment
   async resolveComment(
     datasetId: string,
     commentId: string
   ): Promise<Comment> {
-    // Mock implementation - in a real app, this would call the backend
     const resolvedComment: Comment = {
       id: commentId,
       text: 'This issue has been resolved',
@@ -744,13 +697,11 @@ class ADLSService {
     return resolvedComment;
   }
   
-  // Update column validation rules
   async updateColumn(
     connectionId: string,
     datasetId: string,
     updatedColumn: DatasetColumn
   ): Promise<Dataset> {
-    // Mock implementation - in a real app, this would call the backend
     return {
       id: datasetId,
       name: 'Updated Dataset',
@@ -763,7 +714,6 @@ class ADLSService {
     };
   }
   
-  // Get available authentication methods for the current environment
   async getAvailableAuthMethods(): Promise<{ 
     supportsManagedIdentity: boolean, 
     supportsConnectionString: boolean,
@@ -795,18 +745,16 @@ class ADLSService {
     } catch (error) {
       console.error('Error getting authentication methods:', error);
       
-      // Mark backend as unavailable but don't auto-switch to mock mode
       if (this.backendAvailable) {
         console.log("Backend unavailable for auth methods");
         this.backendAvailable = false;
       }
       
-      // Return information about the environment
       return {
         supportsManagedIdentity: true,
         supportsConnectionString: true,
         supportsAccountKey: true,
-        recommendedMethod: 'accountKey', // Recommend account key in dev environment
+        recommendedMethod: 'accountKey',
         environmentInfo: {
           isAzureEnvironment: false,
           isDevEnvironment: true,
@@ -818,5 +766,4 @@ class ADLSService {
   }
 }
 
-// Create and export an instance
 export const adlsService = new ADLSService();
