@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { adlsService } from '@/services/adlsService';
 import { 
@@ -52,7 +51,6 @@ export function useADLSData() {
     }
   } | null>(null);
 
-  // Get available authentication methods
   const getAvailableAuthMethods = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -72,7 +70,6 @@ export function useADLSData() {
     }
   }, []);
 
-  // Connect to ADLS
   const connect = useCallback(async (credentials: ADLSCredentials, name: string) => {
     setIsLoading(true);
     setError(null);
@@ -81,17 +78,14 @@ export function useADLSData() {
       const newConnection = await adlsService.connect(credentials, name);
       setConnection(newConnection);
       
-      // Fetch available containers based on filter
       const availableContainers = await adlsService.listContainers(newConnection.id, credentials.containerFilter);
       setContainers(availableContainers);
       
-      // Fetch full folder tree structure
       try {
         const tree = await adlsService.getFolderTree(newConnection.id);
         setFolderTree(tree);
       } catch (err) {
         console.error("Error fetching folder tree:", err);
-        // Non-fatal error, continue
       }
       
       toast({
@@ -116,7 +110,6 @@ export function useADLSData() {
     }
   }, []);
 
-  // Disconnect from ADLS
   const disconnect = useCallback(async () => {
     if (!connection) return;
     
@@ -155,7 +148,6 @@ export function useADLSData() {
     }
   }, [connection]);
 
-  // Select a container
   const selectContainer = useCallback(async (containerId: string) => {
     if (!connection) {
       setError('Not connected to ADLS');
@@ -174,11 +166,9 @@ export function useADLSData() {
       setSelectedContainer(container);
       setSelectedFolder(null);
       
-      // Get folders in this container
       const containerFolders = await adlsService.listFolders(connection.id, containerId);
       setFolders(containerFolders);
       
-      // Clear datasets when selecting a container
       setDatasets([]);
       setSelectedDataset(null);
       
@@ -199,7 +189,6 @@ export function useADLSData() {
     }
   }, [connection, containers]);
 
-  // Select a folder
   const selectFolder = useCallback(async (folderId: string) => {
     if (!connection || !selectedContainer) {
       setError('Not connected to ADLS or no container selected');
@@ -211,8 +200,8 @@ export function useADLSData() {
     
     try {
       console.log(`Looking for folder with ID: ${folderId} in ${folders.length} folders`);
+      console.log(`Available folders:`, JSON.stringify(folders.map(f => ({ id: f.id, name: f.name, path: f.path }))));
       
-      // Find the folder in the current list
       const folder = folders.find(f => f.id === folderId);
       if (!folder) {
         console.error(`Folder with ID ${folderId} not found in current container`);
@@ -222,13 +211,12 @@ export function useADLSData() {
       setSelectedFolder(folder);
       console.log(`Selected folder: ${folder.name} (${folder.id})`);
       
-      // Check if this folder contains dataset files
       if (folder.hasDatasetFiles) {
         console.log(`Folder ${folder.name} has dataset files, retrieving them...`);
         try {
-          // Get datasets for this folder
           const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
           console.log(`Retrieved ${folderDatasets.length} datasets for folder ${folder.name}`);
+          console.log(`Dataset details:`, JSON.stringify(folderDatasets.map(d => ({ id: d.id, name: d.name, path: d.path }))));
           setDatasets(folderDatasets);
         } catch (datasetErr) {
           console.error(`Error fetching datasets for folder ${folder.name}:`, datasetErr);
@@ -237,12 +225,10 @@ export function useADLSData() {
             title: "Error loading datasets",
             description: datasetErr instanceof Error ? datasetErr.message : "Failed to load datasets for this folder",
           });
-          // Don't throw here - still want to mark the folder as selected
           setDatasets([]);
         }
       } else {
         console.log(`Folder ${folder.name} doesn't contain dataset files, clearing datasets`);
-        // Folder doesn't contain dataset files, clear datasets
         setDatasets([]);
       }
       
@@ -261,9 +247,8 @@ export function useADLSData() {
     } finally {
       setIsLoading(false);
     }
-  }, [connection, selectedContainer, folders]);
+  }, [connection, selectedContainer, folders, toast]);
 
-  // Check if a folder contains dataset files
   const checkFolderContainsDatasetFiles = useCallback(async (
     containerId: string,
     folderPath: string
@@ -300,7 +285,6 @@ export function useADLSData() {
     }
   }, [connection, containers]);
 
-  // Go back to container view
   const backToContainers = useCallback(() => {
     setSelectedContainer(null);
     setSelectedFolder(null);
@@ -308,7 +292,6 @@ export function useADLSData() {
     setDatasets([]);
   }, []);
 
-  // Go back to folder view
   const backToFolders = useCallback(() => {
     if (selectedContainer) {
       setSelectedFolder(null);
@@ -317,7 +300,6 @@ export function useADLSData() {
     }
   }, [selectedContainer, selectContainer]);
 
-  // Load dataset preview
   const loadDataset = useCallback(async (
     datasetId: string, 
     page: number = 1, 
@@ -331,7 +313,6 @@ export function useADLSData() {
       return;
     }
     
-    // If datasetId is empty, just clear the current dataset selection without error
     if (!datasetId) {
       setSelectedDataset(null);
       setDataPreview(null);
@@ -347,7 +328,6 @@ export function useADLSData() {
     setError(null);
     
     try {
-      // Find and set the selected dataset first
       const dataset = datasets.find(d => d.id === datasetId);
       if (!dataset) {
         throw new Error('Dataset not found');
@@ -355,19 +335,15 @@ export function useADLSData() {
       
       setSelectedDataset(dataset);
       
-      // Get temp storage info
       const storageInfo = adlsService.getTempStorage(datasetId);
       setTempStorage(storageInfo || null);
       
-      // Check if all rows are repaired
       if (storageInfo && storageInfo.repairedCount >= (dataset.rowCount || 0)) {
         setCanCommit(true);
       } else {
         setCanCommit(false);
       }
       
-      // Fix: We were passing 7 arguments, but getDatasetPreview expects 3-6 arguments
-      // The first argument should be the connection ID, not the connection object itself
       const preview = await adlsService.getDatasetPreview(
         connection.id,
         datasetId,
@@ -380,20 +356,16 @@ export function useADLSData() {
       
       setDataPreview(preview);
       
-      // If there's temp storage, update modifiedRows to match
       if (storageInfo) {
-        // Cast the keys to strings explicitly
         const modifiedRowIds = new Set<string>(
           Array.from(storageInfo.modifiedRows.keys()).map(key => String(key))
         );
         setModifiedRows(modifiedRowIds);
       } else {
-        // Reset any existing changes when loading a new dataset with no temp storage
         setChanges([]);
         setModifiedRows(new Set<string>());
       }
       
-      // Load comments for this dataset
       const datasetComments = await adlsService.getComments(datasetId);
       setComments(datasetComments);
       
@@ -415,21 +387,17 @@ export function useADLSData() {
     }
   }, [connection, datasets]);
 
-  // Update a cell value
   const updateCell = useCallback((rowId: string, columnName: string, newValue: any) => {
     if (!dataPreview) return;
     
-    // Find the row in the current preview
     const rowIndex = dataPreview.rows.findIndex(r => r.__id === rowId);
     if (rowIndex === -1) return;
     
     const row = dataPreview.rows[rowIndex];
     const oldValue = row[columnName];
     
-    // Don't record changes if the value didn't actually change
     if (oldValue === newValue) return;
     
-    // Record the change
     const change: DataChange = {
       rowId,
       columnName,
@@ -440,14 +408,12 @@ export function useADLSData() {
     
     setChanges(prev => [...prev, change]);
     
-    // Mark the row as modified
     setModifiedRows(prev => {
       const updated = new Set(prev);
       updated.add(rowId);
       return updated;
     });
     
-    // Update the preview data
     setDataPreview(prev => {
       if (!prev) return null;
       
@@ -465,7 +431,6 @@ export function useADLSData() {
     });
   }, [dataPreview]);
 
-  // Save changes to temporary storage
   const saveChanges = useCallback(async () => {
     if (!connection || !selectedDataset || !dataPreview || changes.length === 0) {
       return false;
@@ -475,38 +440,26 @@ export function useADLSData() {
     setError(null);
     
     try {
-      // Get modified rows
       const modifiedRowsArray = dataPreview.rows.filter(row => modifiedRows.has(row.__id));
       
-      // Save changes to temporary storage
       await adlsService.saveChangesToTemp(connection.id, selectedDataset.id, modifiedRowsArray);
       
-      // Clear changes after successful temp save
       setChanges([]);
       
-      // Get updated temp storage info
       const updatedStorage = adlsService.getTempStorage(selectedDataset.id);
       setTempStorage(updatedStorage || null);
       
-      // Check if all rows are now repaired
       if (updatedStorage && updatedStorage.repairedCount >= (selectedDataset.rowCount || 0)) {
         setCanCommit(true);
       }
       
-      // Refresh the dataset list to update repair counts
       const updatedDatasets = await adlsService.listDatasets(connection.id);
       setDatasets(updatedDatasets);
       
-      // Update the selected dataset with the updated repair count
       const updatedSelectedDataset = updatedDatasets.find(d => d.id === selectedDataset.id);
       if (updatedSelectedDataset) {
         setSelectedDataset(updatedSelectedDataset);
       }
-      
-      toast({
-        title: "Changes saved",
-        description: `Updated ${modifiedRowsArray.length} rows in temporary storage (${updatedStorage?.repairedCount || 0}/${selectedDataset.rowCount || 0} rows total)`,
-      });
       
       return true;
     } catch (err) {
@@ -525,7 +478,6 @@ export function useADLSData() {
     }
   }, [connection, selectedDataset, dataPreview, changes, modifiedRows]);
 
-  // Commit changes to ADLS
   const commitChanges = useCallback(async () => {
     if (!connection || !selectedDataset) {
       return false;
@@ -535,20 +487,16 @@ export function useADLSData() {
     setError(null);
     
     try {
-      // Commit changes to ADLS
       await adlsService.commitChangesToADLS(connection.id, selectedDataset.id);
       
-      // Clear changes and modified rows after successful commit
       setChanges([]);
       setModifiedRows(new Set());
       setTempStorage(null);
       setCanCommit(false);
       
-      // Refresh the dataset list to update repair counts
       const updatedDatasets = await adlsService.listDatasets(connection.id);
       setDatasets(updatedDatasets);
       
-      // Update the selected dataset with the updated repair count
       const updatedSelectedDataset = updatedDatasets.find(d => d.id === selectedDataset.id);
       if (updatedSelectedDataset) {
         setSelectedDataset(updatedSelectedDataset);
@@ -571,13 +519,11 @@ export function useADLSData() {
     }
   }, [connection, selectedDataset]);
 
-  // Discard all changes
   const discardChanges = useCallback(() => {
     if (!connection || !selectedDataset) {
       return;
     }
     
-    // Reload the current dataset to discard changes
     loadDataset(
       selectedDataset.id,
       dataPreview?.page || 1,
@@ -590,7 +536,6 @@ export function useADLSData() {
     });
   }, [connection, selectedDataset, dataPreview, loadDataset]);
 
-  // Add a comment
   const addComment = useCallback(async (text: string, rowId?: string, columnName?: string) => {
     if (!connection || !selectedDataset) {
       return false;
@@ -631,7 +576,6 @@ export function useADLSData() {
     }
   }, [connection, selectedDataset]);
 
-  // Resolve a comment
   const resolveComment = useCallback(async (commentId: string) => {
     if (!connection || !selectedDataset) {
       return false;
@@ -674,7 +618,6 @@ export function useADLSData() {
     }
   }, [connection, selectedDataset]);
 
-  // Validate dataset against schema rules
   const validateDataset = useCallback(() => {
     if (!dataPreview || !dataPreview.columns) {
       toast({
@@ -685,7 +628,6 @@ export function useADLSData() {
       return;
     }
     
-    // Validate data against schema rules
     const result = validateData(dataPreview.rows, dataPreview.columns);
     setValidationResult(result);
     
@@ -705,7 +647,6 @@ export function useADLSData() {
     return result;
   }, [dataPreview]);
 
-  // Update column validation rules
   const updateColumnValidation = useCallback(async (updatedColumn: DatasetColumn) => {
     if (!connection || !selectedDataset) {
       return false;
@@ -715,24 +656,20 @@ export function useADLSData() {
     setError(null);
     
     try {
-      // Update the column in the dataset
       const updatedDataset = await adlsService.updateColumn(
         connection.id,
         selectedDataset.id,
         updatedColumn
       );
       
-      // Update the local dataset
       setSelectedDataset(updatedDataset);
       
-      // Update the dataset in the datasets list
       setDatasets(prev => 
         prev.map(dataset => 
           dataset.id === updatedDataset.id ? updatedDataset : dataset
         )
       );
       
-      // Update the dataPreview columns
       if (dataPreview) {
         setDataPreview({
           ...dataPreview,
@@ -803,4 +740,3 @@ export function useADLSData() {
     updateColumnValidation
   };
 }
-

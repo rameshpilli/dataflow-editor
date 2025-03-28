@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -69,13 +68,14 @@ const ADLSManager: React.FC = () => {
     console.log("Folder tree:", folderTree ? 'available' : 'not available');
   }, [folderTree]);
 
-  // Add a watcher for datasets that automatically selects the first dataset if there's only one
   useEffect(() => {
     if (datasets.length === 1 && !selectedDataset && !datasetSelectionPending) {
       console.log("Auto-selecting the only dataset:", datasets[0].name);
       setTimeout(() => {
         handleSelectDataset(datasets[0]);
       }, 100);
+    } else if (datasets.length > 0) {
+      console.log(`Found ${datasets.length} datasets in the current folder`);
     }
   }, [datasets, selectedDataset, datasetSelectionPending]);
 
@@ -135,14 +135,12 @@ const ADLSManager: React.FC = () => {
         return;
       }
 
-      // First attempt - try to load the dataset
       console.log("Loading dataset with ID:", dataset.id);
       try {
         const preview = await loadDataset(dataset.id);
         console.log("Dataset loaded successfully:", dataset.id);
         console.log("Preview data:", preview ? "available" : "not available");
         
-        // Add a small delay to ensure the UI updates
         setTimeout(() => {
           setDatasetSelectionPending(false);
           setLoadingDatasetId(null);
@@ -150,7 +148,6 @@ const ADLSManager: React.FC = () => {
       } catch (loadError) {
         console.error("First attempt to load dataset failed:", loadError);
         
-        // Wait a bit and try again
         setTimeout(async () => {
           try {
             console.log("Retrying dataset load with ID:", dataset.id);
@@ -238,9 +235,15 @@ const ADLSManager: React.FC = () => {
   const handleFolderSelection = async (folderId: string) => {
     try {
       console.log("Selecting folder with ID:", folderId);
-      await selectFolder(folderId);
+      const selectedFolder = await selectFolder(folderId);
       
-      // If there are datasets, we'll let the auto-selection in the useEffect handle it
+      if (selectedFolder) {
+        console.log("Successfully selected folder:", selectedFolder.name);
+        console.log("Has dataset files:", selectedFolder.hasDatasetFiles ? "Yes" : "No");
+      } else {
+        console.error("Failed to select folder or folder not found");
+      }
+      
     } catch (err) {
       console.error("Error selecting folder:", err);
       toast({
@@ -283,7 +286,6 @@ const ADLSManager: React.FC = () => {
     };
   }, [selectedDataset, changes]);
 
-  // Debug rendering state
   console.log("Rendering state - selectedDataset:", selectedDataset ? "yes" : "no");
   console.log("Rendering state - dataPreview:", dataPreview ? "yes" : "no");
   console.log("Rendering state - datasetSelectionPending:", datasetSelectionPending);

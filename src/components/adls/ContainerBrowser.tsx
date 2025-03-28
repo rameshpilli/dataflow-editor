@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Container, Folder, FolderTree, Dataset } from '@/types/adls';
 import { Button } from '@/components/ui/button';
@@ -93,6 +94,15 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
       return;
     }
     
+    // Log details about the selected folder for debugging
+    console.log(`Selected folder details: ${JSON.stringify({
+      id: folderToSelect.id,
+      name: folderToSelect.name,
+      path: folderToSelect.path,
+      hasDatasetFiles: folderToSelect.hasDatasetFiles
+    })}`);
+    
+    // Call the onSelectFolder prop with the folder ID
     onSelectFolder(folderId);
   };
   
@@ -411,8 +421,11 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
                               }`}
                               onClick={() => {
                                 console.log(`List view: Folder clicked - ${folder.id} (${folder.name})`);
+                                console.log(`Folder data:`, JSON.stringify(folder));
                                 handleFolderSelect(folder.id);
                               }}
+                              data-folder-id={folder.id}
+                              data-folder-name={folder.name}
                             >
                               {selectedFolder?.id === folder.id ? (
                                 <FolderOpen className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" />
