@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Container, Folder, FolderTree, Dataset } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +22,6 @@ interface ContainerBrowserProps {
   onSelectFolder: (folderId: string) => void;
   onBackToContainers: () => void;
   onBackToFolders: () => void;
-  onDatasetClick?: (datasetPath: string) => void;
-  datasets: Dataset[];
 }
 
 const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
@@ -36,24 +34,11 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
   onSelectContainer,
   onSelectFolder,
   onBackToContainers,
-  onBackToFolders,
-  onDatasetClick,
-  datasets
+  onBackToFolders
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'tree'>(folderTree ? 'tree' : 'list');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  
-  // Automatically expand the root node when the tree is first loaded
-  useEffect(() => {
-    if (folderTree && !expandedNodes.has(folderTree.id)) {
-      setExpandedNodes(prev => {
-        const newSet = new Set(prev);
-        newSet.add(folderTree.id);
-        return newSet;
-      });
-    }
-  }, [folderTree]);
   
   // Filter containers by search term
   const filteredContainers = containers.filter(c => 
@@ -75,11 +60,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
       }
       return newSet;
     });
-  };
-
-  // Find a dataset by path
-  const findDatasetByPath = (path: string): Dataset | undefined => {
-    return datasets.find(d => d.path === path);
   };
   
   // Recursive function to render the folder tree
@@ -108,7 +88,6 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
           onClick={() => {
             if (node.type === 'container') {
               onSelectContainer(node.id);
-              toggleNode(node.id);
             } else if (node.type === 'folder') {
               // Find the parent container first
               const parentContainer = containers.find(c => c.name === node.path.split('/')[0]);
@@ -120,35 +99,29 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
                   onSelectFolder(folder.id);
                 }
               }
-              toggleNode(node.id);
             } else if (node.type === 'dataset') {
-              // For dataset nodes, handle dataset selection
-              const dataset = findDatasetByPath(node.path);
-              
-              if (dataset && onDatasetClick) {
-                onDatasetClick(dataset.id);
-              } else {
-                // If no exact dataset match, navigate to its container/folder first
-                const pathParts = node.path?.split('/') || [];
-                if (pathParts.length >= 2) {
-                  const parentContainerName = pathParts[0];
-                  const parentFolderName = pathParts[1];
+              // For dataset nodes, find the parent folder and select it
+              const pathParts = node.path?.split('/') || [];
+              if (pathParts.length >= 2) {
+                const parentContainerName = pathParts[0];
+                const parentFolderName = pathParts[1];
+                
+                const parentContainer = containers.find(c => c.name === parentContainerName);
+                if (parentContainer) {
+                  onSelectContainer(parentContainer.id);
                   
-                  const parentContainer = containers.find(c => c.name === parentContainerName);
-                  if (parentContainer) {
-                    onSelectContainer(parentContainer.id);
-                    
-                    // Find and select the parent folder
-                    setTimeout(() => {
-                      const folder = folders.find(f => f.name === parentFolderName);
-                      if (folder) {
-                        onSelectFolder(folder.id);
-                      }
-                    }, 100);
-                  }
+                  // This will trigger loading folders for this container
+                  // Then we need to find and select the parent folder
+                  setTimeout(() => {
+                    const folder = folders.find(f => f.name === parentFolderName);
+                    if (folder) {
+                      onSelectFolder(folder.id);
+                    }
+                  }, 300);
                 }
               }
             }
+            toggleNode(node.id);
           }}
         >
           <Button
@@ -394,7 +367,7 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
         <div className="relative mb-3">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
           <Input
-            placeholder={viewMode === 'tree' ? "Search tree..." : selectedContainer ? "Search folders..." : "Search containers..."}
+            placeholder={viewMode === 'tree' ? "Search folders..." : selectedContainer ? "Search folders..." : "Search containers..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-8 h-9 bg-white/90 dark:bg-gray-900/70 border-blue-200/60 dark:border-blue-900/40"

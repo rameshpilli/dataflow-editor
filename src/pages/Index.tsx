@@ -34,11 +34,9 @@ const Index = () => {
               Connect, browse, and manage your Azure Data Lake Storage data assets
             </p>
           </div>
-          
           <ADLSManager />
         </div>
       </main>
-      
       <footer className="text-center py-6 text-sm text-blue-600/60 dark:text-blue-400/60 transition-colors duration-300 relative z-10 border-t border-blue-100/20 dark:border-blue-900/20 mt-8">
         <p>Azure Data Lake Storage Explorer <span className="text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-blue-700 dark:text-blue-300">{APP_VERSION}</span></p>
         <p className="text-xs mt-1 text-blue-500/50 dark:text-blue-400/50">A React application for browsing and managing ADLS data</p>

@@ -7,14 +7,9 @@ import ContainerBrowser from '@/components/adls/ContainerBrowser';
 import { Dataset, ADLSCredentials } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { LogOut, CloudOff, AlertCircle, AlertTriangle, UserPlus } from 'lucide-react';
+import { LogOut, DatabaseIcon, CloudOff, AlertCircle, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
-import { Switch } from '@/components/ui/switch';
-import { useTheme } from '@/hooks/useTheme';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 
 const ADLSManager: React.FC = () => {
   const {
@@ -54,15 +49,13 @@ const ADLSManager: React.FC = () => {
   const [usingMockData, setUsingMockData] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
-  const [showUserManagementDialog, setShowUserManagementDialog] = useState(false);
-  const { user, users, addUser, removeUser } = useAuth();
-  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
+    // Load available authentication methods when the component mounts
     getAvailableAuthMethods()
       .catch(error => {
         console.log("Auth methods error:", error);
-        setUsingMockData(false);
+        // Don't set using mock data here, wait for explicit user choice
       });
   }, [getAvailableAuthMethods]);
 
@@ -77,8 +70,10 @@ const ADLSManager: React.FC = () => {
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
+      // Clear any previous errors
       setConnectionError(null);
       
+      // If using mock data, set the flag
       if (credentials.useMockBackend) {
         setUsingMockData(true);
       } else {
@@ -101,12 +96,15 @@ const ADLSManager: React.FC = () => {
     } catch (err) {
       console.error("Connection error:", err);
       
+      // Display specific error message
       const errorMessage = err instanceof Error 
         ? err.message 
         : "Failed to connect to ADLS. Please check your credentials and try again.";
         
       setConnectionError(errorMessage);
       setShowErrorDialog(true);
+      
+      // Do not automatically fall back to mock data here, let the user choose
     }
   };
 
@@ -127,10 +125,6 @@ const ADLSManager: React.FC = () => {
         description: err instanceof Error ? err.message : "Unknown error occurred",
       });
     }
-  };
-
-  const handleDatasetClick = (datasetId: string) => {
-    handleSelectDataset({ id: datasetId } as Dataset);
   };
 
   const handleGoBackToDatasets = () => {
@@ -179,75 +173,23 @@ const ADLSManager: React.FC = () => {
     }
   };
 
+  // Filter datasets by search query
   const filteredDatasets = datasets.filter(dataset => 
     dataset.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Enhanced handling for dataset selection from folder
   const handleFolderSelection = async (folderId: string) => {
     try {
+      // First, select the folder to load its datasets
       await selectFolder(folderId);
       
+      // If there's only one dataset in the folder, automatically select it
       if (datasets.length === 1) {
         handleSelectDataset(datasets[0]);
       }
     } catch (err) {
       console.error("Error selecting folder:", err);
-    }
-  };
-
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newUserRole, setNewUserRole] = useState('viewer');
-
-  const handleAddUser = () => {
-    if (!newUsername || !newPassword) {
-      toast({
-        variant: "destructive",
-        title: "Invalid input",
-        description: "Username and password are required",
-      });
-      return;
-    }
-
-    try {
-      addUser(
-        { 
-          username: newUsername, 
-          roles: [newUserRole]
-        }, 
-        newPassword
-      );
-      
-      toast({
-        title: "User added",
-        description: `User ${newUsername} has been added successfully`,
-      });
-      
-      setNewUsername('');
-      setNewPassword('');
-      setNewUserRole('viewer');
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Error adding user",
-        description: err instanceof Error ? err.message : "Unknown error occurred",
-      });
-    }
-  };
-
-  const handleRemoveUser = (username: string) => {
-    try {
-      removeUser(username);
-      toast({
-        title: "User removed",
-        description: `User ${username} has been removed successfully`,
-      });
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Error removing user",
-        description: err instanceof Error ? err.message : "Unknown error occurred",
-      });
     }
   };
 
@@ -285,16 +227,6 @@ const ADLSManager: React.FC = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl water-blue-bg rounded-xl shadow-lg animate-fade-in">
-      <div className="flex justify-end mb-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600 dark:text-gray-300">Dark Mode</span>
-          <Switch 
-            checked={theme === 'dark'} 
-            onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-          />
-        </div>
-      </div>
-      
       {usingMockData && (
         <Alert variant="default" className="mb-6 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/50">
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
@@ -323,6 +255,7 @@ const ADLSManager: React.FC = () => {
       
       {connection && !selectedDataset && (
         <div className="space-y-6 bg-white/95 dark:bg-gray-800/95 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700 animate-scale-in backdrop-blur-sm">
+          {/* Connection info */}
           <div className="flex flex-col mb-6 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg p-4 border border-blue-100/50 dark:border-blue-900/30 shadow-sm">
             <div className="flex justify-between items-center">
               <div>
@@ -340,56 +273,43 @@ const ADLSManager: React.FC = () => {
                 </p>
               </div>
               
-              <div className="flex items-center space-x-2">
-                {user?.roles?.includes('admin') && (
+              <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
+                <DialogTrigger asChild>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
-                    onClick={() => setShowUserManagementDialog(true)}
+                    className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors btn-feedback"
+                    aria-label="Disconnect from ADLS"
                   >
-                    <UserPlus className="mr-2 h-4 w-4 text-blue-500" />
-                    Manage Users
+                    <LogOut className="mr-2 h-4 w-4 text-red-500" />
+                    Disconnect
                   </Button>
-                )}
-                
-                <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-                  <DialogTrigger asChild>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Disconnect from ADLS</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to disconnect? Any unsaved changes will be lost.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
+                      Cancel
+                    </Button>
                     <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors btn-feedback"
-                      aria-label="Disconnect from ADLS"
+                      variant="destructive" 
+                      onClick={handleDisconnect}
+                      className="btn-feedback"
                     >
-                      <LogOut className="mr-2 h-4 w-4 text-red-500" />
                       Disconnect
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Disconnect from ADLS</DialogTitle>
-                      <DialogDescription>
-                        Are you sure you want to disconnect? Any unsaved changes will be lost.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowDisconnectDialog(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        onClick={handleDisconnect}
-                        className="btn-feedback"
-                      >
-                        Disconnect
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
+          {/* Container and folder browser */}
           <ContainerBrowser
             containers={containers}
             selectedContainer={selectedContainer}
@@ -401,10 +321,9 @@ const ADLSManager: React.FC = () => {
             onBackToContainers={backToContainers}
             onBackToFolders={backToFolders}
             folderTree={folderTree}
-            onDatasetClick={handleDatasetClick}
-            datasets={datasets}
           />
           
+          {/* Only show datasets if a folder is selected */}
           {selectedFolder && (
             filteredDatasets.length > 0 ? (
               <DatasetList 
@@ -477,6 +396,7 @@ const ADLSManager: React.FC = () => {
         </div>
       )}
       
+      {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
           <DialogHeader>
@@ -488,87 +408,6 @@ const ADLSManager: React.FC = () => {
           <DialogFooter>
             <Button onClick={() => setShowErrorDialog(false)}>
               Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showUserManagementDialog} onOpenChange={setShowUserManagementDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>User Management</DialogTitle>
-            <DialogDescription>
-              Add or remove users who can access the Data Editor application.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Current Users</h3>
-              <div className="max-h-40 overflow-y-auto space-y-2">
-                {users.map(user => (
-                  <div key={user.username} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                    <div>
-                      <p className="text-sm font-medium">{user.username}</p>
-                      <p className="text-xs text-gray-500">{user.roles?.join(', ') || 'No roles'}</p>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => handleRemoveUser(user.username)}
-                      disabled={user.username === 'user'}
-                    >
-                      {user.username === 'user' ? 'Default' : 'Remove'}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-medium mb-2">Add New User</h3>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="new-username">Username</Label>
-                  <Input 
-                    id="new-username" 
-                    value={newUsername} 
-                    onChange={e => setNewUsername(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new-password">Password</Label>
-                  <Input 
-                    id="new-password" 
-                    type="password" 
-                    value={newPassword} 
-                    onChange={e => setNewPassword(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new-role">Role</Label>
-                  <select 
-                    id="new-role"
-                    value={newUserRole}
-                    onChange={e => setNewUserRole(e.target.value)}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
-                  >
-                    <option value="viewer">Viewer</option>
-                    <option value="editor">Editor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUserManagementDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddUser}>
-              Add User
             </Button>
           </DialogFooter>
         </DialogContent>
