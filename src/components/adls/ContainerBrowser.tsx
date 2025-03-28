@@ -1,19 +1,22 @@
 
-import React from 'react';
-import { Container, Folder } from '@/types/adls';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Container, Folder, FolderTree } from '@/types/adls';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
-import { FolderOpen, Database, ChevronLeft, HardDrive, FolderArchive, FolderInput, FolderOutput, FolderSymlink } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChevronRight, ChevronDown, Database, Folder as FolderIcon, FolderOpen, Server, ChevronLeft, Search, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 interface ContainerBrowserProps {
   containers: Container[];
   selectedContainer: Container | null;
   folders: Folder[];
   selectedFolder: Folder | null;
+  folderTree: FolderTree | null;
   isLoading: boolean;
   onSelectContainer: (containerId: string) => void;
   onSelectFolder: (folderId: string) => void;
@@ -26,267 +29,334 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
   selectedContainer,
   folders,
   selectedFolder,
+  folderTree,
   isLoading,
   onSelectContainer,
   onSelectFolder,
   onBackToContainers,
   onBackToFolders
 }) => {
-  const getContainerIcon = (containerType: string) => {
-    switch (containerType) {
-      case 'ingress':
-        return <FolderInput className="h-5 w-5 text-green-500" />;
-      case 'bronze':
-        return <FolderArchive className="h-5 w-5 text-amber-500" />;
-      case 'silver':
-        return <FolderOutput className="h-5 w-5 text-blue-500" />;
-      case 'gold':
-        return <FolderSymlink className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <HardDrive className="h-5 w-5 text-purple-500" />;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'tree'>(folderTree ? 'tree' : 'list');
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  
+  // Filter containers by search term
+  const filteredContainers = containers.filter(c => 
+    c.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Filter folders by search term
+  const filteredFolders = folders.filter(f => 
+    f.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const toggleNode = (nodeId: string) => {
+    setExpandedNodes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  };
+  
+  // Recursive function to render the folder tree
+  const renderFolderTree = (node: FolderTree, level = 0) => {
+    // Skip if the node name doesn't match the search term
+    if (searchTerm && !node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+      // But check if any children match
+      const hasMatchingChildren = node.children.some(child => 
+        child.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      if (!hasMatchingChildren) {
+        return null;
+      }
+    }
+    
+    const isExpanded = expandedNodes.has(node.id);
+    const isSelected = selectedContainer?.name === node.name || selectedFolder?.name === node.name;
+    
+    return (
+      <div key={node.id} className="pl-4">
+        <div 
+          className={`flex items-center py-1 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded px-2 cursor-pointer ${
+            isSelected ? 'bg-blue-100/80 dark:bg-blue-800/30 text-blue-700 dark:text-blue-300' : ''
+          }`}
+          onClick={() => {
+            if (node.type === 'container') {
+              onSelectContainer(node.id);
+            } else if (node.type === 'folder') {
+              // Find the parent container first
+              const parentContainer = containers.find(c => c.name === node.path.split('/')[0]);
+              if (parentContainer) {
+                onSelectContainer(parentContainer.id);
+                // Find the folder
+                const folder = folders.find(f => f.name === node.name);
+                if (folder) {
+                  onSelectFolder(folder.id);
+                }
+              }
+            }
+            toggleNode(node.id);
+          }}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 p-0 mr-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleNode(node.id);
+            }}
+          >
+            {node.children.length > 0 ? (
+              isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+            ) : (
+              <div className="w-4" />
+            )}
+          </Button>
+          
+          {node.type === 'root' && <Server className="h-4 w-4 mr-2 text-gray-500" />}
+          {node.type === 'container' && <Database className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />}
+          {node.type === 'folder' && (
+            isSelected ? 
+              <FolderOpen className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" /> : 
+              <FolderIcon className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" />
+          )}
+          {node.type === 'dataset' && (
+            node.format === 'delta' ? 
+              <FileJson className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" /> : 
+              <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
+          )}
+          
+          <span className="text-sm truncate">{node.name}</span>
+          
+          {node.metadata?.hasDatasetFiles && (
+            <Badge variant="outline" className="ml-2 text-xs py-0 h-5 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+              Dataset
+            </Badge>
+          )}
+        </div>
+        
+        {isExpanded && node.children.length > 0 && (
+          <div className="border-l border-gray-200 dark:border-gray-700 ml-2 pl-2">
+            {node.children.map(child => renderFolderTree(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Show either the tree view or the list view based on the selected mode
+  const renderContent = () => {
+    if (viewMode === 'tree' && folderTree) {
+      return (
+        <ScrollArea className="h-[300px] pr-3">
+          {renderFolderTree(folderTree)}
+        </ScrollArea>
+      );
+    } else {
+      // List view - show containers, then folders when a container is selected
+      return (
+        <>
+          {!selectedContainer ? (
+            // Show containers
+            <div className="space-y-2">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Containers</p>
+              </div>
+              <ScrollArea className="h-[300px] pr-3">
+                <div className="space-y-1">
+                  {isLoading ? (
+                    // Show loading skeleton
+                    Array(4).fill(0).map((_, i) => (
+                      <div key={i} className="animate-pulse flex items-center p-2 rounded">
+                        <div className="h-4 w-4 bg-blue-200 dark:bg-blue-800 rounded mr-2"></div>
+                        <div className="h-4 w-32 bg-blue-200 dark:bg-blue-800 rounded"></div>
+                      </div>
+                    ))
+                  ) : filteredContainers.length > 0 ? (
+                    filteredContainers.map((container) => (
+                      <Button
+                        key={container.id}
+                        variant="ghost"
+                        className={`w-full justify-start text-left font-normal h-auto py-1.5 ${
+                          selectedContainer?.id === container.id
+                            ? 'bg-blue-100/80 dark:bg-blue-800/30 text-blue-700 dark:text-blue-300'
+                            : ''
+                        }`}
+                        onClick={() => onSelectContainer(container.id)}
+                      >
+                        <Database className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                        <span className="truncate">{container.name}</span>
+                        {container.hasDatasetFiles && (
+                          <Badge variant="outline" className="ml-2 text-xs py-0 h-5 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                            Dataset
+                          </Badge>
+                        )}
+                      </Button>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      {searchTerm ? 
+                        `No containers matching "${searchTerm}"` : 
+                        'No containers available'
+                      }
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          ) : (
+            // Show folders within the selected container
+            <div className="space-y-2">
+              <div className="flex items-center mb-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 pl-0"
+                  onClick={onBackToContainers}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  <span className="text-sm">Back to Containers</span>
+                </Button>
+              </div>
+              
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <Database className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {selectedContainer.name}
+                  </p>
+                </div>
+              </div>
+              
+              <ScrollArea className="h-[250px] pr-3">
+                <div className="space-y-1">
+                  {isLoading ? (
+                    // Show loading skeleton
+                    Array(4).fill(0).map((_, i) => (
+                      <div key={i} className="animate-pulse flex items-center p-2 rounded">
+                        <div className="h-4 w-4 bg-amber-200 dark:bg-amber-800 rounded mr-2"></div>
+                        <div className="h-4 w-32 bg-amber-200 dark:bg-amber-800 rounded"></div>
+                      </div>
+                    ))
+                  ) : filteredFolders.length > 0 ? (
+                    filteredFolders.map((folder) => (
+                      <TooltipProvider key={folder.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className={`w-full justify-start text-left font-normal h-auto py-1.5 ${
+                                selectedFolder?.id === folder.id
+                                  ? 'bg-blue-100/80 dark:bg-blue-800/30 text-blue-700 dark:text-blue-300'
+                                  : ''
+                              }`}
+                              onClick={() => onSelectFolder(folder.id)}
+                            >
+                              {selectedFolder?.id === folder.id ? (
+                                <FolderOpen className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" />
+                              ) : (
+                                <FolderIcon className="h-4 w-4 mr-2 text-amber-500 dark:text-amber-400" />
+                              )}
+                              <span className="truncate">{folder.name}</span>
+                              {folder.hasDatasetFiles && (
+                                <Badge variant="outline" className="ml-2 text-xs py-0 h-5 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                                  Dataset
+                                </Badge>
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-medium">{folder.name}</p>
+                              <p className="text-xs">{folder.path}</p>
+                              {folder.folderCount !== undefined && (
+                                <p className="text-xs">
+                                  {folder.folderCount} folder{folder.folderCount !== 1 ? 's' : ''}, 
+                                  {folder.blobCount !== undefined && ` ${folder.blobCount} file${folder.blobCount !== 1 ? 's' : ''}`}
+                                </p>
+                              )}
+                              {folder.hasDatasetFiles && (
+                                <p className="text-xs text-green-600 dark:text-green-400">
+                                  Contains datasets: {folder.datasetFormats?.join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      {searchTerm ? 
+                        `No folders matching "${searchTerm}"` : 
+                        'No folders available'
+                      }
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </>
+      );
     }
   };
   
-  const getContainerBadge = (containerType: string) => {
-    switch (containerType) {
-      case 'ingress':
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800">{containerType}</Badge>;
-      case 'bronze':
-        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800">{containerType}</Badge>;
-      case 'silver':
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">{containerType}</Badge>;
-      case 'gold':
-        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800">{containerType}</Badge>;
-      default:
-        return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800">{containerType}</Badge>;
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Card className="shadow-md border-opacity-40 overflow-hidden animate-pulse">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-          <div className="h-6 w-48 bg-blue-200 dark:bg-blue-800 rounded"></div>
-          <div className="h-4 w-72 bg-blue-100 dark:bg-blue-900 rounded mt-2"></div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="h-64 bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full bg-blue-200 dark:bg-blue-800 animate-pulse"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!selectedContainer) {
-    // Container browsing view
-    return (
-      <Card className="shadow-lg border border-blue-100 dark:border-blue-900/40 overflow-hidden rounded-xl">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-blue-900/40 py-5">
-          <CardTitle className="text-blue-700 dark:text-blue-300 text-2xl">Storage Containers</CardTitle>
-          <CardDescription className="text-blue-600/70 dark:text-blue-400/70 mt-1">
-            Select a container to browse its folders and datasets
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table fullWidth={true} hoverable={true} striped={true} compact={true}>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-blue-700 dark:text-blue-300 font-semibold">Type</TableHead>
-                  <TableHead className="w-[180px] text-blue-700 dark:text-blue-300 font-semibold">Name</TableHead>
-                  <TableHead className="text-blue-700 dark:text-blue-300 font-semibold text-center">Folders</TableHead>
-                  <TableHead className="text-blue-700 dark:text-blue-300 font-semibold text-center">Blobs</TableHead>
-                  <TableHead className="text-blue-700 dark:text-blue-300 font-semibold">Last Modified</TableHead>
-                  <TableHead className="text-blue-700 dark:text-blue-300 font-semibold"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {containers.map((container) => (
-                  <TableRow key={container.id} className="transition-all duration-150">
-                    <TableCell>
-                      <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-md inline-flex">
-                        {getContainerIcon(container.type)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium max-w-[180px] truncate text-blue-800 dark:text-blue-200">
-                      {container.name}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full font-mono">
-                        {container.folderCount}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="px-2.5 py-1 bg-gray-50 dark:bg-gray-800/30 text-gray-700 dark:text-gray-300 rounded-full font-mono">
-                        {container.blobCount}
-                      </span>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-gray-600 dark:text-gray-400">
-                      {container.lastModified 
-                        ? format(container.lastModified, 'MMM d, yyyy') 
-                        : 'Unknown'}
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 dark:hover:from-blue-800/40 dark:hover:to-indigo-800/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm hover:shadow transition-all duration-200 group"
-                        onClick={() => onSelectContainer(container.id)}
-                      >
-                        Browse
-                        <FolderOpen className="h-3.5 w-3.5 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  } else if (!selectedFolder) {
-    // Folder browsing view
-    return (
-      <Card className="shadow-lg border border-blue-100 dark:border-blue-900/40 overflow-hidden rounded-xl">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-blue-900/40 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <div className="flex items-center space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40" 
-                  onClick={onBackToContainers}
+  return (
+    <Card className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-blue-100/50 dark:border-blue-900/30 overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 pb-3 pt-4">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg font-medium text-blue-800 dark:text-blue-200">Data Browser</CardTitle>
+          
+          {/* View mode switcher */}
+          {folderTree && (
+            <Tabs
+              value={viewMode}
+              onValueChange={(value) => setViewMode(value as 'list' | 'tree')}
+              className="h-8"
+            >
+              <TabsList className="h-7 p-0.5">
+                <TabsTrigger
+                  value="list"
+                  className="text-xs h-6 px-2 data-[state=active]:bg-white data-[state=active]:text-blue-700 dark:data-[state=active]:bg-gray-800 dark:data-[state=active]:text-blue-300"
                 >
-                  <ChevronLeft className="h-5 w-5 text-blue-700 dark:text-blue-300" />
-                </Button>
-                <CardTitle className="text-blue-700 dark:text-blue-300 text-2xl">
-                  {selectedContainer.name} {getContainerBadge(selectedContainer.type)}
-                </CardTitle>
-              </div>
-              <CardDescription className="text-blue-600/70 dark:text-blue-400/70 mt-1 ml-10">
-                Browse folders within this container
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {folders.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table fullWidth={true} hoverable={true} striped={true} compact={true}>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-blue-700 dark:text-blue-300 font-semibold">Type</TableHead>
-                    <TableHead className="w-[180px] text-blue-700 dark:text-blue-300 font-semibold">Name</TableHead>
-                    <TableHead className="w-[220px] text-blue-700 dark:text-blue-300 font-semibold">Path</TableHead>
-                    <TableHead className="text-blue-700 dark:text-blue-300 font-semibold text-center">Subfolders</TableHead>
-                    <TableHead className="text-blue-700 dark:text-blue-300 font-semibold text-center">Blobs</TableHead>
-                    <TableHead className="text-blue-700 dark:text-blue-300 font-semibold">Last Modified</TableHead>
-                    <TableHead className="text-blue-700 dark:text-blue-300 font-semibold"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {folders.map((folder) => (
-                    <TableRow key={folder.id} className="transition-all duration-150">
-                      <TableCell>
-                        <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-md inline-flex">
-                          <FolderOpen className="h-5 w-5 text-blue-500" />
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium max-w-[180px] truncate text-blue-800 dark:text-blue-200">
-                        {folder.name}
-                      </TableCell>
-                      <TableCell>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="font-mono text-xs truncate max-w-[220px] cursor-help bg-gray-50 dark:bg-gray-800/40 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">
-                                {folder.path}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="font-mono text-xs p-2 max-w-md break-all bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-blue-100 dark:border-blue-800" side="bottom">
-                              {folder.path}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full font-mono">
-                          {folder.folderCount}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="px-2.5 py-1 bg-gray-50 dark:bg-gray-800/30 text-gray-700 dark:text-gray-300 rounded-full font-mono">
-                          {folder.blobCount}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-gray-600 dark:text-gray-400">
-                        {folder.lastModified 
-                          ? format(folder.lastModified, 'MMM d, yyyy') 
-                          : 'Unknown'}
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 dark:hover:from-blue-800/40 dark:hover:to-indigo-800/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm hover:shadow transition-all duration-200 group"
-                          onClick={() => onSelectFolder(folder.id)}
-                        >
-                          Browse
-                          <Database className="h-3.5 w-3.5 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="p-12 text-center">
-              <FolderOpen className="h-12 w-12 mx-auto text-blue-300 dark:text-blue-700 mb-3 opacity-50" />
-              <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200 mb-1">No folders found</h3>
-              <p className="text-blue-600/70 dark:text-blue-400/70 max-w-md mx-auto">
-                This container doesn't contain any folders. You can still view datasets associated with this container.
-              </p>
-            </div>
+                  List View
+                </TabsTrigger>
+                <TabsTrigger
+                  value="tree"
+                  className="text-xs h-6 px-2 data-[state=active]:bg-white data-[state=active]:text-blue-700 dark:data-[state=active]:bg-gray-800 dark:data-[state=active]:text-blue-300"
+                >
+                  Tree View
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
-        </CardContent>
-      </Card>
-    );
-  } else {
-    // Show datasets within folder view - this is handled by the DatasetList component
-    return (
-      <Card className="shadow-lg border border-blue-100 dark:border-blue-900/40 overflow-hidden rounded-xl mb-4">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-100 dark:border-blue-900/40 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <div className="flex items-center space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40" 
-                  onClick={onBackToFolders}
-                >
-                  <ChevronLeft className="h-5 w-5 text-blue-700 dark:text-blue-300" />
-                </Button>
-                <CardTitle className="text-blue-700 dark:text-blue-300 text-2xl flex items-center space-x-2">
-                  <span>{selectedContainer.name}</span>
-                  {getContainerBadge(selectedContainer.type)}
-                  <span className="mx-2 text-blue-300 dark:text-blue-700">/</span>
-                  <span>{selectedFolder.name}</span>
-                </CardTitle>
-              </div>
-              <CardDescription className="text-blue-600/70 dark:text-blue-400/70 mt-1 ml-10">
-                Viewing datasets in this folder
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-    );
-  }
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-4 pt-3">
+        <div className="relative mb-3">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder={viewMode === 'tree' ? "Search folders..." : selectedContainer ? "Search folders..." : "Search containers..."}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 h-9 bg-white/90 dark:bg-gray-900/70 border-blue-200/60 dark:border-blue-900/40"
+          />
+        </div>
+        
+        <Separator className="my-3 bg-blue-100/50 dark:bg-blue-900/30" />
+        
+        {renderContent()}
+      </CardContent>
+    </Card>
+  );
 };
 
 export default ContainerBrowser;

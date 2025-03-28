@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -26,6 +27,9 @@ const ADLSManager: React.FC = () => {
     selectedContainer,
     folders,
     selectedFolder,
+    folderTree,
+    authMethods,
+    getAvailableAuthMethods,
     connect,
     disconnect,
     loadDataset,
@@ -36,16 +40,26 @@ const ADLSManager: React.FC = () => {
     selectContainer,
     selectFolder,
     backToContainers,
-    backToFolders
+    backToFolders,
+    checkFolderContainsDatasetFiles
   } = useADLSData();
   
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    // Load available authentication methods when the component mounts
+    getAvailableAuthMethods();
+  }, [getAvailableAuthMethods]);
+
+  useEffect(() => {
     console.log("Selected dataset:", selectedDataset ? selectedDataset.id : 'none');
     console.log("Data preview:", dataPreview ? `${dataPreview.rows.length} rows` : 'none');
   }, [selectedDataset, dataPreview]);
+  
+  useEffect(() => {
+    console.log("Folder tree:", folderTree ? 'available' : 'not available');
+  }, [folderTree]);
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
@@ -189,7 +203,9 @@ const ADLSManager: React.FC = () => {
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {connection.credentials.useManagedIdentity 
-                    ? 'Using Azure Managed Identity' 
+                    ? connection.credentials.useUserCredentials 
+                      ? 'Using Current User Identity (LDAP/AD)' 
+                      : 'Using Azure Managed Identity' 
                     : connection.credentials.connectionString 
                       ? 'Using Connection String' 
                       : 'Using Account Key'}
@@ -243,6 +259,7 @@ const ADLSManager: React.FC = () => {
             onSelectFolder={selectFolder}
             onBackToContainers={backToContainers}
             onBackToFolders={backToFolders}
+            folderTree={folderTree}
           />
           
           {/* Only show datasets if a folder is selected */}
@@ -322,3 +339,4 @@ const ADLSManager: React.FC = () => {
 };
 
 export default ADLSManager;
+

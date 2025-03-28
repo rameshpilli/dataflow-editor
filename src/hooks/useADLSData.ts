@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { adlsService } from '@/services/adlsService';
 import { 
@@ -13,7 +14,8 @@ import {
   ValidationResult,
   DatasetColumn,
   Container,
-  Folder
+  Folder,
+  FolderTree
 } from '@/types/adls';
 import { toast } from '@/hooks/use-toast';
 import { validateData } from '@/utils/schemaValidation';
@@ -36,6 +38,39 @@ export function useADLSData() {
   const [selectedContainer, setSelectedContainer] = useState<Container | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
+  const [folderTree, setFolderTree] = useState<FolderTree | null>(null);
+  const [authMethods, setAuthMethods] = useState<{
+    supportsManagedIdentity: boolean;
+    supportsConnectionString: boolean;
+    supportsAccountKey: boolean;
+    recommendedMethod: 'managedIdentity' | 'connectionString' | 'accountKey' | null;
+    environmentInfo: {
+      isAzureEnvironment: boolean;
+      isDevEnvironment: boolean;
+      hasSystemManagedIdentity: boolean;
+      hasUserManagedIdentity: boolean;
+    }
+  } | null>(null);
+
+  // Get available authentication methods
+  const getAvailableAuthMethods = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const methods = await adlsService.getAvailableAuthMethods();
+      setAuthMethods(methods);
+      return methods;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get authentication methods';
+      setError(errorMessage);
+      
+      console.error("Auth methods error:", err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Connect to ADLS
   const connect = useCallback(async (credentials: ADLSCredentials, name: string) => {
@@ -50,9 +85,14 @@ export function useADLSData() {
       const availableContainers = await adlsService.listContainers(newConnection.id, credentials.containerFilter);
       setContainers(availableContainers);
       
-      // Fetch available datasets
-      const availableDatasets = await adlsService.listDatasets(newConnection.id);
-      setDatasets(availableDatasets);
+      // Fetch full folder tree structure
+      try {
+        const tree = await adlsService.getFolderTree(newConnection.id);
+        setFolderTree(tree);
+      } catch (err) {
+        console.error("Error fetching folder tree:", err);
+        // Non-fatal error, continue
+      }
       
       toast({
         title: "Connection successful",
@@ -95,6 +135,7 @@ export function useADLSData() {
       setSelectedContainer(null);
       setFolders([]);
       setSelectedFolder(null);
+      setFolderTree(null);
       
       toast({
         title: "Disconnected",
@@ -176,9 +217,15 @@ export function useADLSData() {
       
       setSelectedFolder(folder);
       
-      // Get datasets for this folder
-      const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
-      setDatasets(folderDatasets);
+      // Check if this folder contains dataset files
+      if (folder.hasDatasetFiles) {
+        // Get datasets for this folder
+        const folderDatasets = await adlsService.getDatasetsByFolder(connection.id, folderId);
+        setDatasets(folderDatasets);
+      } else {
+        // Folder doesn't contain dataset files, clear datasets
+        setDatasets([]);
+      }
       
       return folder;
     } catch (err) {
@@ -196,6 +243,43 @@ export function useADLSData() {
       setIsLoading(false);
     }
   }, [connection, selectedContainer, folders]);
+
+  // Check if a folder contains dataset files
+  const checkFolderContainsDatasetFiles = useCallback(async (
+    containerId: string,
+    folderPath: string
+  ) => {
+    if (!connection) {
+      setError('Not connected to ADLS');
+      return null;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const container = containers.find(c => c.id === containerId);
+      if (!container) {
+        throw new Error('Container not found');
+      }
+      
+      const result = await adlsService.checkFolderContainsDatasetFiles(
+        connection.id,
+        container.name,
+        folderPath
+      );
+      
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to check folder contents';
+      setError(errorMessage);
+      
+      console.error("Error checking folder contents:", err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [connection, containers]);
 
   // Go back to container view
   const backToContainers = useCallback(() => {
@@ -679,8 +763,12 @@ export function useADLSData() {
     selectedContainer,
     folders,
     selectedFolder,
+    folderTree,
+    authMethods,
+    getAvailableAuthMethods,
     selectContainer,
     selectFolder,
+    checkFolderContainsDatasetFiles,
     backToContainers,
     backToFolders,
     connect,
@@ -696,3 +784,4 @@ export function useADLSData() {
     updateColumnValidation
   };
 }
+

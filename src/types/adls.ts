@@ -1,4 +1,3 @@
-
 export interface ADLSConnection {
   id: string;
   name: string;
@@ -6,7 +5,7 @@ export interface ADLSConnection {
   status: 'connected' | 'disconnected';
   useManagedIdentity: boolean;
   containerFilter?: string[];
-  credentials: ADLSCredentials; // Added credentials property
+  credentials: ADLSCredentials;
 }
 
 export interface ADLSCredentials {
@@ -16,6 +15,9 @@ export interface ADLSCredentials {
   accountKey?: string;
   containerFilter?: string[];
   useMockBackend?: boolean;
+  tenantId?: string;
+  clientId?: string;
+  useUserCredentials?: boolean;
 }
 
 export interface Container {
@@ -23,9 +25,10 @@ export interface Container {
   name: string;
   path: string;
   lastModified: Date;
-  type?: string; // Added type property
-  folderCount?: number; // Added folderCount property
-  blobCount?: number; // Added blobCount property
+  type?: string;
+  folderCount?: number;
+  blobCount?: number;
+  hasDatasetFiles?: boolean;
 }
 
 export interface Folder {
@@ -34,8 +37,25 @@ export interface Folder {
   path: string;
   containerName: string;
   lastModified: Date;
-  folderCount?: number; // Added folderCount property
-  blobCount?: number; // Added blobCount property
+  folderCount?: number;
+  blobCount?: number;
+  hasDatasetFiles?: boolean;
+  datasetFormats?: string[];
+}
+
+export interface FolderTree {
+  id: string;
+  name: string;
+  type: 'root' | 'container' | 'folder' | 'dataset';
+  path?: string;
+  format?: string;
+  children: FolderTree[];
+  metadata?: {
+    lastModified?: Date;
+    size?: number;
+    itemCount?: number;
+    hasDatasetFiles?: boolean;
+  };
 }
 
 export interface Dataset {
@@ -47,16 +67,18 @@ export interface Dataset {
   rowCount?: number;
   repairedCount?: number;
   lastModified: Date;
+  size?: number;
+  partitionColumns?: string[];
 }
 
 export interface DatasetColumn {
   name: string;
   dataType: string;
   nullable: boolean;
-  type?: string; // Added type property
+  type?: string;
   validationRules?: ValidationRule[];
-  validation?: ColumnValidation; // Added validation property
-  stats?: ColumnStats; // Added stats property
+  validation?: ColumnValidation;
+  stats?: ColumnStats;
 }
 
 export interface ColumnStats {
@@ -109,9 +131,9 @@ export interface DataChange {
 
 export interface FilterOptions {
   column: string;
-  operator: string; // This is the correct property name
+  operator: string;
   value: any;
-  operation?: string; // Added for backward compatibility
+  operation?: string;
 }
 
 export interface Comment {
@@ -142,5 +164,5 @@ export interface ValidationError {
   rowId: string;
   columnName: string;
   message: string;
-  severity?: 'error' | 'warning'; // Added severity property
+  severity?: 'error' | 'warning';
 }

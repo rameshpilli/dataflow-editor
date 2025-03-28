@@ -10,7 +10,8 @@ import {
   FilterOptions,
   Comment,
   TempStorage,
-  DatasetColumn
+  DatasetColumn,
+  FolderTree
 } from '@/types/adls';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -196,6 +197,7 @@ class ADLSService {
   private activeConnection: ADLSConnection | null = null;
   private tempStorage: Map<string, TempStorage> = new Map();
   private useMockBackend: boolean = false;
+  private folderTreeCache: Map<string, FolderTree> = new Map();
   
   // Connect to ADLS
   async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
@@ -270,6 +272,89 @@ class ADLSService {
     }
   }
   
+  // Get folder tree structure
+  async getFolderTree(connectionId: string): Promise<FolderTree> {
+    // Check if we have a cached tree
+    if (this.folderTreeCache.has(connectionId)) {
+      return this.folderTreeCache.get(connectionId)!;
+    }
+    
+    if (this.useMockBackend) {
+      const containers = generateMockContainers(this.activeConnection?.containerFilter);
+      const tree: FolderTree = {
+        id: 'root',
+        name: 'Root',
+        type: 'root',
+        children: []
+      };
+      
+      // Build tree from containers
+      for (const container of containers) {
+        const containerNode: FolderTree = {
+          id: container.id,
+          name: container.name,
+          type: 'container',
+          path: container.name,
+          children: []
+        };
+        
+        const folders = generateMockFolders(container.id);
+        
+        // Add folders to container
+        for (const folder of folders) {
+          const folderNode: FolderTree = {
+            id: folder.id,
+            name: folder.name,
+            type: 'folder',
+            path: folder.path,
+            children: []
+          };
+          
+          // Add datasets to folder
+          const datasets = generateMockDatasets(container.id, folder.id);
+          for (const dataset of datasets) {
+            folderNode.children.push({
+              id: dataset.id,
+              name: dataset.name,
+              type: 'dataset',
+              format: dataset.format,
+              path: dataset.path,
+              children: []
+            });
+          }
+          
+          containerNode.children.push(folderNode);
+        }
+        
+        tree.children.push(containerNode);
+      }
+      
+      // Cache the tree
+      this.folderTreeCache.set(connectionId, tree);
+      
+      return tree;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/folder-tree/${connectionId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to get folder tree');
+      }
+      
+      const treeData = await response.json();
+      
+      // Cache the tree
+      this.folderTreeCache.set(connectionId, treeData);
+      
+      return treeData;
+    } catch (error) {
+      console.error('Error getting folder tree:', error);
+      throw error;
+    }
+  }
+  
   // List containers
   async listContainers(connectionId: string, containerFilter?: string[]): Promise<Container[]> {
     if (this.useMockBackend) {
@@ -318,6 +403,38 @@ class ADLSService {
       return folders;
     } catch (error) {
       console.error('Error listing folders:', error);
+      throw error;
+    }
+  }
+  
+  // Check if a folder contains dataset files (delta or parquet)
+  async checkFolderContainsDatasetFiles(
+    connectionId: string,
+    containerName: string,
+    folderPath: string
+  ): Promise<{hasDatasetFiles: boolean, formats: string[]}> {
+    if (this.useMockBackend) {
+      // For mock implementation, we'll assume some folders have dataset files and others don't
+      if (folderPath.includes('vendorA') || folderPath.includes('vendorB')) {
+        return { hasDatasetFiles: true, formats: ['delta', 'parquet'] };
+      }
+      
+      return { hasDatasetFiles: false, formats: [] };
+    }
+    
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/check-dataset-files/${connectionId}?container_name=${containerName}&folder_path=${folderPath}`
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to check folder contents');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking folder contents:', error);
       throw error;
     }
   }
@@ -607,6 +724,49 @@ class ADLSService {
       repairedCount: 50,
       lastModified: new Date()
     };
+  }
+  
+  // Get available authentication methods for the current environment
+  async getAvailableAuthMethods(): Promise<{ 
+    supportsManagedIdentity: boolean, 
+    supportsConnectionString: boolean,
+    supportsAccountKey: boolean,
+    recommendedMethod: 'managedIdentity' | 'connectionString' | 'accountKey' | null,
+    environmentInfo: {
+      isAzureEnvironment: boolean,
+      isDevEnvironment: boolean,
+      hasSystemManagedIdentity: boolean,
+      hasUserManagedIdentity: boolean
+    }
+  }> {
+    if (this.useMockBackend) {
+      return {
+        supportsManagedIdentity: true,
+        supportsConnectionString: true,
+        supportsAccountKey: true,
+        recommendedMethod: 'managedIdentity',
+        environmentInfo: {
+          isAzureEnvironment: true,
+          isDevEnvironment: false,
+          hasSystemManagedIdentity: true,
+          hasUserManagedIdentity: true
+        }
+      };
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth-methods`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to get authentication methods');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting authentication methods:', error);
+      throw error;
+    }
   }
 }
 

@@ -5,6 +5,7 @@ python-dotenv==1.0.0
 azure-storage-blob==12.17.0
 azure-identity==1.13.0
 azure-storage-file-datalake==12.11.0
+azure-core==1.28.0
 pydantic==1.10.8
 python-multipart==0.0.6
 requests==2.31.0
