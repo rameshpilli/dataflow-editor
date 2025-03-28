@@ -17,6 +17,7 @@ interface DatasetListProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   connectionInfo?: React.ReactNode;
+  loadingDatasetId?: string | null;
 }
 
 const DatasetList: React.FC<DatasetListProps> = ({ 
@@ -25,7 +26,8 @@ const DatasetList: React.FC<DatasetListProps> = ({
   isLoading, 
   searchQuery, 
   onSearchChange,
-  connectionInfo
+  connectionInfo,
+  loadingDatasetId
 }) => {
   if (isLoading) {
     return (
@@ -124,12 +126,14 @@ const DatasetList: React.FC<DatasetListProps> = ({
                 if (totalRows > 0 && repairedRows > 0) {
                   repairPercentage = Math.round((repairedRows / totalRows) * 100);
                 }
-                    
+                
+                const isLoading = loadingDatasetId === dataset.id;
+                
                 return (
                   <TableRow 
                     key={dataset.id} 
-                    className="transition-all duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer"
-                    onClick={() => handleDatasetSelect(dataset)}
+                    className={`transition-all duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 ${isLoading ? 'bg-blue-50/80 dark:bg-blue-900/30 animate-pulse-subtle' : 'cursor-pointer'}`}
+                    onClick={() => !isLoading && handleDatasetSelect(dataset)}
                   >
                     <TableCell>
                       {dataset.format === 'delta' ? (
@@ -144,6 +148,7 @@ const DatasetList: React.FC<DatasetListProps> = ({
                     </TableCell>
                     <TableCell className="font-medium max-w-[180px] truncate text-blue-800 dark:text-blue-200">
                       {dataset.name}
+                      {isLoading && <span className="ml-2 text-xs text-blue-500">Loading...</span>}
                     </TableCell>
                     <TableCell>
                       <TooltipProvider>
@@ -192,11 +197,14 @@ const DatasetList: React.FC<DatasetListProps> = ({
                         className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 dark:hover:from-blue-800/40 dark:hover:to-indigo-800/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm hover:shadow transition-all duration-200 group"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDatasetSelect(dataset);
+                          if (!isLoading) {
+                            handleDatasetSelect(dataset);
+                          }
                         }}
+                        disabled={isLoading}
                       >
-                        View Data
-                        <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
+                        {isLoading ? 'Loading...' : 'View Data'}
+                        {!isLoading && <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />}
                       </Button>
                     </TableCell>
                   </TableRow>
