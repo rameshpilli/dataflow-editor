@@ -137,9 +137,9 @@ export function useADLSData() {
       const containerFolders = await adlsService.listFolders(connection.id, containerId);
       setFolders(containerFolders);
       
-      // Get datasets for this container
-      const containerDatasets = await adlsService.getDatasetsByContainer(connection.id, containerId);
-      setDatasets(containerDatasets);
+      // Clear datasets when selecting a container
+      setDatasets([]);
+      setSelectedDataset(null);
       
       return container;
     } catch (err) {
@@ -202,17 +202,14 @@ export function useADLSData() {
     setSelectedContainer(null);
     setSelectedFolder(null);
     setFolders([]);
-    
-    if (connection) {
-      // Reload all datasets
-      adlsService.listDatasets(connection.id).then(setDatasets);
-    }
-  }, [connection]);
+    setDatasets([]);
+  }, []);
 
   // Go back to folder view
   const backToFolders = useCallback(() => {
     if (selectedContainer) {
       setSelectedFolder(null);
+      setDatasets([]);
       selectContainer(selectedContainer.id);
     }
   }, [selectedContainer, selectContainer]);

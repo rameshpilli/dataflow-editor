@@ -245,8 +245,8 @@ const ADLSManager: React.FC = () => {
             onBackToFolders={backToFolders}
           />
           
-          {/* Only show datasets if a container or folder is selected */}
-          {(selectedContainer || selectedFolder) && (
+          {/* Only show datasets if a folder is selected */}
+          {selectedFolder && (
             filteredDatasets.length > 0 ? (
               <DatasetList 
                 datasets={filteredDatasets}
@@ -256,9 +256,7 @@ const ADLSManager: React.FC = () => {
                 onSearchChange={setSearchQuery}
                 connectionInfo={
                   <div className="text-xs text-blue-600/70 dark:text-blue-400/70 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-100 dark:border-blue-800/50">
-                    {selectedFolder ? 
-                      `Path: ${selectedContainer?.name}/${selectedFolder.name}` : 
-                      `Container: ${selectedContainer?.name}`}
+                    {`Path: ${selectedContainer?.name}/${selectedFolder.name}`}
                   </div>
                 }
               />
@@ -282,14 +280,7 @@ const ADLSManager: React.FC = () => {
                   <>
                     <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
                     <h3 className="text-lg font-medium mb-1">No datasets available</h3>
-                    <p className="text-sm">
-                      {selectedFolder 
-                        ? "No datasets found in this folder"
-                        : selectedContainer
-                          ? "No datasets found in this container"
-                          : "No datasets found. Try browsing through containers and folders"
-                      }
-                    </p>
+                    <p className="text-sm">No datasets found in this folder</p>
                   </>
                 )}
               </div>
