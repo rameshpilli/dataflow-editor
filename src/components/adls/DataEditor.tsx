@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -106,7 +105,6 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
     };
   }, [isFullscreen]);
 
-  // Effect to log data changes
   useEffect(() => {
     console.log("DataEditor - Changes:", changes.length);
     console.log("DataEditor - Modified rows:", modifiedRows.size);

@@ -1,84 +1,49 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Dataset, DatasetPreview, FilterOptions, DataChange } from '@/types/adls';
-import { toast } from '@/hooks/use-toast';
+import { Dataset, DatasetPreview, DataChange, FilterOptions, Column, DataRow } from '@/types/adls';
 
 interface DataEditorContextType {
   dataset: Dataset;
   dataPreview: DatasetPreview | null;
   isLoading: boolean;
   isSaving: boolean;
+  page: number;
+  pageSize: number;
+  sortColumn: string | undefined;
+  sortDirection: 'asc' | 'desc' | undefined;
+  filters: FilterOptions[];
+  editMode: boolean;
   changes: DataChange[];
   modifiedRows: Set<string>;
   canCommit: boolean;
-  page: number;
-  setPage: (page: number) => void;
-  pageSize: number;
-  setPageSize: (size: number) => void;
-  sortColumn: string | undefined;
-  setSortColumn: (column: string | undefined) => void;
-  sortDirection: 'asc' | 'desc' | undefined;
-  setSortDirection: (direction: 'asc' | 'desc' | undefined) => void;
-  columnWidths: { [columnName: string]: number };
-  setColumnWidths: React.Dispatch<React.SetStateAction<{ [columnName: string]: number }>>;
-  zoomLevel: number;
-  setZoomLevel: (zoom: number) => void;
-  visibleColumns: string[];
-  setVisibleColumns: React.Dispatch<React.SetStateAction<string[]>>;
-  isColumnResizing: boolean;
-  setIsColumnResizing: (resizing: boolean) => void;
-  filters: FilterOptions[];
-  setFilters: React.Dispatch<React.SetStateAction<FilterOptions[]>>;
-  frozenColumns: string[];
-  setFrozenColumns: React.Dispatch<React.SetStateAction<string[]>>;
-  editMode: boolean;
-  setEditMode: (mode: boolean) => void;
-  selectedRows: Set<string>;
-  setSelectedRows: React.Dispatch<React.SetStateAction<Set<string>>>;
-  selectedCellId: string | null;
-  setSelectedCellId: (id: string | null) => void;
   isFullscreen: boolean;
-  setIsFullscreen: (fullscreen: boolean) => void;
-  columnFilters: {[key: string]: {value: string, active: boolean}};
-  setColumnFilters: React.Dispatch<React.SetStateAction<{[key: string]: {value: string, active: boolean}}>>;
-  repairedCount: number;
-  getTotalPages: () => number;
+  selectedRows: DataRow[];
+  setEditMode: (enabled: boolean) => void;
+  handlePageChange: (newPage: number) => void;
+  handlePageSizeChange: (newSize: number) => void;
+  handleSortChange: (column: string) => void;
+  handleFilterChange: (filters: FilterOptions[]) => void;
   onCellUpdate: (rowId: string, columnName: string, newValue: any) => void;
   onSaveChanges: () => Promise<boolean>;
   onCommitChanges: () => Promise<boolean>;
   onDiscardChanges: () => void;
-  onLoadData: (
-    datasetId: string, 
-    page: number, 
-    pageSize: number,
-    sortColumn?: string,
-    sortDirection?: 'asc' | 'desc',
-    filters?: FilterOptions[]
-  ) => Promise<DatasetPreview | undefined>;
   onGoBack: () => void;
-  handleSelectRow: (rowId: string) => void;
-  handleSelectAllRows: () => void;
-  handlePageChange: (page: number) => void;
-  handlePageSizeChange: (size: number) => void;
-  handleSort: (columnName: string) => void;
-  handleColumnResize: (columnName: string, newWidth: number) => void;
-  toggleColumnVisibility: (columnName: string, isVisible: boolean) => void;
-  handleFreezeChange: (columnName: string, isFrozen: boolean) => void;
-  isRowModified: (rowId: string) => boolean;
-  isAllRowsSelected: () => boolean;
+  getTotalPages: () => number;
+  setSelectedRows: (rows: DataRow[]) => void;
+  getCellValue: (rowId: string, columnName: string) => any;
 }
 
 const DataEditorContext = createContext<DataEditorContextType | undefined>(undefined);
 
-export const useDataEditor = () => {
+export const useDataEditor = (): DataEditorContextType => {
   const context = useContext(DataEditorContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useDataEditor must be used within a DataEditorProvider');
   }
   return context;
 };
 
 interface DataEditorProviderProps {
-  children: React.ReactNode;
   dataset: Dataset;
   dataPreview: DatasetPreview | null;
   isLoading: boolean;
@@ -99,38 +64,15 @@ interface DataEditorProviderProps {
     filters?: FilterOptions[]
   ) => Promise<DatasetPreview | undefined>;
   onGoBack: () => void;
+  children: React.ReactNode;
 }
 
-const STORAGE_KEY_PREFIX = 'adls-editor-';
-
-const safeLocalStorageSet = (key: string, value: any) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.warn(`Error saving to localStorage for key ${key}:`, error);
-  }
-};
-
-const safeLocalStorageGet = <T,>(key: string, defaultValue: T): T => {
-  if (typeof window === 'undefined') return defaultValue;
-  
-  try {
-    const storedValue = localStorage.getItem(key);
-    if (storedValue === null) return defaultValue;
-    return JSON.parse(storedValue);
-  } catch (error) {
-    console.warn(`Error parsing localStorage for key ${key}:`, error);
-    return defaultValue;
-  }
-};
-
 export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({ 
-  children,
   dataset,
   dataPreview,
   isLoading,
   isSaving,
-  changes: initialChanges,
+  changes,
   modifiedRows,
   canCommit,
   onCellUpdate,
@@ -138,361 +80,140 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
   onCommitChanges,
   onDiscardChanges,
   onLoadData,
-  onGoBack
+  onGoBack,
+  children
 }) => {
   console.log("DataEditorProvider - Initializing with dataset:", dataset?.id);
   console.log("DataEditorProvider - Has dataPreview:", !!dataPreview);
 
-  // We're tracking changes by row+column rather than individual keystrokes
-  const [changes, setChanges] = useState<DataChange[]>(() => {
-    // Group the initial changes by row and column
-    const groupedChanges = new Map<string, DataChange>();
-    
-    initialChanges.forEach(change => {
-      const key = `${change.rowId}-${change.columnName}`;
-      // Only keep the most recent change for each row/column combo
-      groupedChanges.set(key, change);
-    });
-    
-    // Convert the map back to an array
-    return Array.from(groupedChanges.values());
-  });
-
-  const [page, setPage] = useState(() => {
-    const savedPage = safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, 1);
-    console.log("Restored page from storage:", savedPage);
-    return savedPage;
-  });
-  
-  const [pageSize, setPageSize] = useState(() => {
-    const savedPageSize = safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, 10);
-    console.log("Restored pageSize from storage:", savedPageSize);
-    return savedPageSize;
-  });
-  
-  const [sortColumn, setSortColumn] = useState<string | undefined>(() => 
-    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, undefined)
-  );
-  
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | undefined>(() => 
-    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, undefined)
-  );
-  
-  const [columnWidths, setColumnWidths] = useState<{ [columnName: string]: number }>(() =>
-    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, {})
-  );
-  
-  const [zoomLevel, setZoomLevel] = useState(() => 
-    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, 100)
-  );
-  
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => 
-    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, dataset.columns.map(col => col.name))
-  );
-  
-  const [isColumnResizing, setIsColumnResizing] = useState(false);
-  
-  const [filters, setFilters] = useState<FilterOptions[]>(() => 
-    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, [])
-  );
-  
-  const [frozenColumns, setFrozenColumns] = useState<string[]>(() => 
-    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, [])
-  );
-  
-  const [editMode, setEditMode] = useState(() => {
-    const savedEditMode = safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, false);
-    console.log("Restored editMode from storage:", savedEditMode);
-    return savedEditMode;
-  });
-  
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
+  const [page, setPage] = useState(dataPreview?.page || 1);
+  const [pageSize, setPageSize] = useState(dataPreview?.pageSize || 20);
+  const [sortColumn, setSortColumn] = useState<string | undefined>(undefined);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | undefined>(undefined);
+  const [filters, setFilters] = useState<FilterOptions[]>([]);
+  const [editMode, setEditMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [columnFilters, setColumnFilters] = useState<{[key: string]: {value: string, active: boolean}}>({});
-  const [repairedCount, setRepairedCount] = useState(0);
-
-  // Override the onCellUpdate function to manage changes more effectively
-  const handleCellUpdate = (rowId: string, columnName: string, newValue: any) => {
-    // Create a unique key for this row/column combination
-    const changeKey = `${rowId}-${columnName}`;
-    
-    // Call the original onCellUpdate function
-    onCellUpdate(rowId, columnName, newValue);
-    
-    // Update our local changes state
-    setChanges(prevChanges => {
-      // Filter out any previous changes to this same cell
-      const filteredChanges = prevChanges.filter(change => 
-        !(change.rowId === rowId && change.columnName === columnName)
-      );
-      
-      // Find if there's an existing change for this row/column
-      const existingChange = prevChanges.find(change => 
-        change.rowId === rowId && change.columnName === columnName
-      );
-      
-      // If we have an existing change, use its original oldValue
-      const oldValue = existingChange ? existingChange.oldValue : 
-                      (dataPreview?.rows.find(r => r.__id === rowId)?.[columnName]);
-      
-      // Add the new change
-      return [...filteredChanges, {
-        rowId,
-        columnName,
-        oldValue,
-        newValue,
-        timestamp: new Date()
-      }];
-    });
+  const [selectedRows, setSelectedRows] = useState<DataRow[]>([]);
+  
+  useEffect(() => {
+    if (dataPreview) {
+      setPage(dataPreview.page);
+      setPageSize(dataPreview.pageSize);
+    }
+  }, [dataPreview]);
+  
+  // Get the total number of pages based on dataPreview
+  const getTotalPages = () => {
+    if (!dataPreview || !dataPreview.totalRows) return 0;
+    return Math.ceil(dataPreview.totalRows / pageSize);
   };
-
-  // Log important state changes
-  useEffect(() => {
-    console.log("DataEditorContext - Edit mode changed to:", editMode);
-  }, [editMode]);
-
-  useEffect(() => {
-    console.log("DataEditorContext - Page changed to:", page);
-  }, [page]);
-
-  useEffect(() => {
-    if (dataset.id) {
-      console.log("Saving state to localStorage for dataset:", dataset.id);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, page);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, pageSize);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, sortColumn);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, sortDirection);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, columnWidths);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, zoomLevel);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, visibleColumns);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, filters);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, frozenColumns);
-      safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, editMode);
-    }
-  }, [
-    dataset.id, 
-    page, 
-    pageSize, 
-    sortColumn, 
-    sortDirection, 
-    columnWidths, 
-    zoomLevel,
-    visibleColumns,
-    filters,
-    frozenColumns,
-    editMode
-  ]);
-
-  useEffect(() => {
-    setRepairedCount(modifiedRows.size);
-  }, [modifiedRows]);
-
-  useEffect(() => {
-    if (dataset && dataset.id) {
-      console.log("Loading data for dataset:", dataset.id);
-      loadData();
-    }
-  }, [dataset.id]);
-
-  // Separate effect for pagination and sorting changes
-  useEffect(() => {
-    if (dataset && dataset.id && dataPreview) {
-      console.log("Reloading data due to page/sort/filter change");
-      loadData();
-    }
-  }, [page, pageSize, sortColumn, sortDirection, filters]);
-
-  const loadData = async () => {
-    if (dataset && dataset.id) {
-      console.log("Loading data with params:", {
-        datasetId: dataset.id,
-        page,
-        pageSize,
-        sortColumn,
-        sortDirection,
-        filterCount: filters.length
-      });
-      
-      try {
-        const preview = await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters);
-        console.log("Data loaded successfully:", preview ? "yes" : "no");
-        return preview;
-      } catch (error) {
-        console.error("Error loading data:", error);
-        toast({
-          variant: "destructive",
-          title: "Error loading data",
-          description: error instanceof Error ? error.message : "Failed to load data",
-        });
-      }
-    }
-  };
-
-  const handlePageChange = (newPage: number) => {
-    console.log("Changing page to:", newPage);
+  
+  // Handle page change
+  const handlePageChange = async (newPage: number) => {
     setPage(newPage);
-  };
-
-  const handlePageSizeChange = (newSize: number) => {
-    console.log("Changing page size to:", newSize);
-    setPageSize(newSize);
-    setPage(1);
-    
-    if (isFullscreen) {
-      setTimeout(() => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-      }, 10);
+    try {
+      await onLoadData(dataset.id, newPage, pageSize, sortColumn, sortDirection, filters);
+    } catch (err) {
+      console.error("Error loading data for page", newPage, err);
     }
   };
-
-  const handleSort = (columnName: string) => {
-    console.log("Handling sort for column:", columnName);
-    if (sortColumn === columnName) {
+  
+  // Handle page size change
+  const handlePageSizeChange = async (newSize: number) => {
+    setPageSize(newSize);
+    setPage(1); // Reset to first page when changing page size
+    try {
+      await onLoadData(dataset.id, 1, newSize, sortColumn, sortDirection, filters);
+    } catch (err) {
+      console.error("Error loading data with new page size", newSize, err);
+    }
+  };
+  
+  // Handle sort change
+  const handleSortChange = async (column: string) => {
+    let newDirection: 'asc' | 'desc' | undefined;
+    
+    if (sortColumn === column) {
       if (sortDirection === 'asc') {
-        setSortDirection('desc');
+        newDirection = 'desc';
       } else if (sortDirection === 'desc') {
-        setSortColumn(undefined);
-        setSortDirection(undefined);
+        newDirection = undefined;
+      } else {
+        newDirection = 'asc';
       }
     } else {
-      setSortColumn(columnName);
-      setSortDirection('asc');
+      newDirection = 'asc';
+    }
+    
+    setSortColumn(newDirection ? column : undefined);
+    setSortDirection(newDirection);
+    
+    try {
+      await onLoadData(dataset.id, page, pageSize, newDirection ? column : undefined, newDirection, filters);
+    } catch (err) {
+      console.error("Error loading data with new sort", column, newDirection, err);
     }
   };
-
-  const handleColumnResize = (columnName: string, newWidth: number) => {
-    setColumnWidths(prevWidths => ({ ...prevWidths, [columnName]: newWidth }));
-  };
-
-  const toggleColumnVisibility = (columnName: string, isVisible: boolean) => {
-    setVisibleColumns(prevColumns => {
-      if (isVisible) {
-        return [...prevColumns, columnName];
-      } else {
-        return prevColumns.filter(col => col !== columnName);
-      }
-    });
-  };
-
-  const handleFreezeChange = (columnName: string, isFrozen: boolean) => {
-    setFrozenColumns(prev => {
-      if (isFrozen) {
-        return [...prev, columnName];
-      } else {
-        return prev.filter(col => col !== columnName);
-      }
-    });
-  };
-
-  const isRowModified = (rowId: string) => {
-    return modifiedRows.has(rowId);
-  };
-
-  const handleSelectRow = (rowId: string) => {
-    setSelectedRows(prevSelectedRows => {
-      const newSelectedRows = new Set(prevSelectedRows);
-      if (newSelectedRows.has(rowId)) {
-        newSelectedRows.delete(rowId);
-      } else {
-        newSelectedRows.add(rowId);
-      }
-      return newSelectedRows;
-    });
-  };
-
-  const handleSelectAllRows = () => {
-    if (dataPreview) {
-      if (selectedRows.size === dataPreview.rows.length) {
-        setSelectedRows(new Set());
-      } else {
-        const allRowIds = dataPreview.rows.map(row => row.__id);
-        setSelectedRows(new Set(allRowIds));
-      }
+  
+  // Handle filter change
+  const handleFilterChange = async (newFilters: FilterOptions[]) => {
+    setFilters(newFilters);
+    setPage(1); // Reset to first page when changing filters
+    
+    try {
+      await onLoadData(dataset.id, 1, pageSize, sortColumn, sortDirection, newFilters);
+    } catch (err) {
+      console.error("Error loading data with new filters", newFilters, err);
     }
   };
-
-  const isAllRowsSelected = () => {
-    return dataPreview ? selectedRows.size === dataPreview.rows.length : false;
-  };
-
-  const getTotalPages = () => {
-    if (!dataPreview) return 0;
-    if (dataPreview.totalPages !== undefined) return dataPreview.totalPages;
-    return dataPreview.totalRows ? Math.ceil(dataPreview.totalRows / dataPreview.pageSize) : 0;
-  };
-
-  // Custom save changes wrapper
-  const handleSaveChanges = async () => {
-    console.log(`Saving ${changes.length} changes`);
-    const result = await onSaveChanges();
-    if (result) {
-      // Clear our changes list after saving
-      setChanges([]);
+  
+  // Get cell value with local changes applied
+  const getCellValue = (rowId: string, columnName: string): any => {
+    // Find the most recent change for this cell, if any
+    const change = changes
+      .filter(c => c.rowId === rowId && c.columnName === columnName)
+      .sort((a, b) => b.timestamp - a.timestamp)[0];
+    
+    if (change) {
+      return change.newValue;
     }
-    return result;
+    
+    // If no change, return the original value from dataPreview
+    const row = dataPreview?.rows.find(r => r.id === rowId);
+    return row ? row[columnName] : null;
   };
-
-  const value = {
+  
+  const value: DataEditorContextType = {
     dataset,
     dataPreview,
     isLoading,
     isSaving,
+    page,
+    pageSize,
+    sortColumn,
+    sortDirection,
+    filters,
+    editMode,
     changes,
     modifiedRows,
     canCommit,
-    page,
-    setPage,
-    pageSize,
-    setPageSize,
-    sortColumn,
-    setSortColumn,
-    sortDirection,
-    setSortDirection,
-    columnWidths,
-    setColumnWidths,
-    zoomLevel,
-    setZoomLevel,
-    visibleColumns,
-    setVisibleColumns,
-    isColumnResizing,
-    setIsColumnResizing,
-    filters,
-    setFilters,
-    frozenColumns,
-    setFrozenColumns,
-    editMode,
-    setEditMode,
-    selectedRows,
-    setSelectedRows,
-    selectedCellId,
-    setSelectedCellId,
     isFullscreen,
-    setIsFullscreen,
-    columnFilters,
-    setColumnFilters,
-    repairedCount,
-    getTotalPages,
-    onCellUpdate: handleCellUpdate,
-    onSaveChanges: handleSaveChanges,
-    onCommitChanges,
-    onDiscardChanges,
-    onLoadData,
-    onGoBack,
-    handleSelectRow,
-    handleSelectAllRows,
+    selectedRows,
+    setEditMode,
     handlePageChange,
     handlePageSizeChange,
-    handleSort,
-    handleColumnResize,
-    toggleColumnVisibility,
-    handleFreezeChange,
-    isRowModified,
-    isAllRowsSelected
+    handleSortChange,
+    handleFilterChange,
+    onCellUpdate,
+    onSaveChanges,
+    onCommitChanges,
+    onDiscardChanges,
+    onGoBack,
+    getTotalPages,
+    setSelectedRows,
+    getCellValue
   };
-
+  
   return (
     <DataEditorContext.Provider value={value}>
       {children}

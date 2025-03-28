@@ -1,132 +1,138 @@
 
 import React, { useState } from 'react';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
-  ArrowLeftCircle, 
-  ShieldCheck
+  ChevronLeft, 
+  AlertCircle,
+  Database,
+  Table,
+  Edit3,
+  Save
 } from 'lucide-react';
-import { 
-  Card,
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
-} from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useDataEditor } from '../DataEditorContext';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DataHeaderProps {
   onBackConfirmation: boolean;
   setShowBackConfirmation: (show: boolean) => void;
 }
 
-const DataHeader: React.FC<DataHeaderProps> = ({ 
+const DataHeader: React.FC<DataHeaderProps> = ({
   onBackConfirmation,
   setShowBackConfirmation
 }) => {
   const { 
     dataset, 
     dataPreview, 
+    editMode,
     changes,
-    repairedCount,
-    isFullscreen, 
-    onGoBack,
-    onSaveChanges,
-    onDiscardChanges
+    modifiedRows,
+    canCommit,
+    onGoBack
   } = useDataEditor();
 
   const handleBackClick = () => {
+    console.log("Back button clicked");
     if (changes.length > 0) {
+      console.log("Changes detected, showing confirmation dialog");
       setShowBackConfirmation(true);
     } else {
+      console.log("No changes, going back directly");
       onGoBack();
     }
   };
 
-  const handleConfirmDiscardAndGoBack = () => {
-    onDiscardChanges();
+  const handleConfirmBack = () => {
+    console.log("Confirmed going back, discarding changes");
+    setShowBackConfirmation(false);
     onGoBack();
-    setShowBackConfirmation(false);
-  };
-
-  const handleSaveAndGoBack = async () => {
-    const saveSuccessful = await onSaveChanges();
-    if (saveSuccessful) {
-      onGoBack();
-    }
-    setShowBackConfirmation(false);
   };
 
   return (
-    <>
-      <CardHeader className={cn(
-        "pb-2 transition-all duration-200", 
-        isFullscreen ? "py-2" : ""
-      )}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleBackClick} 
-              className="mr-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-800/30 border-blue-200 dark:border-blue-800 transition-all duration-200 font-medium"
-            >
-              <ArrowLeftCircle className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-              Back
-            </Button>
-            <CardTitle>{dataset.name}</CardTitle>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg px-4 py-2 shadow-sm border border-blue-100 dark:border-blue-800/50">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
-                <div>
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Data Repair Progress</div>
-                  <div className="flex items-center gap-3">
-                    <Progress 
-                      value={dataset.rowCount ? (repairedCount / dataset.rowCount) * 100 : 0} 
-                      className="h-2 w-24 bg-blue-100 dark:bg-blue-900/50"
-                    />
-                    <div className="flex items-center">
-                      <Badge variant="outline" className="bg-white dark:bg-gray-800 text-xs font-semibold py-0 h-5 border-blue-200 dark:border-blue-800">
-                        <span className="text-indigo-600 dark:text-indigo-400">{repairedCount}</span>
-                        <span className="text-gray-500 dark:text-gray-400">/</span>
-                        <span className="text-gray-600 dark:text-gray-300">{dataset.rowCount || 0}</span>
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <CardDescription>
-          {dataPreview ? `Displaying ${dataPreview.rows.length} of ${dataPreview.totalRows} rows` : 'Loading data...'}
-        </CardDescription>
-      </CardHeader>
+    <div className="px-6 py-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30">
+      <div className="flex items-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleBackClick}
+          className="mr-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-800/30 border-blue-200 dark:border-blue-800 transition-all duration-200 font-medium"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+        
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 ml-2">
+          {dataset?.name || 'Dataset'}
+        </h2>
 
+        <div className="flex items-center ml-4 space-x-2">
+          <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+            <Database className="h-3 w-3 mr-1" />
+            {dataset?.rowCount?.toLocaleString() || 'Unknown'} rows
+          </Badge>
+          
+          <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+            <Table className="h-3 w-3 mr-1" />
+            {dataset?.columns?.length || 0} columns
+          </Badge>
+          
+          {editMode && (
+            <Badge variant="outline" className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800">
+              <Edit3 className="h-3 w-3 mr-1" />
+              Edit Mode
+            </Badge>
+          )}
+          
+          {changes.length > 0 && (
+            <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+              <Save className="h-3 w-3 mr-1" />
+              {modifiedRows.size} {modifiedRows.size === 1 ? 'row' : 'rows'} modified
+            </Badge>
+          )}
+        </div>
+      </div>
+      
+      <div>
+        {changes.length > 0 && !canCommit && (
+          <Alert variant="warning" className="mb-0 py-1 px-3 mt-0 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-xs font-medium text-amber-800 dark:text-amber-300 ml-2">Uncommitted changes</AlertTitle>
+            <AlertDescription className="text-xs text-amber-700 dark:text-amber-400 ml-2">
+              Save your changes before exiting
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+      
       <AlertDialog open={onBackConfirmation} onOpenChange={setShowBackConfirmation}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>You have unsaved changes</AlertDialogTitle>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              There are {changes.length} unsaved changes. Do you want to save them before going back?
+              You have unsaved changes to {modifiedRows.size} {modifiedRows.size === 1 ? 'row' : 'rows'}.
+              Going back will discard all these changes. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowBackConfirmation(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDiscardAndGoBack} className="bg-red-600 hover:bg-red-700">
-              Discard Changes
-            </AlertDialogAction>
-            <AlertDialogAction onClick={handleSaveAndGoBack}>
-              Save & Go Back
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmBack} className="bg-red-600 hover:bg-red-700">
+              Discard Changes & Go Back
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };
 
