@@ -246,46 +246,55 @@ const ADLSManager: React.FC = () => {
             onBackToFolders={backToFolders}
           />
           
-          {/* Datasets within the current context (all, container, or folder) */}
-          {filteredDatasets.length > 0 ? (
-            <DatasetList 
-              datasets={filteredDatasets}
-              onSelectDataset={handleSelectDataset}
-              isLoading={isLoading}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-            />
-          ) : (
-            <div className="empty-state animate-fade-in bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-100 dark:border-gray-700 text-center shadow-sm" role="status">
-              {searchQuery ? (
-                <>
-                  <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
-                  <h3 className="text-lg font-medium mb-1">No datasets found</h3>
-                  <p className="text-sm">No datasets match your search criteria "{searchQuery}"</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4"
-                    onClick={() => setSearchQuery('')}
-                  >
-                    Clear search
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
-                  <h3 className="text-lg font-medium mb-1">No datasets available</h3>
-                  <p className="text-sm">
-                    {selectedFolder 
-                      ? "No datasets found in this folder"
-                      : selectedContainer
-                        ? "No datasets found in this container"
-                        : "No datasets found. Try browsing through containers and folders"
-                    }
-                  </p>
-                </>
-              )}
-            </div>
+          {/* Only show datasets if a container or folder is selected */}
+          {(selectedContainer || selectedFolder) && (
+            filteredDatasets.length > 0 ? (
+              <DatasetList 
+                datasets={filteredDatasets}
+                onSelectDataset={handleSelectDataset}
+                isLoading={isLoading}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                connectionInfo={
+                  <div className="text-xs text-blue-600/70 dark:text-blue-400/70 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-100 dark:border-blue-800/50">
+                    {selectedFolder ? 
+                      `Path: ${selectedContainer?.name}/${selectedFolder.name}` : 
+                      `Container: ${selectedContainer?.name}`}
+                  </div>
+                }
+              />
+            ) : (
+              <div className="empty-state animate-fade-in bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-100 dark:border-gray-700 text-center shadow-sm" role="status">
+                {searchQuery ? (
+                  <>
+                    <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
+                    <h3 className="text-lg font-medium mb-1">No datasets found</h3>
+                    <p className="text-sm">No datasets match your search criteria "{searchQuery}"</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      Clear search
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <CloudOff className="h-10 w-10 mb-2 text-gray-400 mx-auto animate-bounce-subtle" />
+                    <h3 className="text-lg font-medium mb-1">No datasets available</h3>
+                    <p className="text-sm">
+                      {selectedFolder 
+                        ? "No datasets found in this folder"
+                        : selectedContainer
+                          ? "No datasets found in this container"
+                          : "No datasets found. Try browsing through containers and folders"
+                      }
+                    </p>
+                  </>
+                )}
+              </div>
+            )
           )}
         </div>
       )}
