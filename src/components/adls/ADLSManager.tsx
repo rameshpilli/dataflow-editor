@@ -51,6 +51,7 @@ const ADLSManager: React.FC = () => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [datasetSelectionPending, setDatasetSelectionPending] = useState(false);
+  const [loadingDatasetId, setLoadingDatasetId] = useState<string | null>(null);
 
   useEffect(() => {
     getAvailableAuthMethods()
@@ -121,6 +122,7 @@ const ADLSManager: React.FC = () => {
   const handleSelectDataset = async (dataset: Dataset) => {
     console.log("ADLSManager - Selecting dataset:", dataset.id, dataset.name);
     setDatasetSelectionPending(true);
+    setLoadingDatasetId(dataset.id);
     
     try {
       if (!dataset.id) {
@@ -136,8 +138,15 @@ const ADLSManager: React.FC = () => {
       // First attempt - try to load the dataset
       console.log("Loading dataset with ID:", dataset.id);
       try {
-        await loadDataset(dataset.id);
+        const preview = await loadDataset(dataset.id);
         console.log("Dataset loaded successfully:", dataset.id);
+        console.log("Preview data:", preview ? "available" : "not available");
+        
+        // Add a small delay to ensure the UI updates
+        setTimeout(() => {
+          setDatasetSelectionPending(false);
+          setLoadingDatasetId(null);
+        }, 300);
       } catch (loadError) {
         console.error("First attempt to load dataset failed:", loadError);
         
@@ -145,8 +154,9 @@ const ADLSManager: React.FC = () => {
         setTimeout(async () => {
           try {
             console.log("Retrying dataset load with ID:", dataset.id);
-            await loadDataset(dataset.id);
+            const retryPreview = await loadDataset(dataset.id);
             console.log("Dataset loaded successfully on second attempt:", dataset.id);
+            console.log("Preview data on retry:", retryPreview ? "available" : "not available");
           } catch (retryError) {
             console.error("Error loading dataset on retry:", retryError);
             toast({
@@ -156,6 +166,7 @@ const ADLSManager: React.FC = () => {
             });
           } finally {
             setDatasetSelectionPending(false);
+            setLoadingDatasetId(null);
           }
         }, 500);
       }
@@ -167,6 +178,7 @@ const ADLSManager: React.FC = () => {
         description: err instanceof Error ? err.message : "Unknown error occurred",
       });
       setDatasetSelectionPending(false);
+      setLoadingDatasetId(null);
     }
   };
 
@@ -174,6 +186,7 @@ const ADLSManager: React.FC = () => {
     console.log("Going back to datasets list");
     loadDataset('');
     setDatasetSelectionPending(false);
+    setLoadingDatasetId(null);
   };
 
   const handleSaveChanges = async () => {
@@ -269,6 +282,12 @@ const ADLSManager: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [selectedDataset, changes]);
+
+  // Debug rendering state
+  console.log("Rendering state - selectedDataset:", selectedDataset ? "yes" : "no");
+  console.log("Rendering state - dataPreview:", dataPreview ? "yes" : "no");
+  console.log("Rendering state - datasetSelectionPending:", datasetSelectionPending);
+  console.log("Rendering state - loadingDatasetId:", loadingDatasetId);
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl water-blue-bg rounded-xl shadow-lg animate-fade-in">
@@ -378,10 +397,11 @@ const ADLSManager: React.FC = () => {
                   {`Path: ${selectedContainer?.name}/${selectedFolder.name}`}
                 </div>
               }
+              loadingDatasetId={loadingDatasetId}
             />
           )}
 
-          {datasetSelectionPending && (
+          {datasetSelectionPending && !selectedDataset && (
             <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
               <div className="animate-pulse flex flex-col items-center justify-center">
                 <div className="h-10 w-10 bg-blue-200 dark:bg-blue-800 rounded-full mb-4"></div>

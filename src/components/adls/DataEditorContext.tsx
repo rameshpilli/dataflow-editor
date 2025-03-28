@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Dataset, DatasetPreview, FilterOptions, DataChange } from '@/types/adls';
+import { toast } from '@/hooks/use-toast';
 
 interface DataEditorContextType {
   dataset: Dataset;
@@ -140,37 +141,75 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
   onLoadData,
   onGoBack
 }) => {
-  const [page, setPage] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, 1));
-  const [pageSize, setPageSize] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, 10));
+  console.log("DataEditorProvider - Initializing with dataset:", dataset?.id);
+  console.log("DataEditorProvider - Has dataPreview:", !!dataPreview);
+
+  const [page, setPage] = useState(() => {
+    const savedPage = safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, 1);
+    console.log("Restored page from storage:", savedPage);
+    return savedPage;
+  });
+  
+  const [pageSize, setPageSize] = useState(() => {
+    const savedPageSize = safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, 10);
+    console.log("Restored pageSize from storage:", savedPageSize);
+    return savedPageSize;
+  });
+  
   const [sortColumn, setSortColumn] = useState<string | undefined>(() => 
     safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, undefined)
   );
+  
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | undefined>(() => 
     safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortDirection`, undefined)
   );
+  
   const [columnWidths, setColumnWidths] = useState<{ [columnName: string]: number }>(() =>
     safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-columnWidths`, {})
   );
-  const [zoomLevel, setZoomLevel] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, 100));
+  
+  const [zoomLevel, setZoomLevel] = useState(() => 
+    safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-zoomLevel`, 100)
+  );
+  
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => 
     safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-visibleColumns`, dataset.columns.map(col => col.name))
   );
+  
   const [isColumnResizing, setIsColumnResizing] = useState(false);
+  
   const [filters, setFilters] = useState<FilterOptions[]>(() => 
     safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-filters`, [])
   );
+  
   const [frozenColumns, setFrozenColumns] = useState<string[]>(() => 
     safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-frozenColumns`, [])
   );
-  const [editMode, setEditMode] = useState(() => safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, false));
+  
+  const [editMode, setEditMode] = useState(() => {
+    const savedEditMode = safeLocalStorageGet(`${STORAGE_KEY_PREFIX}${dataset.id}-editMode`, false);
+    console.log("Restored editMode from storage:", savedEditMode);
+    return savedEditMode;
+  });
+  
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [columnFilters, setColumnFilters] = useState<{[key: string]: {value: string, active: boolean}}>({});
   const [repairedCount, setRepairedCount] = useState(0);
 
+  // Log important state changes
+  useEffect(() => {
+    console.log("DataEditorContext - Edit mode changed to:", editMode);
+  }, [editMode]);
+
+  useEffect(() => {
+    console.log("DataEditorContext - Page changed to:", page);
+  }, [page]);
+
   useEffect(() => {
     if (dataset.id) {
+      console.log("Saving state to localStorage for dataset:", dataset.id);
       safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-page`, page);
       safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-pageSize`, pageSize);
       safeLocalStorageSet(`${STORAGE_KEY_PREFIX}${dataset.id}-sortColumn`, sortColumn);
@@ -202,21 +241,52 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
 
   useEffect(() => {
     if (dataset && dataset.id) {
+      console.log("Loading data for dataset:", dataset.id);
       loadData();
     }
-  }, [dataset, page, pageSize, sortColumn, sortDirection, filters]);
+  }, [dataset.id]);
+
+  // Separate effect for pagination and sorting changes
+  useEffect(() => {
+    if (dataset && dataset.id && dataPreview) {
+      console.log("Reloading data due to page/sort/filter change");
+      loadData();
+    }
+  }, [page, pageSize, sortColumn, sortDirection, filters]);
 
   const loadData = async () => {
     if (dataset && dataset.id) {
-      await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters);
+      console.log("Loading data with params:", {
+        datasetId: dataset.id,
+        page,
+        pageSize,
+        sortColumn,
+        sortDirection,
+        filterCount: filters.length
+      });
+      
+      try {
+        const preview = await onLoadData(dataset.id, page, pageSize, sortColumn, sortDirection, filters);
+        console.log("Data loaded successfully:", preview ? "yes" : "no");
+        return preview;
+      } catch (error) {
+        console.error("Error loading data:", error);
+        toast({
+          variant: "destructive",
+          title: "Error loading data",
+          description: error instanceof Error ? error.message : "Failed to load data",
+        });
+      }
     }
   };
 
   const handlePageChange = (newPage: number) => {
+    console.log("Changing page to:", newPage);
     setPage(newPage);
   };
 
   const handlePageSizeChange = (newSize: number) => {
+    console.log("Changing page size to:", newSize);
     setPageSize(newSize);
     setPage(1);
     
@@ -230,6 +300,7 @@ export const DataEditorProvider: React.FC<DataEditorProviderProps> = ({
   };
 
   const handleSort = (columnName: string) => {
+    console.log("Handling sort for column:", columnName);
     if (sortColumn === columnName) {
       if (sortDirection === 'asc') {
         setSortDirection('desc');

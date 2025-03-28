@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -57,6 +58,20 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
   console.log("DataEditor - Rendering with dataset:", dataset?.id);
   console.log("DataEditor - Data preview available:", !!dataPreview);
   console.log("DataEditor - Is loading:", isLoading);
+  console.log("DataEditor - Dataset details:", {
+    name: dataset?.name,
+    rowCount: dataset?.rowCount,
+    columnCount: dataset?.columns?.length
+  });
+
+  if (dataPreview) {
+    console.log("DataEditor - Preview details:", {
+      rowCount: dataPreview.rows.length,
+      totalRows: dataPreview.totalRows,
+      page: dataPreview.page,
+      pageSize: dataPreview.pageSize
+    });
+  }
 
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -90,6 +105,12 @@ const DataEditor: React.FC<DataEditorProps> = (props) => {
       document.removeEventListener('keydown', handleEscKey);
     };
   }, [isFullscreen]);
+
+  // Effect to log data changes
+  useEffect(() => {
+    console.log("DataEditor - Changes:", changes.length);
+    console.log("DataEditor - Modified rows:", modifiedRows.size);
+  }, [changes, modifiedRows]);
 
   const handleToggleFullscreen = () => {
     setIsFullscreen(prev => {

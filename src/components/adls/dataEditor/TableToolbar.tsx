@@ -85,6 +85,32 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
     }
   };
 
+  const handleToggleEditMode = (checked: boolean) => {
+    console.log("Toggling edit mode to:", checked);
+    setEditMode(checked);
+    
+    if (checked) {
+      toast({
+        title: "Edit mode enabled",
+        description: "You can now edit cells in the table",
+        variant: "default",
+      });
+    } else {
+      if (changes.length > 0) {
+        toast({
+          title: "Edit mode disabled",
+          description: `You have ${changes.length} unsaved changes`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Edit mode disabled",
+          variant: "default",
+        });
+      }
+    }
+  };
+
   return (
     <div className="py-3 px-2 border-b flex flex-wrap items-center justify-between gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 z-10">
       <div className="flex items-center space-x-2">
@@ -139,10 +165,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
                 <div className={`p-0.5 rounded-md transition-colors ${editMode ? 'bg-blue-100 dark:bg-blue-900/30' : ''}`}>
                   <Switch
                     checked={editMode}
-                    onCheckedChange={(checked) => {
-                      console.log("Toggling edit mode to:", checked);
-                      setEditMode(checked);
-                    }}
+                    onCheckedChange={handleToggleEditMode}
                     aria-label="Toggle edit mode"
                   />
                 </div>
