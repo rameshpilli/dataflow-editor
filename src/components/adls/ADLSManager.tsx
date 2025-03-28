@@ -8,8 +8,9 @@ import ContainerBrowser from '@/components/adls/ContainerBrowser';
 import { Dataset, ADLSCredentials } from '@/types/adls';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { LogOut, DatabaseIcon, CloudOff, AlertCircle } from 'lucide-react';
+import { LogOut, DatabaseIcon, CloudOff, AlertCircle, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const ADLSManager: React.FC = () => {
   const {
@@ -46,10 +47,16 @@ const ADLSManager: React.FC = () => {
   
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [usingMockData, setUsingMockData] = useState(false);
 
   useEffect(() => {
     // Load available authentication methods when the component mounts
-    getAvailableAuthMethods();
+    getAvailableAuthMethods()
+      .catch(error => {
+        if (error.message.includes('fetch') || error.message.includes('backend')) {
+          setUsingMockData(true);
+        }
+      });
   }, [getAvailableAuthMethods]);
 
   useEffect(() => {
@@ -63,12 +70,35 @@ const ADLSManager: React.FC = () => {
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
+      // If backend is unavailable, force mock mode
+      if (usingMockData && !credentials.useMockBackend) {
+        credentials.useMockBackend = true;
+      }
+      
       await connect(credentials, name);
-      toast({
-        title: "Connected successfully",
-        description: `Connected to ${name}`,
-      });
+      
+      if (credentials.useMockBackend) {
+        setUsingMockData(true);
+        toast({
+          title: "Connected to mock data",
+          description: "Using mock data for demonstration purposes",
+        });
+      } else {
+        toast({
+          title: "Connected successfully",
+          description: `Connected to ${name}`,
+        });
+      }
     } catch (err) {
+      // Check if error is related to backend unavailability
+      if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('backend'))) {
+        setUsingMockData(true);
+        // Try again with mock mode
+        if (!credentials.useMockBackend) {
+          credentials.useMockBackend = true;
+          return handleConnect(credentials, name);
+        }
+      }
       // Error is already handled in the useADLSData hook
     }
   };
@@ -192,6 +222,16 @@ const ADLSManager: React.FC = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl water-blue-bg rounded-xl shadow-lg animate-fade-in">
+      {usingMockData && (
+        <Alert variant="default" className="mb-6 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/50">
+          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+          <AlertTitle className="text-amber-800 dark:text-amber-400">Using mock data</AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-300">
+            Backend connection unavailable. Using simulated data for demonstration purposes.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6 shadow-sm animate-scale-in">
           <div className="flex items-center">

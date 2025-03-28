@@ -14,6 +14,7 @@ import {
   FolderTree
 } from '@/types/adls';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from '@/hooks/use-toast';
 
 // Base API URL for the Python backend
 const API_BASE_URL = 'http://localhost:8000';
@@ -198,13 +199,41 @@ class ADLSService {
   private tempStorage: Map<string, TempStorage> = new Map();
   private useMockBackend: boolean = false;
   private folderTreeCache: Map<string, FolderTree> = new Map();
+  private backendAvailable: boolean = true;
+  
+  constructor() {
+    // Check if backend is available on startup
+    this.checkBackendAvailability();
+  }
+  
+  // Check if the backend is available
+  private async checkBackendAvailability(): Promise<void> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(`${API_BASE_URL}/auth-methods`, { 
+        signal: controller.signal 
+      });
+      
+      clearTimeout(timeoutId);
+      this.backendAvailable = response.ok;
+    } catch (error) {
+      console.log("Backend unavailable, using mock data");
+      this.backendAvailable = false;
+      this.useMockBackend = true;
+    }
+  }
   
   // Connect to ADLS
   async connect(credentials: ADLSCredentials, name: string): Promise<ADLSConnection> {
-    this.useMockBackend = credentials.useMockBackend || false;
+    // Force mock mode if backend is unavailable
+    if (!this.backendAvailable) {
+      this.useMockBackend = true;
+    }
     
     // If using mock backend, return a mock connection
-    if (this.useMockBackend) {
+    if (this.useMockBackend || credentials.useMockBackend) {
       const mockConnection: ADLSConnection = {
         id: uuidv4(),
         name,
@@ -243,6 +272,14 @@ class ADLSService {
       return connectionData;
     } catch (error) {
       console.error('ADLS connection error:', error);
+      
+      // If backend connection fails, fallback to mock mode
+      if (!this.useMockBackend) {
+        console.log("Falling back to mock mode due to connection error");
+        this.useMockBackend = true;
+        return this.connect(credentials, name);
+      }
+      
       throw error;
     }
   }
@@ -739,7 +776,8 @@ class ADLSService {
       hasUserManagedIdentity: boolean
     }
   }> {
-    if (this.useMockBackend) {
+    // If backend is known to be unavailable or mock mode is already active, return mock data
+    if (!this.backendAvailable || this.useMockBackend) {
       return {
         supportsManagedIdentity: true,
         supportsConnectionString: true,
@@ -755,7 +793,14 @@ class ADLSService {
     }
     
     try {
-      const response = await fetch(`${API_BASE_URL}/auth-methods`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(`${API_BASE_URL}/auth-methods`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -765,7 +810,27 @@ class ADLSService {
       return await response.json();
     } catch (error) {
       console.error('Error getting authentication methods:', error);
-      throw error;
+      
+      // If this is the first backend error, mark backend as unavailable
+      if (this.backendAvailable) {
+        console.log("Backend unavailable, using mock data for future requests");
+        this.backendAvailable = false;
+        this.useMockBackend = true;
+      }
+      
+      // Return mock data as fallback
+      return {
+        supportsManagedIdentity: true,
+        supportsConnectionString: true,
+        supportsAccountKey: true,
+        recommendedMethod: 'accountKey', // Recommend account key in dev environment
+        environmentInfo: {
+          isAzureEnvironment: false,
+          isDevEnvironment: true,
+          hasSystemManagedIdentity: false,
+          hasUserManagedIdentity: false
+        }
+      };
     }
   }
 }
