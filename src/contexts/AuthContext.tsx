@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -45,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (authMethod === 'ldap') {
       if (username.startsWith('ldap_')) {
-        const userData = { 
+        const userData: User = { 
           username, 
           role: 'user', 
           groups: ['LDAPUsers'], 
@@ -58,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const foundUser = users.find(u => u.username === username && u.password === password);
       if (foundUser) {
-        const userData = { 
+        const userData: User = { 
           username, 
           role: foundUser.role, 
           groups: foundUser.groups,
@@ -77,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Invalid credentials');
       }
       
-      const userData = { 
+      const userData: User = { 
         username, 
         role: foundUser.role, 
         groups: foundUser.groups,
