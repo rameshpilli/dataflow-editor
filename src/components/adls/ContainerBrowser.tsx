@@ -42,6 +42,24 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   
+  // Automatically expand all nodes on initial load for better discoverability
+  useEffect(() => {
+    if (folderTree && folderTree.children.length > 0) {
+      const initialExpandedNodes = new Set<string>();
+      const expandFirstLevel = (node: FolderTree) => {
+        initialExpandedNodes.add(node.id);
+        // Only auto-expand the first level
+        if (node.id === folderTree.id) {
+          node.children.forEach(child => {
+            initialExpandedNodes.add(child.id);
+          });
+        }
+      };
+      expandFirstLevel(folderTree);
+      setExpandedNodes(initialExpandedNodes);
+    }
+  }, [folderTree]);
+  
   const filteredContainers = containers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -95,20 +113,59 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
           
           // Wait for container selection to complete
           setTimeout(() => {
-            // Find folder by name in the new container context
-            const folderToSelect = folders.find(f => f.path.includes(node.name));
+            // Find folder by name or path in the new container context
+            const folderToSelect = folders.find(f => 
+              f.name === node.name || 
+              f.path === node.path ||
+              f.path.includes(`/${node.name}`) ||
+              node.path.includes(f.name)
+            );
+            
             if (folderToSelect) {
               handleFolderSelect(folderToSelect.id);
             } else {
-              console.error(`Folder ${node.name} not found after selecting container`);
+              console.warn(`Folder ${node.name} not found after selecting container ${containerName}. Adding folder IDs to mock data might be needed.`);
+              // If in mock data mode, try to find a folder with a similar ID based on the node name
+              const mockFolderId = `${node.name.toLowerCase()}-folder`;
+              console.log(`Trying mock folder ID: ${mockFolderId}`);
+              const mockFolder = folders.find(f => f.id === mockFolderId);
+              if (mockFolder) {
+                handleFolderSelect(mockFolder.id);
+              } else {
+                toast({
+                  title: "Folder not found",
+                  description: `Could not find folder "${node.name}". Try switching to List View and navigating manually.`,
+                  variant: "destructive"
+                });
+              }
             }
-          }, 300);
+          }, 500);
         } else {
-          const folderToSelect = folders.find(f => f.name === node.name);
+          // Container already selected, just select the folder by path or name
+          const folderToSelect = folders.find(f => 
+            f.name === node.name || 
+            f.path === node.path ||
+            f.path.includes(`/${node.name}`) ||
+            node.path.includes(f.name)
+          );
+          
           if (folderToSelect) {
             handleFolderSelect(folderToSelect.id);
           } else {
-            console.error(`Folder ${node.name} not found in current container`);
+            console.warn(`Folder ${node.name} not found in current container. Trying alternative matching.`);
+            // For mock data - try finding by ID pattern
+            const mockFolderId = `${node.name.toLowerCase()}-folder`;
+            console.log(`Trying mock folder ID: ${mockFolderId}`);
+            const mockFolder = folders.find(f => f.id === mockFolderId);
+            if (mockFolder) {
+              handleFolderSelect(mockFolder.id);
+            } else {
+              toast({
+                title: "Folder not found",
+                description: `Could not find folder "${node.name}". Try switching to List View and navigating manually.`,
+                variant: "destructive"
+              });
+            }
           }
         }
       }
@@ -130,39 +187,63 @@ const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
             
             // Wait for container selection to complete then try to find folder
             setTimeout(() => {
-              // Find the folder by path that contains the folder name
+              // Find the folder by path or name
               const folderToSelect = folders.find(f => 
-                f.path.includes(folderName) || f.name === folderName
+                f.name === folderName || 
+                f.path.includes(`/${folderName}`) || 
+                f.path.endsWith(folderName)
               );
               
               if (folderToSelect) {
                 handleFolderSelect(folderToSelect.id);
-                // No need to auto-select dataset, as it will be shown in DatasetList
+                // Dataset selection will be handled by the parent component
               } else {
-                console.error(`Folder ${folderName} not found after selecting container`);
+                console.warn(`Folder ${folderName} not found after selecting container. Trying mock folder ID.`);
+                // For mock data - try to find by ID pattern
+                const mockFolderId = `${folderName.toLowerCase()}-folder`;
+                console.log(`Trying mock folder ID: ${mockFolderId}`);
+                const mockFolder = folders.find(f => f.id === mockFolderId);
+                
+                if (mockFolder) {
+                  handleFolderSelect(mockFolder.id);
+                  // Dataset selection will be handled by the parent component
+                } else {
+                  toast({
+                    title: "Folder not found",
+                    description: `Could not find parent folder "${folderName}" for dataset. Try switching to List View and navigating manually.`,
+                    variant: "destructive"
+                  });
+                }
+              }
+            }, 500);
+          } else {
+            // Container already selected, just select the folder
+            const folderToSelect = folders.find(f => 
+              f.name === folderName || 
+              f.path.includes(`/${folderName}`) || 
+              f.path.endsWith(folderName)
+            );
+            
+            if (folderToSelect) {
+              handleFolderSelect(folderToSelect.id);
+              // Dataset selection will be handled by the parent component
+            } else {
+              console.warn(`Folder ${folderName} not found in current container. Trying mock folder ID.`);
+              // For mock data - try to find by ID pattern
+              const mockFolderId = `${folderName.toLowerCase()}-folder`;
+              console.log(`Trying mock folder ID: ${mockFolderId}`);
+              const mockFolder = folders.find(f => f.id === mockFolderId);
+              
+              if (mockFolder) {
+                handleFolderSelect(mockFolder.id);
+                // Dataset selection will be handled by the parent component
+              } else {
                 toast({
                   title: "Folder not found",
                   description: `Could not find parent folder "${folderName}" for dataset. Try switching to List View and navigating manually.`,
                   variant: "destructive"
                 });
               }
-            }, 500);
-          } else {
-            // Container already selected, just select the folder
-            const folderToSelect = folders.find(f => 
-              f.path.includes(folderName) || f.name === folderName
-            );
-            
-            if (folderToSelect) {
-              handleFolderSelect(folderToSelect.id);
-              // No need to auto-select dataset, as it will be shown in DatasetList
-            } else {
-              console.error(`Folder ${folderName} not found in current container`);
-              toast({
-                title: "Folder not found",
-                description: `Could not find parent folder "${folderName}" for dataset. Try switching to List View and navigating manually.`,
-                variant: "destructive"
-              });
             }
           }
         }

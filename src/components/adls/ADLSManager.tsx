@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useADLSData } from '@/hooks/useADLSData';
 import ConnectionForm from '@/components/adls/ConnectionForm';
@@ -49,6 +50,7 @@ const ADLSManager: React.FC = () => {
   const [usingMockData, setUsingMockData] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [datasetSelectionPending, setDatasetSelectionPending] = useState(false);
 
   useEffect(() => {
     getAvailableAuthMethods()
@@ -65,6 +67,16 @@ const ADLSManager: React.FC = () => {
   useEffect(() => {
     console.log("Folder tree:", folderTree ? 'available' : 'not available');
   }, [folderTree]);
+
+  // Add a watcher for datasets that automatically selects the first dataset if there's only one
+  useEffect(() => {
+    if (datasets.length === 1 && !selectedDataset && !datasetSelectionPending) {
+      console.log("Auto-selecting the only dataset:", datasets[0].name);
+      setTimeout(() => {
+        handleSelectDataset(datasets[0]);
+      }, 100);
+    }
+  }, [datasets, selectedDataset, datasetSelectionPending]);
 
   const handleConnect = async (credentials: ADLSCredentials, name: string) => {
     try {
@@ -108,6 +120,8 @@ const ADLSManager: React.FC = () => {
 
   const handleSelectDataset = async (dataset: Dataset) => {
     console.log("ADLSManager - Selecting dataset:", dataset.id, dataset.name);
+    setDatasetSelectionPending(true);
+    
     try {
       if (!dataset.id) {
         console.error("Dataset ID is missing", dataset);
@@ -119,24 +133,47 @@ const ADLSManager: React.FC = () => {
         return;
       }
 
-      setTimeout(async () => {
-        console.log("Loading dataset with ID:", dataset.id);
+      // First attempt - try to load the dataset
+      console.log("Loading dataset with ID:", dataset.id);
+      try {
         await loadDataset(dataset.id);
         console.log("Dataset loaded successfully:", dataset.id);
-      }, 100);
+      } catch (loadError) {
+        console.error("First attempt to load dataset failed:", loadError);
+        
+        // Wait a bit and try again
+        setTimeout(async () => {
+          try {
+            console.log("Retrying dataset load with ID:", dataset.id);
+            await loadDataset(dataset.id);
+            console.log("Dataset loaded successfully on second attempt:", dataset.id);
+          } catch (retryError) {
+            console.error("Error loading dataset on retry:", retryError);
+            toast({
+              variant: "destructive",
+              title: "Error loading dataset",
+              description: retryError instanceof Error ? retryError.message : "Failed to load dataset after multiple attempts",
+            });
+          } finally {
+            setDatasetSelectionPending(false);
+          }
+        }, 500);
+      }
     } catch (err) {
-      console.error("Error loading dataset:", err);
+      console.error("Error in dataset selection process:", err);
       toast({
         variant: "destructive",
         title: "Error loading dataset",
         description: err instanceof Error ? err.message : "Unknown error occurred",
       });
+      setDatasetSelectionPending(false);
     }
   };
 
   const handleGoBackToDatasets = () => {
     console.log("Going back to datasets list");
     loadDataset('');
+    setDatasetSelectionPending(false);
   };
 
   const handleSaveChanges = async () => {
@@ -190,10 +227,7 @@ const ADLSManager: React.FC = () => {
       console.log("Selecting folder with ID:", folderId);
       await selectFolder(folderId);
       
-      if (datasets.length === 1) {
-        console.log("Auto-selecting the only dataset in folder:", datasets[0].name);
-        handleSelectDataset(datasets[0]);
-      }
+      // If there are datasets, we'll let the auto-selection in the useEffect handle it
     } catch (err) {
       console.error("Error selecting folder:", err);
       toast({
@@ -336,7 +370,7 @@ const ADLSManager: React.FC = () => {
             <DatasetList 
               datasets={filteredDatasets}
               onSelectDataset={handleSelectDataset}
-              isLoading={isLoading}
+              isLoading={isLoading || datasetSelectionPending}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               connectionInfo={
@@ -345,6 +379,17 @@ const ADLSManager: React.FC = () => {
                 </div>
               }
             />
+          )}
+
+          {datasetSelectionPending && (
+            <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
+              <div className="animate-pulse flex flex-col items-center justify-center">
+                <div className="h-10 w-10 bg-blue-200 dark:bg-blue-800 rounded-full mb-4"></div>
+                <h3 className="text-lg font-medium">Loading dataset...</h3>
+                <p className="text-gray-500 mt-2">Please wait while we fetch the data</p>
+                <div className="mt-4 h-2 w-40 bg-blue-200 dark:bg-blue-800 rounded"></div>
+              </div>
+            </div>
           )}
         </div>
       )}

@@ -10,12 +10,14 @@ import {
   Undo2, 
   SlidersHorizontal, 
   Save,
-  Maximize2
+  Maximize2,
+  AlertTriangle
 } from 'lucide-react';
 import { useDataEditor } from '../DataEditorContext';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface TableToolbarProps {
   showColumnManager: boolean;
@@ -149,14 +151,23 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
             </Tooltip>
           </TooltipProvider>
         </div>
+
+        {changes.length > 0 && (
+          <Badge variant="outline" className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 flex items-center px-2.5">
+            <AlertTriangle className="h-3.5 w-3.5 mr-1 text-amber-500" />
+            <span className="text-xs">
+              {changes.length} unsaved {changes.length === 1 ? 'change' : 'changes'}
+            </span>
+          </Badge>
+        )}
         
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
+                variant={changes.length > 0 ? "default" : "outline"}
                 size="icon"
-                className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-700"
+                className={`h-8 w-8 ${changes.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                 disabled={changes.length === 0}
                 onClick={handleSaveChanges}
                 aria-label="Save changes"

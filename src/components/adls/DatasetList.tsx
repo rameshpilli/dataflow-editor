@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dataset } from '@/types/adls';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,7 +126,11 @@ const DatasetList: React.FC<DatasetListProps> = ({
                 }
                     
                 return (
-                  <TableRow key={dataset.id} className="transition-all duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer" onClick={() => handleDatasetSelect(dataset)}>
+                  <TableRow 
+                    key={dataset.id} 
+                    className="transition-all duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer"
+                    onClick={() => handleDatasetSelect(dataset)}
+                  >
                     <TableCell>
                       {dataset.format === 'delta' ? (
                         <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-md inline-flex">
