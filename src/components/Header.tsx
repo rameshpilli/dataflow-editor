@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Database, LogOut, Moon, Sun, User, ChevronDown } from 'lucide-react';
-import { Toggle } from '@/components/ui/toggle';
 import { useTheme } from '@/hooks/useTheme';
 import {
   DropdownMenu,
@@ -31,6 +30,10 @@ const Header = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
   return (
     <header className="w-full bg-background border-b shadow-sm px-6 py-3 sticky top-0 z-10">
       <div className="container mx-auto flex justify-between items-center">
@@ -43,17 +46,19 @@ const Header = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <Toggle 
-            pressed={theme === 'dark'} 
-            onPressedChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        <div className="flex items-center gap-2">
+          {/* Moon icon for theme toggle */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleTheme}
             aria-label="Toggle dark mode"
-            className="mr-2"
+            className="h-9 w-9"
           >
             {theme === 'dark' ? 
               <Sun className="h-4 w-4" /> : 
               <Moon className="h-4 w-4" />}
-          </Toggle>
+          </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

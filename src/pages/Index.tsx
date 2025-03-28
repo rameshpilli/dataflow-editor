@@ -5,7 +5,6 @@ import ADLSManager from '@/components/adls/ADLSManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { APP_VERSION } from '@/constants/appInfo';
-import WelcomeDashboard from '@/components/WelcomeDashboard';
 
 const Index = () => {
   const { user } = useAuth();
@@ -36,7 +35,6 @@ const Index = () => {
             </p>
           </div>
           
-          {user && <WelcomeDashboard username={user.username} />}
           <ADLSManager />
         </div>
       </main>

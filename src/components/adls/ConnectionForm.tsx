@@ -26,6 +26,7 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, isLoading })
           onClick={() => onConnect({
             accountName: 'datalakeaccount',
             accountKey: 'demo-key',
+            useManagedIdentity: false,
             useMockBackend: true
           }, 'Demo ADLS Connection')}
           disabled={isLoading}
